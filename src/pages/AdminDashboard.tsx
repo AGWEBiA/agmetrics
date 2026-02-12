@@ -137,6 +137,17 @@ export default function AdminDashboard() {
     const available = Math.max(0, budget - spent);
     const usePct = budget > 0 ? (spent / budget) * 100 : 0;
 
+    // Determine period length based on strategy
+    const strategy = project?.strategy;
+    const isLaunch = strategy === "lancamento" || strategy === "lancamento_pago";
+    let periodDays = 30; // default for perpetuo / funis
+
+    if (isLaunch && project?.start_date && project?.end_date) {
+      const start = new Date(project.start_date);
+      const end = new Date(project.end_date);
+      periodDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1);
+    }
+
     // Build daily spending timeline from meta + google + manual
     const dailySpending = new Map<string, number>();
     (m.metaMetrics || []).forEach((met: any) => {
@@ -151,8 +162,23 @@ export default function AdminDashboard() {
     const sortedDays = Array.from(dailySpending.entries()).sort(([a], [b]) => a.localeCompare(b));
     const daysWithSpending = sortedDays.filter(([, v]) => v > 0).length;
     const dailyAvg = daysWithSpending > 0 ? spent / daysWithSpending : 0;
-    const daysRemaining = dailyAvg > 0 ? Math.ceil(available / dailyAvg) : null;
-    const exhaustionDate = daysRemaining ? new Date(Date.now() + daysRemaining * 86400000) : null;
+
+    // For launches: remaining = launch days - elapsed days; for perpetuo/funis: budget-based
+    let daysRemaining: number | null = null;
+    let exhaustionDate: Date | null = null;
+
+    if (isLaunch && project?.end_date) {
+      const end = new Date(project.end_date);
+      const today = new Date();
+      daysRemaining = Math.max(0, Math.ceil((end.getTime() - today.getTime()) / 86400000));
+      exhaustionDate = end;
+    } else {
+      daysRemaining = dailyAvg > 0 ? Math.ceil(available / dailyAvg) : null;
+      exhaustionDate = daysRemaining ? new Date(Date.now() + daysRemaining * 86400000) : null;
+    }
+
+    // Daily budget target
+    const dailyBudgetTarget = periodDays > 0 ? budget / periodDays : 0;
 
     // Build projection chart
     let cumulative = 0;
@@ -162,10 +188,11 @@ export default function AdminDashboard() {
       chartData.push({ date: new Date(date).toLocaleDateString("pt-BR", { day: "2-digit", month: "numeric" }), real: cumulative });
     });
     // Add projection points
-    if (dailyAvg > 0 && chartData.length > 0) {
+    const maxProjectionDays = isLaunch ? (daysRemaining ?? 0) : Math.min(daysRemaining || 60, 60);
+    if (dailyAvg > 0 && chartData.length > 0 && maxProjectionDays > 0) {
       let projCum = cumulative;
       const lastDate = new Date(sortedDays[sortedDays.length - 1][0]);
-      for (let i = 1; i <= Math.min(daysRemaining || 60, 60); i++) {
+      for (let i = 1; i <= maxProjectionDays; i++) {
         const d = new Date(lastDate.getTime() + i * 86400000);
         projCum += dailyAvg;
         if (projCum > budget * 1.1) break;
@@ -177,7 +204,7 @@ export default function AdminDashboard() {
       }
     }
 
-    return { budget, spent, available, usePct, dailyAvg, daysRemaining, exhaustionDate, chartData };
+    return { budget, spent, available, usePct, dailyAvg, daysRemaining, exhaustionDate, chartData, periodDays, dailyBudgetTarget };
   }, [project, m.totalInvestment, m.metaMetrics, m.googleMetrics]);
 
   const isPerpertuo = project?.strategy === "perpetuo";
