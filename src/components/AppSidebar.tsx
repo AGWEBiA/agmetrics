@@ -7,7 +7,8 @@ import {
   BarChart3,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation, useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { useProject } from "@/hooks/useProjects";
 import {
   Sidebar,
   SidebarContent,
@@ -23,9 +24,9 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 export function AppSidebar() {
-  const location = useLocation();
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const { data: project } = useProject(projectId);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -84,10 +85,10 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {projectItems.length > 0 && (
+        {projectId && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground px-4">
-              Projeto Atual
+              {project?.name || "Projeto"}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -106,19 +107,21 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <a
-                      href={`/view/demo-token`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center hover:bg-sidebar-accent"
-                    >
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      <span>Dashboard Público</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {project?.view_token && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <a
+                        href={`/view/${project.view_token}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center hover:bg-sidebar-accent"
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        <span>Dashboard Público</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
