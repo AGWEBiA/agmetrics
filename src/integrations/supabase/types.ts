@@ -14,6 +14,321 @@ export type Database = {
   }
   public: {
     Tables: {
+      google_credentials: {
+        Row: {
+          client_id: string
+          client_secret: string
+          created_at: string
+          customer_id: string
+          id: string
+          project_id: string
+          refresh_token: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          client_secret: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          project_id: string
+          refresh_token: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          client_secret?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          project_id?: string
+          refresh_token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_credentials_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      google_metrics: {
+        Row: {
+          cache_expiry: number | null
+          clicks: number | null
+          conversion_rate: number | null
+          conversions: number | null
+          cost_per_conversion: number | null
+          cpc: number | null
+          created_at: string
+          ctr: number | null
+          date: string
+          id: string
+          impressions: number | null
+          investment: number | null
+          last_updated: string | null
+          project_id: string
+        }
+        Insert: {
+          cache_expiry?: number | null
+          clicks?: number | null
+          conversion_rate?: number | null
+          conversions?: number | null
+          cost_per_conversion?: number | null
+          cpc?: number | null
+          created_at?: string
+          ctr?: number | null
+          date: string
+          id?: string
+          impressions?: number | null
+          investment?: number | null
+          last_updated?: string | null
+          project_id: string
+        }
+        Update: {
+          cache_expiry?: number | null
+          clicks?: number | null
+          conversion_rate?: number | null
+          conversions?: number | null
+          cost_per_conversion?: number | null
+          cpc?: number | null
+          created_at?: string
+          ctr?: number | null
+          date?: string
+          id?: string
+          impressions?: number | null
+          investment?: number | null
+          last_updated?: string | null
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_metrics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manual_investments: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          project_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          date: string
+          description?: string | null
+          id?: string
+          project_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_investments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meta_credentials: {
+        Row: {
+          access_token: string
+          ad_account_id: string
+          created_at: string
+          id: string
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          ad_account_id: string
+          created_at?: string
+          id?: string
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          ad_account_id?: string
+          created_at?: string
+          id?: string
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_credentials_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meta_metrics: {
+        Row: {
+          cache_expiry: number | null
+          checkout_conversion_rate: number | null
+          checkouts_initiated: number | null
+          clicks: number | null
+          connect_rate: number | null
+          cost_per_lead: number | null
+          cost_per_purchase: number | null
+          cost_per_result: number | null
+          cpa: number | null
+          cpc: number | null
+          cpm: number | null
+          created_at: string
+          ctr: number | null
+          date: string
+          id: string
+          impressions: number | null
+          investment: number | null
+          landing_page_views: number | null
+          last_updated: string | null
+          lead_event_type: string | null
+          leads: number | null
+          link_clicks: number | null
+          link_cpc: number | null
+          link_ctr: number | null
+          page_conversion_rate: number | null
+          page_views: number | null
+          project_id: string
+          purchases: number | null
+          results: number | null
+          top_ads: Json | null
+        }
+        Insert: {
+          cache_expiry?: number | null
+          checkout_conversion_rate?: number | null
+          checkouts_initiated?: number | null
+          clicks?: number | null
+          connect_rate?: number | null
+          cost_per_lead?: number | null
+          cost_per_purchase?: number | null
+          cost_per_result?: number | null
+          cpa?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          date: string
+          id?: string
+          impressions?: number | null
+          investment?: number | null
+          landing_page_views?: number | null
+          last_updated?: string | null
+          lead_event_type?: string | null
+          leads?: number | null
+          link_clicks?: number | null
+          link_cpc?: number | null
+          link_ctr?: number | null
+          page_conversion_rate?: number | null
+          page_views?: number | null
+          project_id: string
+          purchases?: number | null
+          results?: number | null
+          top_ads?: Json | null
+        }
+        Update: {
+          cache_expiry?: number | null
+          checkout_conversion_rate?: number | null
+          checkouts_initiated?: number | null
+          clicks?: number | null
+          connect_rate?: number | null
+          cost_per_lead?: number | null
+          cost_per_purchase?: number | null
+          cost_per_result?: number | null
+          cpa?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          date?: string
+          id?: string
+          impressions?: number | null
+          investment?: number | null
+          landing_page_views?: number | null
+          last_updated?: string | null
+          lead_event_type?: string | null
+          leads?: number | null
+          link_clicks?: number | null
+          link_cpc?: number | null
+          link_ctr?: number | null
+          page_conversion_rate?: number | null
+          page_views?: number | null
+          project_id?: string
+          purchases?: number | null
+          results?: number | null
+          top_ads?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_metrics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          platform: Database["public"]["Enums"]["product_platform"]
+          price: number | null
+          project_id: string
+          type: Database["public"]["Enums"]["product_type"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          platform?: Database["public"]["Enums"]["product_platform"]
+          price?: number | null
+          project_id: string
+          type?: Database["public"]["Enums"]["product_type"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          platform?: Database["public"]["Enums"]["product_platform"]
+          price?: number | null
+          project_id?: string
+          type?: Database["public"]["Enums"]["product_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -40,6 +355,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      project_goals: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          period: Database["public"]["Enums"]["goal_period"]
+          project_id: string
+          target_value: number
+          type: Database["public"]["Enums"]["goal_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          period?: Database["public"]["Enums"]["goal_period"]
+          project_id: string
+          target_value: number
+          type: Database["public"]["Enums"]["goal_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          period?: Database["public"]["Enums"]["goal_period"]
+          project_id?: string
+          target_value?: number
+          type?: Database["public"]["Enums"]["goal_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_goals_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       projects: {
         Row: {
@@ -80,6 +436,106 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_events: {
+        Row: {
+          amount: number | null
+          buyer_email: string | null
+          buyer_name: string | null
+          created_at: string
+          external_id: string
+          gross_amount: number | null
+          id: string
+          payload: Json | null
+          platform: Database["public"]["Enums"]["sales_platform"]
+          platform_fee: number | null
+          product_name: string | null
+          product_type: Database["public"]["Enums"]["product_type"] | null
+          project_id: string
+          sale_date: string | null
+          status: Database["public"]["Enums"]["sale_status"] | null
+        }
+        Insert: {
+          amount?: number | null
+          buyer_email?: string | null
+          buyer_name?: string | null
+          created_at?: string
+          external_id: string
+          gross_amount?: number | null
+          id?: string
+          payload?: Json | null
+          platform: Database["public"]["Enums"]["sales_platform"]
+          platform_fee?: number | null
+          product_name?: string | null
+          product_type?: Database["public"]["Enums"]["product_type"] | null
+          project_id: string
+          sale_date?: string | null
+          status?: Database["public"]["Enums"]["sale_status"] | null
+        }
+        Update: {
+          amount?: number | null
+          buyer_email?: string | null
+          buyer_name?: string | null
+          created_at?: string
+          external_id?: string
+          gross_amount?: number | null
+          id?: string
+          payload?: Json | null
+          platform?: Database["public"]["Enums"]["sales_platform"]
+          platform_fee?: number | null
+          product_name?: string | null
+          product_type?: Database["public"]["Enums"]["product_type"] | null
+          project_id?: string
+          sale_date?: string | null
+          status?: Database["public"]["Enums"]["sale_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_dashboard_preferences: {
+        Row: {
+          created_at: string
+          dashboard_type: Database["public"]["Enums"]["dashboard_type"]
+          id: string
+          project_id: string
+          section_order: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dashboard_type: Database["public"]["Enums"]["dashboard_type"]
+          id?: string
+          project_id: string
+          section_order?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dashboard_type?: Database["public"]["Enums"]["dashboard_type"]
+          id?: string
+          project_id?: string
+          section_order?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_dashboard_preferences_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -98,6 +554,47 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_groups: {
+        Row: {
+          created_at: string
+          engagement_rate: number | null
+          id: string
+          member_count: number | null
+          name: string
+          notes: string | null
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          engagement_rate?: number | null
+          id?: string
+          member_count?: number | null
+          name: string
+          notes?: string | null
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          engagement_rate?: number | null
+          id?: string
+          member_count?: number | null
+          name?: string
+          notes?: string | null
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_groups_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -110,9 +607,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      owns_project: { Args: { _project_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
+      dashboard_type: "public" | "admin"
+      goal_period: "daily" | "weekly" | "monthly" | "total"
+      goal_type: "revenue" | "sales" | "roi" | "leads" | "margin"
+      product_platform: "kiwify" | "hotmart" | "both"
+      product_type: "main" | "order_bump"
+      sale_status: "approved" | "pending" | "cancelled" | "refunded"
+      sales_platform: "kiwify" | "hotmart"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -241,6 +746,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      dashboard_type: ["public", "admin"],
+      goal_period: ["daily", "weekly", "monthly", "total"],
+      goal_type: ["revenue", "sales", "roi", "leads", "margin"],
+      product_platform: ["kiwify", "hotmart", "both"],
+      product_type: ["main", "order_bump"],
+      sale_status: ["approved", "pending", "cancelled", "refunded"],
+      sales_platform: ["kiwify", "hotmart"],
     },
   },
 } as const
