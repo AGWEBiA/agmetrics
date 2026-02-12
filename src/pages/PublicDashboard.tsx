@@ -99,6 +99,37 @@ export default function PublicDashboard() {
                 <AnimatedCard index={3}><MetricCard title="Investimento" value={formatBRL(m.totalInvestment)} /></AnimatedCard>
               </div>
 
+              {/* Meta Ads */}
+              {(m.metaInvestment > 0 || m.metaImpressions > 0) && (
+                <AnimatedCard index={0}>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">Meta Ads</CardTitle>
+                        <Badge variant="outline">{formatBRL(m.metaInvestment)}</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
+                        <Stat label="Resultados" value={formatNumber(m.metaResults)} />
+                        <Stat label="CPR" value={formatBRL(m.metaCostPerResult)} />
+                        <Stat label="Compras" value={formatNumber(m.metaPurchases)} />
+                        <Stat label="Custo/Compra" value={formatBRL(m.metaCostPerPurchase)} />
+                        <Stat label="Cliques no Link" value={formatNumber(m.metaLinkClicks)} />
+                        <Stat label="CTR Link" value={formatPercent(m.metaLinkCtr)} />
+                        <Stat label="CPC Link" value={formatBRL(m.metaLinkCpc)} />
+                        <Stat label="Views LP" value={formatNumber(m.metaLpViews)} />
+                        <Stat label="Connect Rate" value={formatPercent(m.metaConnectRate)} />
+                        <Stat label="Conv. Página" value={formatPercent(m.metaPageConversion)} />
+                        <Stat label="Conv. Checkout" value={formatPercent(m.metaCheckoutConversion)} />
+                        <Stat label="Impressões" value={formatNumber(m.metaImpressions)} />
+                        <Stat label="CPM" value={formatBRL(m.metaCpm)} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </AnimatedCard>
+              )}
+
               {/* Goals */}
               {m.goalsProgress.length > 0 && (
                 <AnimatedCard index={0}>
@@ -288,5 +319,14 @@ function MetricCard({ title, value, subtitle, color, icon }: { title: string; va
         {subtitle && <p className="mt-0.5 text-[11px] sm:text-xs text-muted-foreground">{subtitle}</p>}
       </CardContent>
     </Card>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[11px] sm:text-xs text-muted-foreground">{label}</p>
+      <p className="font-semibold text-sm sm:text-base">{value}</p>
+    </div>
   );
 }

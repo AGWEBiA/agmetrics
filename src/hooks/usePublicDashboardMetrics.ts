@@ -83,6 +83,26 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   const roas = totalInvestment > 0 ? totalRevenue / totalInvestment : 0;
   const margin = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0;
 
+  // Meta Ads aggregate metrics (excluding leads/CPL for privacy)
+  const metaImpressions = meta.reduce((s: number, m: any) => s + (m.impressions || 0), 0);
+  const metaClicks = meta.reduce((s: number, m: any) => s + (m.clicks || 0), 0);
+  const metaResults = meta.reduce((s: number, m: any) => s + (m.results || 0), 0);
+  const metaPurchases = meta.reduce((s: number, m: any) => s + (m.purchases || 0), 0);
+  const metaLinkClicks = meta.reduce((s: number, m: any) => s + (m.link_clicks || 0), 0);
+  const metaLpViews = meta.reduce((s: number, m: any) => s + (m.landing_page_views || 0), 0);
+  const metaCheckouts = meta.reduce((s: number, m: any) => s + (m.checkouts_initiated || 0), 0);
+
+  const metaCpm = metaImpressions > 0 ? (metaInvestment / metaImpressions) * 1000 : 0;
+  const metaCtr = metaImpressions > 0 ? (metaClicks / metaImpressions) * 100 : 0;
+  const metaCpc = metaClicks > 0 ? metaInvestment / metaClicks : 0;
+  const metaCostPerResult = metaResults > 0 ? metaInvestment / metaResults : 0;
+  const metaCostPerPurchase = metaPurchases > 0 ? metaInvestment / metaPurchases : 0;
+  const metaLinkCtr = metaImpressions > 0 ? (metaLinkClicks / metaImpressions) * 100 : 0;
+  const metaLinkCpc = metaLinkClicks > 0 ? metaInvestment / metaLinkClicks : 0;
+  const metaConnectRate = metaLinkClicks > 0 ? (metaLpViews / metaLinkClicks) * 100 : 0;
+  const metaPageConversion = metaLpViews > 0 ? (metaCheckouts / metaLpViews) * 100 : 0;
+  const metaCheckoutConversion = metaCheckouts > 0 ? (metaPurchases / metaCheckouts) * 100 : 0;
+
   // Sales by date
   const salesByDate = new Map<string, { count: number; revenue: number }>();
   sales.forEach((s: any) => {
@@ -139,7 +159,10 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   return {
     isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || goalsQuery.isLoading,
     totalRevenue, grossRevenue, totalFees, salesCount, avgTicket,
-    totalInvestment, netProfit, roi, roas, margin,
+    totalInvestment, metaInvestment, googleInvestment, netProfit, roi, roas, margin,
+    metaImpressions, metaClicks, metaResults, metaPurchases, metaLinkClicks, metaLpViews, metaCheckouts,
+    metaCpm, metaCtr, metaCpc, metaCostPerResult, metaCostPerPurchase,
+    metaLinkCtr, metaLinkCpc, metaConnectRate, metaPageConversion, metaCheckoutConversion,
     salesChartData, productData, platformChartData, goalsProgress,
   };
 }
