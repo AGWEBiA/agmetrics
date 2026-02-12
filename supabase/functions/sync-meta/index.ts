@@ -115,7 +115,8 @@ Deno.serve(async (req) => {
         }
       } else {
         // No filter: fetch account-level
-        const url = `https://graph.facebook.com/v21.0/${creds.ad_account_id}/insights?fields=${fields}&time_range={"since":"${sinceStr}","until":"${untilStr}"}&time_increment=1&level=account&access_token=${creds.access_token}&limit=100`;
+        const adAccountId = creds.ad_account_id.startsWith("act_") ? creds.ad_account_id : `act_${creds.ad_account_id}`;
+        const url = `https://graph.facebook.com/v21.0/${adAccountId}/insights?fields=${fields}&time_range={"since":"${sinceStr}","until":"${untilStr}"}&time_increment=1&level=account&access_token=${creds.access_token}&limit=100`;
         const metaRes = await fetch(url);
         if (!metaRes.ok) {
           console.error(`Account ${creds.ad_account_id} error:`, await metaRes.text());
