@@ -34,7 +34,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 const COLORS = ["hsl(220, 90%, 56%)", "hsl(265, 80%, 60%)", "hsl(152, 60%, 42%)", "hsl(38, 92%, 50%)"];
 
-const DEFAULT_OVERVIEW_ORDER = ["financial", "roi", "sales_overview", "funnel", "meta_ads", "google_ads", "payment_methods", "whatsapp", "products", "platform_pie"];
+const DEFAULT_OVERVIEW_ORDER = ["financial", "roi", "sales_overview", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "whatsapp", "products", "platform_pie"];
 
 function SortableCard({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -372,6 +372,73 @@ export default function AdminDashboard() {
                 <p className="text-xs text-muted-foreground">Cartão - Parcelado</p>
                 <p className="text-xl font-bold mt-1">{formatPercent(m.cardInstallmentPct)}</p>
                 <p className="text-xs text-muted-foreground">{m.paymentBreakdown.cardInstallment.count} vendas</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </AnimatedCard>
+    ) : null,
+    temporal_analysis: m.salesCount > 0 ? (
+      <AnimatedCard index={5}>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Análise Temporal de Vendas</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="rounded-lg border p-4">
+                <p className="text-xs text-muted-foreground">📅 Melhor Dia da Semana</p>
+                <p className="text-2xl font-bold mt-1">{m.bestDay.name}</p>
+                <div className="flex justify-between mt-3 text-sm">
+                  <span className="text-muted-foreground">Vendas:</span>
+                  <span className="font-semibold">{m.bestDay.vendas}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Receita:</span>
+                  <span className="font-semibold">{formatBRL(m.bestDay.revenue)}</span>
+                </div>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-xs text-muted-foreground">🕐 Melhor Horário</p>
+                <p className="text-2xl font-bold mt-1">{m.bestHour.name}</p>
+                <div className="flex justify-between mt-3 text-sm">
+                  <span className="text-muted-foreground">Vendas:</span>
+                  <span className="font-semibold">{m.bestHour.vendas}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Receita:</span>
+                  <span className="font-semibold">{formatBRL(m.bestHour.revenue)}</span>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm font-medium mb-3">📊 Vendas por Dia da Semana</p>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={m.salesByDayOfWeek}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                      <Bar dataKey="vendas" name="Vendas" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium mb-3">🕐 Vendas por Horário</p>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={m.salesByHour}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={9} interval={1} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                      <Bar dataKey="vendas" name="Vendas" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
           </CardContent>

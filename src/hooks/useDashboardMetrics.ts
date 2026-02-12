@@ -237,7 +237,22 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const cardCashPct = paymentBreakdown.card.count > 0 ? (paymentBreakdown.cardCash.count / paymentBreakdown.card.count) * 100 : 0;
   const cardInstallmentPct = paymentBreakdown.card.count > 0 ? (paymentBreakdown.cardInstallment.count / paymentBreakdown.card.count) * 100 : 0;
 
-  // Previous period metrics for comparison
+  // Temporal analysis - sales by day of week and hour
+  const DAY_NAMES = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+  const salesByDayOfWeek = Array.from({ length: 7 }, (_, i) => ({ name: DAY_NAMES[i], vendas: 0, revenue: 0 }));
+  const salesByHour = Array.from({ length: 24 }, (_, i) => ({ name: `${String(i).padStart(2, "0")}:00`, vendas: 0, revenue: 0 }));
+  approvedSales.forEach((s) => {
+    const dateStr = s.sale_date || s.created_at;
+    if (!dateStr) return;
+    const d = new Date(dateStr);
+    salesByDayOfWeek[d.getDay()].vendas++;
+    salesByDayOfWeek[d.getDay()].revenue += Number(s.amount);
+    salesByHour[d.getHours()].vendas++;
+    salesByHour[d.getHours()].revenue += Number(s.amount);
+  });
+  const bestDay = salesByDayOfWeek.reduce((best, cur) => cur.vendas > best.vendas ? cur : best, salesByDayOfWeek[0]);
+  const bestHour = salesByHour.reduce((best, cur) => cur.vendas > best.vendas ? cur : best, salesByHour[0]);
+
   const prevApproved = prevSales.filter((s) => s.status === "approved");
   const prevRevenue = prevApproved.reduce((s, e) => s + Number(e.amount), 0);
   const prevSalesCount = prevApproved.length;
@@ -291,6 +306,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     gCostPerConversion: gConversions > 0 ? googleInvestment / gConversions : 0,
     salesChartData, productData, platformChartData, metaMetrics, googleMetrics,
     paymentBreakdown, paymentPieData, installmentBarData, pixPct, cardPct, cardCashPct, cardInstallmentPct,
+    salesByDayOfWeek, salesByHour, bestDay, bestHour,
     ...changes,
   };
 }
