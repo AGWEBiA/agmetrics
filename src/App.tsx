@@ -11,6 +11,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ProjectConfig from "./pages/ProjectConfig";
 import PublicDashboard from "./pages/PublicDashboard";
 import SalesTable from "./pages/SalesTable";
+import CompareProjects from "./pages/CompareProjects";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
           >
             <Route index element={<Navigate to="projects" replace />} />
             <Route path="projects" element={<ProjectsHub />} />
+            <Route path="compare" element={<CompareProjects />} />
             <Route path="projects/:projectId/dashboard" element={<AdminDashboard />} />
             <Route path="projects/:projectId/sales" element={<SalesTable />} />
             <Route path="projects/:projectId/config" element={<ProjectConfig />} />
