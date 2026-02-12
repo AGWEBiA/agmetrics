@@ -465,6 +465,7 @@ export type Database = {
           amount: number | null
           buyer_email: string | null
           buyer_name: string | null
+          coproducer_commission: number | null
           created_at: string
           external_id: string
           gross_amount: number | null
@@ -477,11 +478,13 @@ export type Database = {
           project_id: string
           sale_date: string | null
           status: Database["public"]["Enums"]["sale_status"] | null
+          taxes: number | null
         }
         Insert: {
           amount?: number | null
           buyer_email?: string | null
           buyer_name?: string | null
+          coproducer_commission?: number | null
           created_at?: string
           external_id: string
           gross_amount?: number | null
@@ -494,11 +497,13 @@ export type Database = {
           project_id: string
           sale_date?: string | null
           status?: Database["public"]["Enums"]["sale_status"] | null
+          taxes?: number | null
         }
         Update: {
           amount?: number | null
           buyer_email?: string | null
           buyer_name?: string | null
+          coproducer_commission?: number | null
           created_at?: string
           external_id?: string
           gross_amount?: number | null
@@ -511,6 +516,7 @@ export type Database = {
           project_id?: string
           sale_date?: string | null
           status?: Database["public"]["Enums"]["sale_status"] | null
+          taxes?: number | null
         }
         Relationships: [
           {
