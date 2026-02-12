@@ -75,6 +75,14 @@ Deno.serve(async (req) => {
     }
 
     const headers = lines[0].split(",").map((h: string) => h.trim().toLowerCase().replace(/"/g, ""));
+    // Load registered products for this project
+    const { data: registeredProducts } = await supabase
+      .from("products")
+      .select("name, type")
+      .eq("project_id", projectId);
+
+    const productNames = (registeredProducts || []).map((p: any) => p.name.toLowerCase());
+
     let imported = 0;
     let skipped = 0;
     const errors: string[] = [];
@@ -88,6 +96,14 @@ Deno.serve(async (req) => {
         // Flexible column mapping (supports Kiwify PT-BR exports)
         const externalId = row["transaction_id"] || row["order_id"] || row["external_id"] || row["id da venda"] || row["id"] || `csv-${i}`;
         const productName = row["product_name"] || row["produto"] || row["product"] || "";
+
+        // Skip products not registered in the project
+        const matchedProduct = (registeredProducts || []).find((p: any) => p.name.toLowerCase() === productName.toLowerCase());
+        if (!matchedProduct) {
+          skipped++;
+          continue;
+        }
+
         const grossAmount = parseFloat(row["gross_amount"] || row["total com acréscimo"] || row["total com acrescimo"] || row["valor_bruto"] || row["amount"] || row["valor"] || "0");
         const netAmount = parseFloat(row["net_amount"] || row["valor líquido"] || row["valor liquido"] || row["valor_liquido"] || row["net_value"] || String(grossAmount));
         const buyerEmail = row["buyer_email"] || row["email"] || "";
@@ -100,9 +116,8 @@ Deno.serve(async (req) => {
         const coproducerCommission = parseFloat(row["comissões dos coprodutores"] || row["comissoes dos coprodutores"] || row["coproducer_commission"] || "0");
         const platformFee = taxes > 0 ? taxes : Math.max(0, grossAmount - netAmount - coproducerCommission);
 
-        // Detect product type from "oferta" or "product_type" column
-        const oferta = (row["oferta"] || row["product_type"] || row["tipo_produto"] || "").toLowerCase();
-        const productType = oferta.includes("order bump") || oferta.includes("order_bump") ? "order_bump" : "main";
+        // Use registered product type
+        const productType = matchedProduct.type || "main";
 
         const { error: upsertError } = await supabase
           .from("sales_events")
