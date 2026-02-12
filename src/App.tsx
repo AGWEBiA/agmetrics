@@ -10,6 +10,7 @@ import ProjectsHub from "./pages/ProjectsHub";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProjectConfig from "./pages/ProjectConfig";
 import PublicDashboard from "./pages/PublicDashboard";
+import SalesTable from "./pages/SalesTable";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route index element={<Navigate to="projects" replace />} />
             <Route path="projects" element={<ProjectsHub />} />
             <Route path="projects/:projectId/dashboard" element={<AdminDashboard />} />
+            <Route path="projects/:projectId/sales" element={<SalesTable />} />
             <Route path="projects/:projectId/config" element={<ProjectConfig />} />
           </Route>
           <Route path="/" element={<Navigate to="/admin/projects" replace />} />

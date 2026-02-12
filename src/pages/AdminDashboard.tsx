@@ -2,6 +2,8 @@ import { useState, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useProject } from "@/hooks/useProjects";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
+import { useSalesRealtime } from "@/hooks/useSalesRealtime";
+import { exportDashboardPDF } from "@/lib/exportPDF";
 import { formatBRL, formatPercent, formatNumber, formatDecimal } from "@/lib/formatters";
 import { DateRangeFilter, type DateRange } from "@/components/DateRangeFilter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ExternalLink, TrendingUp, TrendingDown, GripVertical } from "lucide-react";
+import { ExternalLink, TrendingUp, TrendingDown, GripVertical, Download } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -54,6 +56,26 @@ export default function AdminDashboard() {
   const { data: project } = useProject(projectId);
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const m = useDashboardMetrics(projectId, dateRange);
+  useSalesRealtime(projectId);
+
+  const handleExport = () => {
+    if (!project) return;
+    exportDashboardPDF({
+      projectName: project.name,
+      totalRevenue: m.totalRevenue,
+      grossRevenue: m.grossRevenue,
+      salesCount: m.salesCount,
+      avgTicket: m.avgTicket,
+      roi: m.roi,
+      roas: m.roas,
+      margin: m.margin,
+      netProfit: m.netProfit,
+      totalInvestment: m.totalInvestment,
+      totalLeads: m.totalLeads,
+      conversionRate: m.conversionRate,
+      productData: m.productData,
+    });
+  };
 
   const [sectionOrder, setSectionOrder] = useState(DEFAULT_OVERVIEW_ORDER);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -191,6 +213,9 @@ export default function AdminDashboard() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="mr-2 h-4 w-4" />PDF
+          </Button>
           <Button variant="outline" size="sm" onClick={() => project?.view_token && window.open(`/view/${project.view_token}`, "_blank")}>
             <ExternalLink className="mr-2 h-4 w-4" />Público
           </Button>

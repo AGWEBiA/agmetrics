@@ -5,6 +5,7 @@ import {
   ExternalLink,
   LogOut,
   BarChart3,
+  ShoppingCart,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
@@ -43,6 +44,11 @@ export function AppSidebar() {
           title: "Dashboard",
           url: `/admin/projects/${projectId}/dashboard`,
           icon: LayoutDashboard,
+        },
+        {
+          title: "Vendas",
+          url: `/admin/projects/${projectId}/sales`,
+          icon: ShoppingCart,
         },
         {
           title: "Configurações",
