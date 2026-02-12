@@ -93,7 +93,8 @@ Deno.serve(async (req) => {
         const buyerEmail = row["buyer_email"] || row["email"] || "";
         const buyerName = row["buyer_name"] || row["cliente"] || row["nome"] || row["name"] || "";
         const status = mapStatus(row["status"] || "approved");
-        const saleDate = row["sale_date"] || row["data de criação"] || row["data de criacao"] || row["data"] || row["date"] || row["created_at"] || new Date().toISOString();
+        const rawDate = row["sale_date"] || row["data de criação"] || row["data de criacao"] || row["data"] || row["date"] || row["created_at"] || "";
+        const saleDate = parseDateFlexible(rawDate);
 
         const taxes = parseFloat(row["taxas"] || row["taxes"] || row["platform_tax"] || "0");
         const coproducerCommission = parseFloat(row["comissões dos coprodutores"] || row["comissoes dos coprodutores"] || row["coproducer_commission"] || "0");
@@ -165,4 +166,24 @@ function mapStatus(s: string): string {
   if (["refunded", "reembolsado"].includes(lower)) return "refunded";
   if (["cancelled", "canceled", "cancelado"].includes(lower)) return "cancelled";
   return "pending";
+}
+
+function parseDateFlexible(raw: string): string {
+  if (!raw || !raw.trim()) return new Date().toISOString();
+  // Try DD/MM/YYYY HH:mm:ss (Brazilian format)
+  const brMatch = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})$/);
+  if (brMatch) {
+    const [, day, month, year, hour, min, sec] = brMatch;
+    return `${year}-${month}-${day}T${hour}:${min}:${sec}+00:00`;
+  }
+  // Try DD/MM/YYYY (no time)
+  const brDateOnly = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (brDateOnly) {
+    const [, day, month, year] = brDateOnly;
+    return `${year}-${month}-${day}T00:00:00+00:00`;
+  }
+  // Already ISO or other parseable format
+  const d = new Date(raw);
+  if (!isNaN(d.getTime())) return d.toISOString();
+  return new Date().toISOString();
 }
