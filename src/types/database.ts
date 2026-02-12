@@ -15,6 +15,8 @@ export interface Project {
   manual_investment: number | null;
   meta_leads_enabled: boolean;
   google_leads_enabled: boolean;
+  kiwify_webhook_token: string | null;
+  hotmart_webhook_token: string | null;
   created_at: string;
   updated_at: string;
 }

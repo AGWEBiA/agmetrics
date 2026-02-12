@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, Check, Upload, RefreshCw } from "lucide-react";
+import { Plus, Trash2, Copy, Check, Upload, RefreshCw, Send, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ProjectConfig() {
@@ -320,17 +320,110 @@ function SyncButton({ projectId, platform, disabled }: { projectId: string; plat
 
 // ============ WEBHOOK TAB (Kiwify / Hotmart) ============
 function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiwify" | "hotmart" }) {
+  const { data: project } = useProject(projectId);
+  const updateProject = useUpdateProject();
   const [copied, setCopied] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [webhookToken, setWebhookToken] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
   const webhookUrl = `${supabaseUrl}/functions/v1/webhook-${platform}/${projectId}`;
+  const platformLabel = platform === "kiwify" ? "Kiwify" : "Hotmart";
+  const tokenField = platform === "kiwify" ? "kiwify_webhook_token" : "hotmart_webhook_token";
+
+  useEffect(() => {
+    if (project) {
+      setWebhookToken((project as any)[tokenField] || "");
+    }
+  }, [project, tokenField]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(webhookUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSaveToken = async () => {
+    try {
+      await updateProject.mutateAsync({
+        id: projectId,
+        [tokenField]: webhookToken || null,
+      });
+      toast({ title: "Token salvo!" });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleTestWebhook = async () => {
+    setTesting(true);
+    try {
+      const testPayload = platform === "kiwify"
+        ? {
+            order_id: `test_${Date.now()}`,
+            order_status: "paid",
+            order_amount: "97.00",
+            net_value: "87.30",
+            Product: { product_name: "Produto Teste" },
+            Customer: { email: "teste@teste.com", full_name: "Cliente Teste" },
+            created_at: new Date().toISOString(),
+            ...(webhookToken ? { webhook_token: webhookToken } : {}),
+          }
+        : {
+            event: "PURCHASE_COMPLETE",
+            data: {
+              purchase: {
+                transaction: `test_${Date.now()}`,
+                product: { name: "Produto Teste" },
+                price: { value: "97.00", net_value: "87.30" },
+                buyer: { email: "teste@teste.com", name: "Cliente Teste" },
+                status: "approved",
+              },
+              ...(webhookToken ? { hottok: webhookToken } : {}),
+            },
+          };
+
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(webhookToken ? { "x-webhook-token": webhookToken, "x-hotmart-hottok": webhookToken } : {}),
+        },
+        body: JSON.stringify(testPayload),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Test failed");
+      toast({ title: "Webhook testado com sucesso!", description: "Uma venda de teste foi criada." });
+    } catch (err: any) {
+      toast({ title: "Erro no teste", description: err.message, variant: "destructive" });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleDeleteTestSales = async () => {
+    setDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Não autenticado");
+
+      const { error } = await supabase
+        .from("sales_events")
+        .delete()
+        .eq("project_id", projectId)
+        .eq("platform", platform)
+        .like("external_id", "test_%");
+
+      if (error) throw error;
+      toast({ title: "Vendas de teste excluídas!" });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -366,31 +459,72 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="capitalize">{platform}</CardTitle>
-        <CardDescription>Configure o webhook para receber vendas em tempo real</CardDescription>
+        <CardTitle>Configuração da {platformLabel}</CardTitle>
+        <CardDescription>Configure o webhook para receber eventos de vendas automaticamente</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         <div className="space-y-2">
           <Label>URL do Webhook</Label>
           <div className="flex gap-2">
             <Input value={webhookUrl} readOnly className="font-mono text-xs" />
-            <Button variant="outline" size="icon" onClick={handleCopy}>
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            <Button variant="outline" onClick={handleCopy}>
+              {copied ? <Check className="mr-1 h-4 w-4" /> : <Copy className="mr-1 h-4 w-4" />}
+              Copiar
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Copie esta URL e cole no painel da {platform === "kiwify" ? "Kiwify" : "Hotmart"} como webhook.
+            Cole esta URL no painel da {platformLabel} em: Configurações → Webhooks
           </p>
         </div>
-        <div className="flex gap-2">
+
+        <div className="space-y-2">
+          <Label>Token de Validação (Opcional)</Label>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Ex: 4e0ba9sb456"
+              value={webhookToken}
+              onChange={(e) => setWebhookToken(e.target.value)}
+            />
+            <Button onClick={handleSaveToken} disabled={updateProject.isPending}>
+              <Save className="mr-1 h-4 w-4" />
+              Salvar
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Token opcional para validar a origem dos webhooks
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={handleTestWebhook} disabled={testing}>
+            <Send className="mr-2 h-4 w-4" />
+            {testing ? "Testando..." : "Testar Webhook"}
+          </Button>
           <input ref={fileInputRef} type="file" accept=".csv" onChange={handleCSVImport} className="hidden" />
           <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importing}>
             <Upload className="mr-2 h-4 w-4" />
             {importing ? "Importando..." : "Importar Vendas CSV"}
           </Button>
+          <Button variant="destructive" onClick={handleDeleteTestSales} disabled={deleting}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            {deleting ? "Excluindo..." : "Excluir Vendas de Teste"}
+          </Button>
         </div>
+
+        <div className="rounded-lg border border-border p-4 space-y-2">
+          <h4 className="font-semibold">Como configurar:</h4>
+          <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+            <li>Copie a URL do webhook acima</li>
+            <li>Acesse o painel da {platformLabel}</li>
+            <li>Vá em Configurações → Webhooks</li>
+            <li>Cole a URL e salve</li>
+            <li>(Opcional) Configure o token de validação</li>
+            <li>Use o botão "Testar Webhook" acima para verificar</li>
+          </ol>
+        </div>
+
         <p className="text-xs text-muted-foreground">
-          Colunas aceitas: transaction_id/order_id, product_name/produto, gross_amount/valor_bruto, net_amount/valor_liquido, buyer_email/email, buyer_name/nome, status, sale_date/data
+          Colunas aceitas no CSV: transaction_id/order_id, product_name/produto, gross_amount/valor_bruto, net_amount/valor_liquido, buyer_email/email, buyer_name/nome, status, sale_date/data
         </p>
       </CardContent>
     </Card>

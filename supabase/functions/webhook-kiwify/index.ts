@@ -25,6 +25,36 @@ Deno.serve(async (req) => {
 
     const payload = await req.json();
 
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Check if project exists and get webhook token
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("id, kiwify_webhook_token")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      return new Response(
+        JSON.stringify({ error: "Project not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate webhook token if configured
+    if (project.kiwify_webhook_token) {
+      const providedToken = req.headers.get("x-webhook-token") || url.searchParams.get("token") || payload?.webhook_token;
+      if (providedToken !== project.kiwify_webhook_token) {
+        return new Response(
+          JSON.stringify({ error: "Invalid webhook token" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Extract data from Kiwify webhook payload
     const orderId = payload.order_id || payload.subscription_id || "";
     const orderStatus = payload.order_status || "";
@@ -54,25 +84,6 @@ Deno.serve(async (req) => {
     }
 
     const platformFee = Math.max(0, orderAmount - netValue);
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    // Check if project exists
-    const { data: project, error: projectError } = await supabase
-      .from("projects")
-      .select("id")
-      .eq("id", projectId)
-      .single();
-
-    if (projectError || !project) {
-      return new Response(
-        JSON.stringify({ error: "Project not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
     // Try to match product type
     let productType: string | null = null;
