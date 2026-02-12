@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
     let hasMore = true;
 
     while (hasMore) {
-      const url = `https://public-api.kiwify.com/v1/sales?start_date=${startDate}&end_date=${endDate}&page=${page}&limit=100`;
+      const url = `https://public-api.kiwify.com/v1/sales?start_date=${startDate}&end_date=${endDate}&page_number=${page}&page_size=100`;
       const res = await fetch(url, {
         headers: {
           "Authorization": `Bearer ${bearerToken}`,
@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
       }
 
       for (const tx of transactions) {
-        const productName = tx.Product?.product_name || tx.product?.product_name || "";
+        const productName = tx.product?.name || tx.Product?.product_name || "";
         const matchedProduct = registeredProducts.find(
           (p: any) => p.name.toLowerCase() === productName.toLowerCase()
         );
@@ -132,12 +132,12 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const orderId = tx.order_id || tx.subscription_id || "";
-        const orderStatus = tx.order_status || "";
-        const orderAmount = parseFloat(tx.order_amount || tx.sale_amount || "0");
-        const netValue = parseFloat(tx.net_value || tx.order_amount || "0");
-        const buyerEmail = tx.Customer?.email || tx.customer?.email || "";
-        const buyerName = tx.Customer?.full_name || tx.customer?.full_name || "";
+        const orderId = tx.reference || tx.id || "";
+        const orderStatus = tx.status || "";
+        const orderAmount = parseFloat(tx.charge_amount || tx.order_amount || "0") / 100;
+        const netValue = parseFloat(tx.net_amount || tx.charge_amount || "0") / 100;
+        const buyerEmail = tx.customer?.email || "";
+        const buyerName = tx.customer?.name || "";
         const createdAt = tx.created_at || new Date().toISOString();
 
         let status: string;
@@ -187,9 +187,11 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Check pagination
+      // Check pagination - Kiwify uses page_number and count
       const pagination = data.pagination || {};
-      if (page >= (pagination.last_page || 1)) {
+      const totalItems = pagination.count || 0;
+      const pageSize = pagination.page_size || 100;
+      if (page * pageSize >= totalItems) {
         hasMore = false;
       } else {
         page++;
