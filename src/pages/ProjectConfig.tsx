@@ -473,15 +473,17 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Cole esta URL no painel da {platformLabel} em: Configurações → Webhooks
+            Cole esta URL no painel da {platformLabel} em: {platform === "hotmart" ? "Ferramentas → Webhooks" : "Configurações → Webhooks"}
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label>Token de Validação (Opcional)</Label>
+          <Label>
+            {platform === "hotmart" ? "Token de Validação (X-Hotmart-Hottok)" : "Token de Validação (x-webhook-token)"}
+          </Label>
           <div className="flex gap-2">
             <Input
-              placeholder="Ex: 4e0ba9sb456"
+              placeholder={platform === "hotmart" ? "Digite o token da Hotmart" : "Digite o token da Kiwify"}
               value={webhookToken}
               onChange={(e) => setWebhookToken(e.target.value)}
             />
@@ -491,7 +493,7 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Token opcional para validar a origem dos webhooks
+            Token para validar a origem dos webhooks {platform === "hotmart" ? "(header X-Hotmart-Hottok)" : "(header x-webhook-token)"}
           </p>
         </div>
 
@@ -516,15 +518,15 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
           <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
             <li>Copie a URL do webhook acima</li>
             <li>Acesse o painel da {platformLabel}</li>
-            <li>Vá em Configurações → Webhooks</li>
-            <li>Cole a URL e salve</li>
-            <li>(Opcional) Configure o token de validação</li>
-            <li>Use o botão "Testar Webhook" acima para verificar</li>
+            <li>Vá em {platform === "hotmart" ? "Ferramentas → Webhooks" : "Configurações → Webhooks"}</li>
+            <li>Cole a URL e configure os eventos desejados</li>
+            <li>Configure o token de validação {platform === "hotmart" ? "(X-Hotmart-Hottok)" : "(x-webhook-token)"}</li>
+            <li>Teste enviando um evento de teste da {platformLabel}</li>
           </ol>
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Colunas aceitas no CSV: transaction_id/order_id, product_name/produto, gross_amount/valor_bruto, net_amount/valor_liquido, buyer_email/email, buyer_name/nome, status, sale_date/data
+          Colunas aceitas no CSV: transaction_id/order_id, product_name/produto, gross_amount/valor_bruto/total com acréscimo, net_amount/valor_liquido/valor líquido, buyer_email/email, buyer_name/cliente/nome, status, sale_date/data de criação/data
         </p>
       </CardContent>
     </Card>
