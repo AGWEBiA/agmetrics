@@ -95,7 +95,9 @@ Deno.serve(async (req) => {
         const status = mapStatus(row["status"] || "approved");
         const saleDate = row["sale_date"] || row["data de criação"] || row["data de criacao"] || row["data"] || row["date"] || row["created_at"] || new Date().toISOString();
 
-        const platformFee = Math.max(0, grossAmount - netAmount);
+        const taxes = parseFloat(row["taxas"] || row["taxes"] || row["platform_tax"] || "0");
+        const coproducerCommission = parseFloat(row["comissões dos coprodutores"] || row["comissoes dos coprodutores"] || row["coproducer_commission"] || "0");
+        const platformFee = taxes > 0 ? taxes : Math.max(0, grossAmount - netAmount - coproducerCommission);
 
         const { error: upsertError } = await supabase
           .from("sales_events")
@@ -108,6 +110,8 @@ Deno.serve(async (req) => {
               amount: netAmount,
               gross_amount: grossAmount,
               platform_fee: platformFee,
+              taxes,
+              coproducer_commission: coproducerCommission,
               status,
               buyer_email: buyerEmail,
               buyer_name: buyerName,

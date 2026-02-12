@@ -127,6 +127,8 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const totalRevenue = approvedSales.reduce((s, e) => s + Number(e.amount), 0);
   const grossRevenue = approvedSales.reduce((s, e) => s + Number(e.gross_amount), 0);
   const totalFees = approvedSales.reduce((s, e) => s + Number(e.platform_fee), 0);
+  const totalTaxes = approvedSales.reduce((s, e) => s + Number((e as any).taxes || 0), 0);
+  const totalCoproducerCommission = approvedSales.reduce((s, e) => s + Number((e as any).coproducer_commission || 0), 0);
   const salesCount = approvedSales.length;
   const avgTicket = salesCount > 0 ? totalRevenue / salesCount : 0;
 
@@ -225,7 +227,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
 
   return {
     isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || investmentsQuery.isLoading,
-    totalRevenue, grossRevenue, totalFees, salesCount, avgTicket,
+    totalRevenue, grossRevenue, totalFees, totalTaxes, totalCoproducerCommission, salesCount, avgTicket,
     pendingSalesCount: pendingSales.length, kiwifySales, hotmartSales,
     metaInvestment, googleInvestment, manualInvestment, totalInvestment,
     roi, roas, margin, netProfit,
