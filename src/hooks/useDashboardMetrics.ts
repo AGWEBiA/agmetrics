@@ -35,7 +35,7 @@ function inRange(dateStr: string | null, filter: DateFilter): boolean {
   return true;
 }
 
-export function useDashboardMetrics(projectId: string | undefined, dateFilter?: DateFilter) {
+export function useDashboardMetrics(projectId: string | undefined, dateFilter?: DateFilter, strategy?: string) {
   const salesQuery = useQuery({
     queryKey: ["sales_events", projectId],
     enabled: !!projectId,
@@ -150,7 +150,15 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const metaLeads = metaMetrics.reduce((s: number, m: any) => s + (m.leads || 0), 0);
   const googleLeads = googleMetrics.reduce((s: number, m: any) => s + (m.conversions || 0), 0);
   const totalLeads = metaLeads + googleLeads;
-  const conversionRate = totalLeads > 0 ? (salesCount / totalLeads) * 100 : 0;
+
+  // Perpétuo: conversão = views de página → compras
+  // Lançamento/outros: conversão = leads → compras
+  const isPerpertuo = strategy === "perpetuo";
+  const totalPageViews = metaMetrics.reduce((s: number, m: any) => s + (m.landing_page_views || 0), 0)
+    + googleMetrics.reduce((s: number, m: any) => s + (m.clicks || 0), 0);
+  const conversionBase = isPerpertuo ? totalPageViews : totalLeads;
+  const conversionRate = conversionBase > 0 ? (salesCount / conversionBase) * 100 : 0;
+  const conversionLabel = isPerpertuo ? "Views → Compras" : "Leads → Compras";
   const avgCpl = totalLeads > 0 ? totalInvestment / totalLeads : 0;
 
   const metaImpressions = metaMetrics.reduce((s: number, m: any) => s + (m.impressions || 0), 0);
@@ -328,7 +336,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     totalSalesCount: sales.length, kiwifySales, hotmartSales,
     metaInvestment, googleInvestment, manualInvestment, totalInvestment,
     roi, roas, margin, netProfit,
-    totalLeads, metaLeads, googleLeads, conversionRate, avgCpl,
+    totalLeads, metaLeads, googleLeads, conversionRate, conversionLabel, conversionBase, avgCpl,
     metaImpressions, metaClicks, metaResults, metaPurchases, metaLinkClicks, metaLpViews, metaCheckouts,
     metaInvestment_total: metaInvestment,
     metaCpm: metaImpressions > 0 ? (metaInvestment / metaImpressions) * 1000 : 0,
