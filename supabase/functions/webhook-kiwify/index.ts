@@ -7,6 +7,115 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+/**
+ * Extracts sale data from Kiwify webhook payload.
+ * Supports both English (API format) and Portuguese (Kiwify panel/CSV format).
+ */
+function extractSaleData(payload: Record<string, any>) {
+  // Detect format: PT-BR payloads have "id da venda" or "produto"
+  const isPtBr = !!(payload["id da venda"] || payload["produto"] || payload["valor líquido"]);
+
+  if (isPtBr) {
+    const orderId = payload["id da venda"] || "";
+    const rawStatus = (payload["status"] || "").toLowerCase();
+    const productName = payload["produto"] || "";
+    const grossAmount = parseFloat(
+      String(payload["total com acréscimo"] || payload["preço base do produto"] || "0").replace(",", ".")
+    );
+    const netValue = parseFloat(
+      String(payload["valor líquido"] || "0").replace(",", ".")
+    );
+    const platformFee = parseFloat(
+      String(payload["taxas"] || "0").replace(",", ".")
+    );
+    const taxes = parseFloat(
+      String(payload["imposto"] || payload["imposto de compra em moeda da conta"] || "0").replace(",", ".")
+    );
+    const coproducerCommission = parseFloat(
+      String(payload["comissões dos coprodutores"] || payload["comissão do afiliado"] || "0").replace(",", ".")
+    );
+    const buyerEmail = payload["email"] || "";
+    const buyerName = payload["cliente"] || "";
+    const paymentMethod = payload["pagamento"] || "";
+    const installments = parseInt(payload["parcelas"] || "1", 10);
+
+    // Parse PT-BR date "DD/MM/YYYY HH:MM:SS" to ISO
+    let createdAt = new Date().toISOString();
+    const rawDate = payload["data de criação"] || "";
+    if (rawDate) {
+      const match = rawDate.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+      if (match) {
+        createdAt = new Date(
+          parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]),
+          parseInt(match[4]), parseInt(match[5]), parseInt(match[6])
+        ).toISOString();
+      }
+    }
+
+    let status: string;
+    switch (rawStatus) {
+      case "paid":
+      case "completed":
+      case "aprovado":
+        status = "approved";
+        break;
+      case "refunded":
+      case "reembolsado":
+        status = "refunded";
+        break;
+      case "cancelled":
+      case "canceled":
+      case "cancelado":
+        status = "cancelled";
+        break;
+      default:
+        status = "pending";
+    }
+
+    return {
+      orderId, productName, grossAmount, netValue, platformFee,
+      taxes, coproducerCommission, buyerEmail, buyerName, status,
+      createdAt, paymentMethod, installments,
+    };
+  }
+
+  // English format (standard Kiwify webhook/API)
+  const orderId = payload.order_id || payload.subscription_id || "";
+  const rawStatus = payload.order_status || "";
+  const productName = payload.Product?.product_name || payload.product?.product_name || "";
+  const grossAmount = parseFloat(payload.order_amount || payload.sale_amount || "0");
+  const netValue = parseFloat(payload.net_value || payload.order_amount || "0");
+  const platformFee = Math.max(0, grossAmount - netValue);
+  const buyerEmail = payload.Customer?.email || payload.customer?.email || "";
+  const buyerName = payload.Customer?.full_name || payload.customer?.full_name || "";
+  const createdAt = payload.created_at || new Date().toISOString();
+  const paymentMethod = payload.pagamento || payload.payment_method || "";
+  const installments = parseInt(payload.parcelas || payload.installments || "1", 10);
+
+  let status: string;
+  switch (rawStatus) {
+    case "paid":
+    case "completed":
+      status = "approved";
+      break;
+    case "refunded":
+      status = "refunded";
+      break;
+    case "cancelled":
+    case "canceled":
+      status = "cancelled";
+      break;
+    default:
+      status = "pending";
+  }
+
+  return {
+    orderId, productName, grossAmount, netValue, platformFee,
+    taxes: 0, coproducerCommission: 0, buyerEmail, buyerName, status,
+    createdAt, paymentMethod, installments,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -25,6 +134,7 @@ Deno.serve(async (req) => {
     }
 
     const payload = await req.json();
+    console.log("Received webhook payload keys:", Object.keys(payload).slice(0, 10));
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -56,47 +166,29 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Extract data from Kiwify webhook payload
-    const orderId = payload.order_id || payload.subscription_id || "";
-    const orderStatus = payload.order_status || "";
-    const productName = payload.Product?.product_name || payload.product?.product_name || "";
-    const orderAmount = parseFloat(payload.order_amount || payload.sale_amount || "0");
-    const netValue = parseFloat(payload.net_value || payload.order_amount || "0");
-    const buyerEmail = payload.Customer?.email || payload.customer?.email || "";
-    const buyerName = payload.Customer?.full_name || payload.customer?.full_name || "";
-    const createdAt = payload.created_at || new Date().toISOString();
+    // Extract data supporting both EN and PT-BR formats
+    const sale = extractSaleData(payload);
+    console.log("Extracted sale:", { orderId: sale.orderId, productName: sale.productName, gross: sale.grossAmount, net: sale.netValue, status: sale.status });
 
-    // Map Kiwify status to our status
-    let status: string;
-    switch (orderStatus) {
-      case "paid":
-      case "completed":
-        status = "approved";
-        break;
-      case "refunded":
-        status = "refunded";
-        break;
-      case "cancelled":
-      case "canceled":
-        status = "cancelled";
-        break;
-      default:
-        status = "pending";
+    if (!sale.orderId) {
+      return new Response(
+        JSON.stringify({ error: "Could not extract order ID from payload" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
-
-    const platformFee = Math.max(0, orderAmount - netValue);
 
     // Match product — only accept sales for registered products
     const { data: matchedProduct } = await supabase
       .from("products")
       .select("type")
       .eq("project_id", projectId)
-      .ilike("name", productName)
+      .ilike("name", sale.productName)
       .maybeSingle();
 
     if (!matchedProduct) {
+      console.log("Product not registered:", sale.productName);
       return new Response(
-        JSON.stringify({ skipped: true, reason: "Product not registered in project", product_name: productName }),
+        JSON.stringify({ skipped: true, reason: "Product not registered in project", product_name: sale.productName }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -104,22 +196,24 @@ Deno.serve(async (req) => {
     const productType = matchedProduct.type;
 
     // Upsert sale (deduplication by platform + external_id + project_id)
-    const { data: sale, error: saleError } = await supabase
+    const { data: saleRecord, error: saleError } = await supabase
       .from("sales_events")
       .upsert(
         {
           project_id: projectId,
           platform: "kiwify",
-          external_id: orderId,
-          product_name: productName,
+          external_id: sale.orderId,
+          product_name: sale.productName,
           product_type: productType,
-          amount: netValue,
-          gross_amount: orderAmount,
-          platform_fee: platformFee,
-          status,
-          buyer_email: buyerEmail,
-          buyer_name: buyerName,
-          sale_date: createdAt,
+          amount: sale.netValue,
+          gross_amount: sale.grossAmount,
+          platform_fee: sale.platformFee,
+          taxes: sale.taxes,
+          coproducer_commission: sale.coproducerCommission,
+          status: sale.status,
+          buyer_email: sale.buyerEmail,
+          buyer_name: sale.buyerName,
+          sale_date: sale.createdAt,
           payload,
         },
         { onConflict: "platform,external_id,project_id" }
@@ -136,7 +230,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, sale_id: sale.id }),
+      JSON.stringify({ success: true, sale_id: saleRecord.id }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
