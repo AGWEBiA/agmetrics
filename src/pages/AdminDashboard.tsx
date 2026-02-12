@@ -26,6 +26,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { Progress } from "@/components/ui/progress";
+import { RecentSalesCard } from "@/components/RecentSalesCard";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -37,7 +38,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 const COLORS = ["hsl(220, 90%, 56%)", "hsl(265, 80%, 60%)", "hsl(152, 60%, 42%)", "hsl(38, 92%, 50%)"];
 
-const DEFAULT_OVERVIEW_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "whatsapp", "products", "platform_pie"];
+const DEFAULT_OVERVIEW_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "recent_sales", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "whatsapp", "products", "platform_pie"];
 
 function SortableCard({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -401,6 +402,11 @@ export default function AdminDashboard() {
         </AnimatedCard>
       </div>
     ) : null,
+    recent_sales: (
+      <AnimatedCard index={7}>
+        <RecentSalesCard projectId={projectId} />
+      </AnimatedCard>
+    ),
     funnel: isPerpertuo ? null : (m.totalLeads > 0 || m.totalInvestment > 0) ? (
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         <AnimatedCard index={0}><MetricCard title="Total de Leads" value={formatNumber(m.totalLeads)} subtitle="Meta + Google" change={m.leadsChange} /></AnimatedCard>
