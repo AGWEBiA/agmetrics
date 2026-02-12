@@ -252,6 +252,7 @@ export default function CompareProjects() {
                         <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={10} interval={0} angle={-15} textAnchor="end" height={60} />
                         <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
                         <Tooltip
+                          cursor={false}
                           contentStyle={{
                             background: "hsl(var(--card))",
                             border: "1px solid hsl(var(--border))",
@@ -302,6 +303,7 @@ export default function CompareProjects() {
                         ))}
                         <Legend />
                         <Tooltip
+                          cursor={false}
                           contentStyle={{
                             background: "hsl(var(--card))",
                             border: "1px solid hsl(var(--border))",
