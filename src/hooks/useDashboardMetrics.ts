@@ -224,17 +224,29 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     }
   });
 
-  // Boleto metrics: count boletos across ALL sales (not just approved)
-  const allFilteredSales = sales;
-  const boletoSales = allFilteredSales.filter((s) => {
+  // Boleto metrics: count boletos across ALL sales, cross-referenced by platform
+  const boletoSales = sales.filter((s) => {
     const payload = (s as any).payload || {};
-    const method = (payload.pagamento || payload.payment_method || "").toLowerCase();
-    return method === "boleto" || method === "billet";
+    const method = (payload.pagamento || payload.payment_method || payload.payment?.type || "").toLowerCase();
+    return method === "boleto" || method === "billet" || method === "bank_slip";
   });
   const boletoTotal = boletoSales.length;
   const boletoPaid = boletoSales.filter((s) => s.status === "approved").length;
   const boletoPending = boletoSales.filter((s) => s.status === "pending").length;
   const boletoConversionRate = boletoTotal > 0 ? (boletoPaid / boletoTotal) * 100 : 0;
+  const boletoRevenue = boletoSales.filter((s) => s.status === "approved").reduce((sum, s) => sum + Number(s.amount || 0), 0);
+
+  // Boleto breakdown by platform
+  const boletoByPlatform = {
+    kiwify: { total: 0, paid: 0, pending: 0, revenue: 0 },
+    hotmart: { total: 0, paid: 0, pending: 0, revenue: 0 },
+  };
+  boletoSales.forEach((s) => {
+    const p = s.platform === "kiwify" ? boletoByPlatform.kiwify : boletoByPlatform.hotmart;
+    p.total++;
+    if (s.status === "approved") { p.paid++; p.revenue += Number(s.amount || 0); }
+    if (s.status === "pending") p.pending++;
+  });
   const paymentPieData = [
     { name: "Cartão de Crédito", value: paymentBreakdown.card.count },
     { name: "PIX", value: paymentBreakdown.pix.count },
@@ -318,7 +330,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     gCostPerConversion: gConversions > 0 ? googleInvestment / gConversions : 0,
     salesChartData, productData, platformChartData, metaMetrics, googleMetrics,
     paymentBreakdown, paymentPieData, installmentBarData, pixPct, cardPct, cardCashPct, cardInstallmentPct,
-    boletoTotal, boletoPaid, boletoPending, boletoConversionRate,
+    boletoTotal, boletoPaid, boletoPending, boletoConversionRate, boletoRevenue, boletoByPlatform,
     salesByDayOfWeek, salesByHour, bestDay, bestHour,
     ...changes,
   };
