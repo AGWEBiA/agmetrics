@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL } from "@/lib/formatters";
+import { exportCSV } from "@/lib/exportCSV";
 import { AnimatedPage } from "@/components/AnimatedCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, FileSpreadsheet } from "lucide-react";
 
 const PAGE_SIZE = 20;
 
@@ -61,11 +62,31 @@ export default function SalesTable() {
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
+  const handleCSVExport = () => {
+    const csvData = filtered.map((s) => ({
+      Data: s.sale_date ? new Date(s.sale_date).toLocaleDateString("pt-BR") : "",
+      Cliente: s.buyer_name || "",
+      Email: s.buyer_email || "",
+      Produto: s.product_name || "",
+      Plataforma: s.platform,
+      Status: s.status,
+      Valor_Bruto: Number(s.gross_amount || 0),
+      Valor_Liquido: Number(s.amount || 0),
+    }));
+    exportCSV(csvData, "vendas");
+  };
+
   return (
     <AnimatedPage className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Vendas</h1>
-        <p className="text-sm text-muted-foreground">{filtered.length} registros</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Vendas</h1>
+          <p className="text-sm text-muted-foreground">{filtered.length} registros</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleCSVExport}>
+          <FileSpreadsheet className="mr-1.5 h-4 w-4" />
+          <span className="hidden sm:inline">Exportar CSV</span>
+        </Button>
       </div>
 
       <Card>

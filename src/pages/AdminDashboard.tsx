@@ -1,10 +1,12 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useProject } from "@/hooks/useProjects";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useSalesRealtime } from "@/hooks/useSalesRealtime";
 import { useGoalAlerts } from "@/hooks/useGoalAlerts";
+import { useDashboardPreferences, useSaveDashboardPreferences } from "@/hooks/useDashboardPreferences";
 import { exportDashboardPDF } from "@/lib/exportPDF";
+import { exportCSV } from "@/lib/exportCSV";
 import { formatBRL, formatPercent, formatNumber, formatDecimal } from "@/lib/formatters";
 import { DateRangeFilter, type DateRange } from "@/components/DateRangeFilter";
 import { AnimatedCard, AnimatedPage } from "@/components/AnimatedCard";
@@ -13,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ExternalLink, TrendingUp, TrendingDown, GripVertical, Download } from "lucide-react";
+import { ExternalLink, TrendingUp, TrendingDown, GripVertical, Download, FileSpreadsheet } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -86,8 +88,25 @@ export default function AdminDashboard() {
     });
   };
 
+  const handleCSVExport = () => {
+    const csvData = m.salesChartData.map((d) => ({
+      Data: d.date,
+      Vendas: d.vendas,
+      Receita: d.receita,
+    }));
+    exportCSV(csvData, `${project?.name || "metricas"}-vendas`);
+  };
+
+  const { data: savedPrefs } = useDashboardPreferences(projectId, "admin");
+  const savePrefs = useSaveDashboardPreferences();
   const [sectionOrder, setSectionOrder] = useState(DEFAULT_OVERVIEW_ORDER);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  useEffect(() => {
+    if (savedPrefs?.section_order && Array.isArray(savedPrefs.section_order)) {
+      setSectionOrder(savedPrefs.section_order as string[]);
+    }
+  }, [savedPrefs]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
@@ -95,7 +114,11 @@ export default function AdminDashboard() {
       setSectionOrder((items) => {
         const oldIndex = items.indexOf(active.id as string);
         const newIndex = items.indexOf(over.id as string);
-        return arrayMove(items, oldIndex, newIndex);
+        const newOrder = arrayMove(items, oldIndex, newIndex);
+        if (projectId) {
+          savePrefs.mutate({ projectId, dashboardType: "admin", sectionOrder: newOrder });
+        }
+        return newOrder;
       });
     }
   }, []);
@@ -239,6 +262,10 @@ export default function AdminDashboard() {
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="mr-1.5 h-4 w-4" />
             <span className="hidden sm:inline">PDF</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleCSVExport}>
+            <FileSpreadsheet className="mr-1.5 h-4 w-4" />
+            <span className="hidden sm:inline">CSV</span>
           </Button>
           <Button variant="outline" size="sm" onClick={() => project?.view_token && window.open(`/view/${project.view_token}`, "_blank")}>
             <ExternalLink className="mr-1.5 h-4 w-4" />
