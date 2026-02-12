@@ -63,7 +63,7 @@ export default function AdminDashboard() {
   const { projectId } = useParams();
   const { data: project } = useProject(projectId);
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
-  const m = useDashboardMetrics(projectId, dateRange);
+  const m = useDashboardMetrics(projectId, dateRange, project?.strategy);
   const { data: whatsappGroups } = useWhatsAppGroups(projectId);
   const { data: onboardingSteps } = useOnboardingStatus(projectId);
   useSalesRealtime(projectId);
@@ -293,7 +293,7 @@ export default function AdminDashboard() {
           <AnimatedCard index={2}><MetricCard title="Pendentes" value={formatNumber(m.pendingSalesCount)} color="text-warning" /></AnimatedCard>
           <AnimatedCard index={3}><MetricCard title="Canceladas" value={formatNumber(m.cancelledSalesCount)} color="text-destructive" /></AnimatedCard>
           <AnimatedCard index={4}><MetricCard title="Reembolsadas" value={formatNumber(m.refundedSalesCount)} /></AnimatedCard>
-          <AnimatedCard index={5}><MetricCard title="Conversão L→V" value={formatPercent(m.conversionRate)} subtitle="Leads → Vendas" /></AnimatedCard>
+          <AnimatedCard index={5}><MetricCard title="Taxa de Conversão" value={formatPercent(m.conversionRate)} subtitle={m.conversionLabel} /></AnimatedCard>
         </div>
         <AnimatedCard index={6}>
           <Card>
