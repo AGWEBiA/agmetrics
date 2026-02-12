@@ -5,6 +5,8 @@ import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useSalesRealtime } from "@/hooks/useSalesRealtime";
 import { useGoalAlerts } from "@/hooks/useGoalAlerts";
 import { useDashboardPreferences, useSaveDashboardPreferences } from "@/hooks/useDashboardPreferences";
+import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
+import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { exportDashboardPDF } from "@/lib/exportPDF";
 import { exportCSV } from "@/lib/exportCSV";
 import { formatBRL, formatPercent, formatNumber, formatDecimal } from "@/lib/formatters";
@@ -15,7 +17,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ExternalLink, TrendingUp, TrendingDown, GripVertical, Download, FileSpreadsheet } from "lucide-react";
+import { ExternalLink, TrendingUp, TrendingDown, GripVertical, Download, FileSpreadsheet, MessageCircle, Users } from "lucide-react";
+import { useWhatsAppGroups } from "@/hooks/useProjectData";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -31,7 +34,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 const COLORS = ["hsl(220, 90%, 56%)", "hsl(265, 80%, 60%)", "hsl(152, 60%, 42%)", "hsl(38, 92%, 50%)"];
 
-const DEFAULT_OVERVIEW_ORDER = ["roi", "sales_overview", "meta_ads", "google_ads", "products", "platform_pie"];
+const DEFAULT_OVERVIEW_ORDER = ["roi", "sales_overview", "meta_ads", "google_ads", "whatsapp", "products", "platform_pie"];
 
 function SortableCard({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -60,6 +63,8 @@ export default function AdminDashboard() {
   const { data: project } = useProject(projectId);
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const m = useDashboardMetrics(projectId, dateRange);
+  const { data: whatsappGroups } = useWhatsAppGroups(projectId);
+  const { data: onboardingSteps } = useOnboardingStatus(projectId);
   useSalesRealtime(projectId);
   useGoalAlerts(projectId, {
     totalRevenue: m.totalRevenue,
@@ -127,7 +132,7 @@ export default function AdminDashboard() {
     roi: (
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
         <AnimatedCard index={0}>
-          <MetricCard title="ROI Total" value={formatPercent(m.roi)} color={m.roi >= 0 ? "text-success" : "text-destructive"} icon={m.roi >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />} />
+          <MetricCard title="ROI Total" value={formatPercent(m.roi)} color={m.roi >= 0 ? "text-success" : "text-destructive"} icon={m.roi >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />} change={m.roiChange} />
         </AnimatedCard>
         <AnimatedCard index={1}>
           <MetricCard title="ROAS" value={`${formatDecimal(m.roas)}x`} subtitle="Retorno sobre gasto em ads" />
@@ -139,8 +144,8 @@ export default function AdminDashboard() {
     ),
     sales_overview: (
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-        <AnimatedCard index={0}><MetricCard title="Vendas Totais" value={formatBRL(m.totalRevenue)} subtitle="Valor líquido" /></AnimatedCard>
-        <AnimatedCard index={1}><MetricCard title="Nº de Vendas" value={formatNumber(m.salesCount)} subtitle="Aprovadas" /></AnimatedCard>
+        <AnimatedCard index={0}><MetricCard title="Vendas Totais" value={formatBRL(m.totalRevenue)} subtitle="Valor líquido" change={m.revenueChange} /></AnimatedCard>
+        <AnimatedCard index={1}><MetricCard title="Nº de Vendas" value={formatNumber(m.salesCount)} subtitle="Aprovadas" change={m.salesCountChange} /></AnimatedCard>
         <AnimatedCard index={2}><MetricCard title="Ticket Médio" value={formatBRL(m.avgTicket)} /></AnimatedCard>
         <AnimatedCard index={3}><MetricCard title="Conversão" value={formatPercent(m.conversionRate)} subtitle="Leads → Vendas" /></AnimatedCard>
         <AnimatedCard index={4}><MetricCard title="Pendentes" value={formatNumber(m.pendingSalesCount)} subtitle="Aguardando" /></AnimatedCard>
@@ -231,6 +236,28 @@ export default function AdminDashboard() {
         </Card>
       </AnimatedCard>
     ) : null,
+    whatsapp: whatsappGroups && whatsappGroups.length > 0 ? (
+      <AnimatedCard index={2}>
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4 text-success" />
+              <CardTitle className="text-lg">Grupos WhatsApp</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
+              <Stat label="Total de Grupos" value={formatNumber(whatsappGroups.length)} />
+              <Stat label="Total Membros" value={formatNumber(whatsappGroups.reduce((s, g) => s + (g.member_count || 0), 0))} />
+              <Stat label="Engajamento Médio" value={formatPercent(whatsappGroups.reduce((s, g) => s + (g.engagement_rate || 0), 0) / whatsappGroups.length)} />
+              {whatsappGroups.slice(0, 5).map((g) => (
+                <Stat key={g.id} label={g.name} value={`${formatNumber(g.member_count || 0)} membros`} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </AnimatedCard>
+    ) : null,
     platform_pie: m.platformChartData.length > 0 ? (
       <AnimatedCard index={3}>
         <Card>
@@ -248,7 +275,7 @@ export default function AdminDashboard() {
         </Card>
       </AnimatedCard>
     ) : null,
-  }), [m]);
+  }), [m, whatsappGroups]);
 
   return (
     <AnimatedPage className="space-y-6">
@@ -273,6 +300,14 @@ export default function AdminDashboard() {
           </Button>
         </div>
       </div>
+
+      {onboardingSteps && project && (
+        <OnboardingWizard
+          projectId={projectId!}
+          projectName={project.name}
+          completedSteps={onboardingSteps}
+        />
+      )}
 
       <Tabs defaultValue="overview">
         <TabsList className="w-full sm:w-auto overflow-x-auto">
@@ -393,7 +428,7 @@ export default function AdminDashboard() {
   );
 }
 
-function MetricCard({ title, value, subtitle, color, icon }: { title: string; value: string; subtitle?: string; color?: string; icon?: React.ReactNode }) {
+function MetricCard({ title, value, subtitle, color, icon, change }: { title: string; value: string; subtitle?: string; color?: string; icon?: React.ReactNode; change?: number | null }) {
   return (
     <Card className="transition-shadow duration-200 hover:shadow-md">
       <CardContent className="p-4 sm:p-5">
@@ -401,6 +436,12 @@ function MetricCard({ title, value, subtitle, color, icon }: { title: string; va
         <div className="mt-1 flex items-center gap-2">
           {icon && <span className={color}>{icon}</span>}
           <p className={`text-xl sm:text-2xl font-bold tracking-tight ${color || ""}`}>{value}</p>
+          {change !== null && change !== undefined && (
+            <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${change >= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+              {change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {Math.abs(change).toFixed(1)}%
+            </span>
+          )}
         </div>
         {subtitle && <p className="mt-0.5 text-[11px] sm:text-xs text-muted-foreground">{subtitle}</p>}
       </CardContent>

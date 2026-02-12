@@ -103,6 +103,24 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const googleMetrics = (googleQuery.data || []).filter((m: any) => inRange(m.date, df));
   const manualInvestments = (investmentsQuery.data || []).filter((m: any) => inRange(m.date, df));
 
+  // Calculate previous period for comparison
+  const hasDates = df.from && df.to;
+  let prevSales: SalesEvent[] = [];
+  let prevMetaMetrics: any[] = [];
+  let prevGoogleMetrics: any[] = [];
+  let prevManualInvestments: any[] = [];
+
+  if (hasDates && df.from && df.to) {
+    const rangeMs = df.to.getTime() - df.from.getTime();
+    const prevFrom = new Date(df.from.getTime() - rangeMs);
+    const prevTo = new Date(df.from.getTime() - 1);
+    const prevDf = { from: prevFrom, to: prevTo };
+    prevSales = allSales.filter((s) => inRange(s.sale_date || s.created_at, prevDf));
+    prevMetaMetrics = (metaQuery.data || []).filter((m: any) => inRange(m.date, prevDf));
+    prevGoogleMetrics = (googleQuery.data || []).filter((m: any) => inRange(m.date, prevDf));
+    prevManualInvestments = (investmentsQuery.data || []).filter((m: any) => inRange(m.date, prevDf));
+  }
+
   const approvedSales = sales.filter((s) => s.status === "approved");
   const pendingSales = sales.filter((s) => s.status === "pending");
 
@@ -179,6 +197,32 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     { name: "Hotmart", value: hotmartSales.reduce((s, e) => s + Number(e.amount), 0) },
   ].filter((d) => d.value > 0);
 
+  // Previous period metrics for comparison
+  const prevApproved = prevSales.filter((s) => s.status === "approved");
+  const prevRevenue = prevApproved.reduce((s, e) => s + Number(e.amount), 0);
+  const prevSalesCount = prevApproved.length;
+  const prevMetaInv = prevMetaMetrics.reduce((s: number, m: any) => s + Number(m.investment), 0);
+  const prevGoogleInv = prevGoogleMetrics.reduce((s: number, m: any) => s + Number(m.investment), 0);
+  const prevManualInv = prevManualInvestments.reduce((s: number, m: any) => s + Number(m.amount), 0);
+  const prevTotalInv = prevMetaInv + prevGoogleInv + prevManualInv;
+  const prevRoi = prevTotalInv > 0 ? ((prevRevenue - prevTotalInv) / prevTotalInv) * 100 : 0;
+  const prevLeads = prevMetaMetrics.reduce((s: number, m: any) => s + (m.leads || 0), 0)
+    + prevGoogleMetrics.reduce((s: number, m: any) => s + (m.conversions || 0), 0);
+
+  function pctChange(current: number, previous: number): number | null {
+    if (!hasDates) return null;
+    if (previous === 0) return current > 0 ? 100 : null;
+    return ((current - previous) / Math.abs(previous)) * 100;
+  }
+
+  const changes = {
+    revenueChange: pctChange(totalRevenue, prevRevenue),
+    salesCountChange: pctChange(salesCount, prevSalesCount),
+    roiChange: pctChange(roi, prevRoi),
+    investmentChange: pctChange(totalInvestment, prevTotalInv),
+    leadsChange: pctChange(totalLeads, prevLeads),
+  };
+
   return {
     isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || investmentsQuery.isLoading,
     totalRevenue, grossRevenue, totalFees, salesCount, avgTicket,
@@ -205,5 +249,6 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     gConversionRate: gClicks > 0 ? (gConversions / gClicks) * 100 : 0,
     gCostPerConversion: gConversions > 0 ? googleInvestment / gConversions : 0,
     salesChartData, productData, platformChartData, metaMetrics, googleMetrics,
+    ...changes,
   };
 }
