@@ -1,13 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useProjects, useCreateProject, useDeleteProject } from "@/hooks/useProjects";
+import { useProjects, useCreateProject, useDeleteProject, useUpdateProject } from "@/hooks/useProjects";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import type { ProjectStrategy } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -29,45 +24,103 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, BarChart3, Calendar, Trash2, ExternalLink, Settings } from "lucide-react";
+import { Plus, BarChart3, Calendar, Trash2, ExternalLink, Settings, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ProjectStrategyForm, strategyLabel, type ProjectFormData } from "@/components/ProjectStrategyForm";
+import type { Project, ProjectStrategy } from "@/types/database";
+
+const emptyForm: ProjectFormData = {
+  name: "",
+  description: "",
+  strategy: "perpetuo",
+  startDate: "",
+  endDate: "",
+  cartOpenDate: "",
+  manualInvestment: "0,00",
+  isActive: true,
+  budget: "0,00",
+  metaLeads: false,
+  googleLeads: false,
+};
+
+function projectToForm(p: Project): ProjectFormData {
+  return {
+    name: p.name,
+    description: p.description || "",
+    strategy: (p.strategy as ProjectStrategy) || "perpetuo",
+    startDate: p.start_date || "",
+    endDate: p.end_date || "",
+    cartOpenDate: p.cart_open_date || "",
+    manualInvestment: Number(p.manual_investment || 0).toFixed(2).replace(".", ","),
+    isActive: p.is_active ?? true,
+    budget: Number(p.budget || 0).toFixed(2).replace(".", ","),
+    metaLeads: p.meta_leads_enabled ?? false,
+    googleLeads: p.google_leads_enabled ?? false,
+  };
+}
 
 export default function ProjectsHub() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: projects, isLoading } = useProjects();
   const createProject = useCreateProject();
+  const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
 
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [strategy, setStrategy] = useState<ProjectStrategy>("perpetuo");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [cartOpenDate, setCartOpenDate] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<ProjectFormData>(emptyForm);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<ProjectFormData>(emptyForm);
 
   const handleCreate = async () => {
-    if (!name.trim()) return;
+    if (!createForm.name.trim()) return;
     try {
       const project = await createProject.mutateAsync({
-        name: name.trim(),
-        description: description.trim() || undefined,
-        strategy,
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
-        cart_open_date: cartOpenDate || undefined,
+        name: createForm.name.trim(),
+        description: createForm.description.trim() || undefined,
+        strategy: createForm.strategy,
+        start_date: createForm.startDate || undefined,
+        end_date: createForm.endDate || undefined,
+        cart_open_date: createForm.cartOpenDate || undefined,
       });
       toast({ title: "Projeto criado!", description: `"${project.name}" foi criado com sucesso.` });
-      setOpen(false);
-      setName("");
-      setDescription("");
-      setStrategy("perpetuo");
-      setStartDate("");
-      setEndDate("");
-      setCartOpenDate("");
+      setCreateOpen(false);
+      setCreateForm(emptyForm);
       navigate(`/admin/projects/${project.id}/config`);
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const openEdit = (project: Project) => {
+    setEditingId(project.id);
+    setEditForm(projectToForm(project));
+    setEditOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editingId || !editForm.name.trim()) return;
+    try {
+      await updateProject.mutateAsync({
+        id: editingId,
+        name: editForm.name.trim(),
+        description: editForm.description.trim() || null,
+        strategy: editForm.strategy as any,
+        start_date: editForm.startDate || null,
+        end_date: editForm.endDate || null,
+        cart_open_date: editForm.cartOpenDate || null,
+        manual_investment: parseFloat(editForm.manualInvestment.replace(",", ".")) || 0,
+        is_active: editForm.isActive,
+        budget: parseFloat(editForm.budget.replace(",", ".")) || 0,
+        meta_leads_enabled: editForm.metaLeads,
+        google_leads_enabled: editForm.googleLeads,
+      });
+      toast({ title: "Projeto atualizado!" });
+      setEditOpen(false);
+      setEditingId(null);
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
@@ -94,7 +147,7 @@ export default function ProjectsHub() {
           <h1 className="text-3xl font-bold tracking-tight">Projetos</h1>
           <p className="text-muted-foreground">Gerencie seus lançamentos digitais</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -104,95 +157,35 @@ export default function ProjectsHub() {
           <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Criar Projeto</DialogTitle>
-              <DialogDescription>
-                Preencha as informações do seu projeto digital.
-              </DialogDescription>
+              <DialogDescription>Preencha as informações do seu projeto digital.</DialogDescription>
             </DialogHeader>
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="project-name">Nome do Projeto *</Label>
-                <Input
-                  id="project-name"
-                  placeholder="Ex: Pack de IA - Contabilidade Médica"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="project-desc">Descrição</Label>
-                <Textarea
-                  id="project-desc"
-                  placeholder="Descrição opcional do projeto"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Label>Estratégia</Label>
-                  <span className="text-xs text-muted-foreground" title="Define como as métricas de conversão são calculadas">ⓘ</span>
-                </div>
-                <RadioGroup value={strategy} onValueChange={(v) => setStrategy(v as ProjectStrategy)} className="space-y-3">
-                  <div className="flex items-start space-x-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50">
-                    <RadioGroupItem value="perpetuo" id="strat-perpetuo" className="mt-0.5" />
-                    <div>
-                      <Label htmlFor="strat-perpetuo" className="cursor-pointer font-semibold">Perpétuo</Label>
-                      <p className="text-sm text-muted-foreground">Ideal para produtos evergreen com vendas contínuas. Taxa de conversão = vendas / visitas.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50">
-                    <RadioGroupItem value="lancamento" id="strat-lancamento" className="mt-0.5" />
-                    <div>
-                      <Label htmlFor="strat-lancamento" className="cursor-pointer font-semibold">Lançamento</Label>
-                      <p className="text-sm text-muted-foreground">Para lançamentos com período definido e captação de leads. Taxa de conversão = vendas / leads.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50">
-                    <RadioGroupItem value="lancamento_pago" id="strat-lancamento-pago" className="mt-0.5" />
-                    <div>
-                      <Label htmlFor="strat-lancamento-pago" className="cursor-pointer font-semibold">Lançamento Pago</Label>
-                      <p className="text-sm text-muted-foreground">Lançamento com investimento intensivo em tráfego pago. Taxa de conversão = vendas / leads.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50">
-                    <RadioGroupItem value="funis" id="strat-funis" className="mt-0.5" />
-                    <div>
-                      <Label htmlFor="strat-funis" className="cursor-pointer font-semibold">Funis (Webinar/WhatsApp/Chatbot)</Label>
-                      <p className="text-sm text-muted-foreground">Para vendas via funis automatizados ou semi-automatizados. Taxa de conversão = vendas / leads.</p>
-                    </div>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              {(strategy === "lancamento" || strategy === "lancamento_pago") && (
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="start-date">Início</Label>
-                    <Input id="start-date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="end-date">Término</Label>
-                    <Input id="end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cart-date">Abertura Carrinho</Label>
-                    <Input id="cart-date" type="date" value={cartOpenDate} onChange={(e) => setCartOpenDate(e.target.value)} />
-                  </div>
-                </div>
-              )}
-            </div>
+            <ProjectStrategyForm data={createForm} onChange={setCreateForm} />
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleCreate} disabled={!name.trim() || createProject.isPending}>
+              <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
+              <Button onClick={handleCreate} disabled={!createForm.name.trim() || createProject.isPending}>
                 {createProject.isPending ? "Criando..." : "Criar Projeto"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar Projeto</DialogTitle>
+            <DialogDescription>Atualize as informações do projeto.</DialogDescription>
+          </DialogHeader>
+          <ProjectStrategyForm data={editForm} onChange={setEditForm} showExtendedFields />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
+            <Button onClick={handleEdit} disabled={!editForm.name.trim() || updateProject.isPending}>
+              {updateProject.isPending ? "Salvando..." : "Atualizar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -215,11 +208,16 @@ export default function ProjectsHub() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">{project.name}</CardTitle>
-                  {project.strategy && (
-                    <Badge variant="outline" className="text-xs capitalize">
-                      {project.strategy === "lancamento_pago" ? "Lanç. Pago" : project.strategy === "lancamento" ? "Lançamento" : project.strategy === "funis" ? "Funis" : "Perpétuo"}
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {!project.is_active && (
+                      <Badge variant="secondary" className="text-xs">Inativo</Badge>
+                    )}
+                    {project.strategy && (
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {strategyLabel(project.strategy as ProjectStrategy)}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 {project.description && (
                   <CardDescription className="line-clamp-2">{project.description}</CardDescription>
@@ -237,26 +235,18 @@ export default function ProjectsHub() {
                 </div>
               </CardContent>
               <CardFooter className="gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => navigate(`/admin/projects/${project.id}/dashboard`)}
-                >
+                <Button size="sm" onClick={() => navigate(`/admin/projects/${project.id}/dashboard`)}>
                   <BarChart3 className="mr-1 h-3 w-3" />
                   Dashboard
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => navigate(`/admin/projects/${project.id}/config`)}
-                >
+                <Button size="sm" variant="outline" onClick={() => navigate(`/admin/projects/${project.id}/config`)}>
                   <Settings className="mr-1 h-3 w-3" />
                   Config
                 </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => window.open(`/view/${project.view_token}`, "_blank")}
-                >
+                <Button size="sm" variant="ghost" onClick={() => openEdit(project)}>
+                  <Pencil className="h-3 w-3" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => window.open(`/view/${project.view_token}`, "_blank")}>
                   <ExternalLink className="h-3 w-3" />
                 </Button>
                 <AlertDialog>
@@ -294,7 +284,7 @@ export default function ProjectsHub() {
           <CardDescription className="mb-4">
             Crie seu primeiro projeto para começar a acompanhar as métricas do seu lançamento.
           </CardDescription>
-          <Button variant="outline" onClick={() => setOpen(true)}>
+          <Button variant="outline" onClick={() => setCreateOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Criar Projeto
           </Button>

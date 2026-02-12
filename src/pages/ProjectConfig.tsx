@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useProject, useUpdateProject } from "@/hooks/useProjects";
+import { ProjectStrategyForm, type ProjectFormData } from "@/components/ProjectStrategyForm";
 import {
   useMetaCredentials, useSaveMetaCredentials,
   useGoogleCredentials, useSaveGoogleCredentials,
@@ -19,12 +20,10 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Trash2, Copy, Check, Upload, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { ProjectStrategy } from "@/types/database";
 
 export default function ProjectConfig() {
   const { projectId } = useParams();
@@ -89,27 +88,28 @@ function GeneralTab({ projectId }: { projectId: string }) {
   const updateProject = useUpdateProject();
   const { toast } = useToast();
 
-  const [strategy, setStrategy] = useState<ProjectStrategy>("perpetuo");
-  const [manualInvestment, setManualInvestment] = useState("0,00");
-  const [isActive, setIsActive] = useState(true);
-  const [budget, setBudget] = useState("0,00");
-  const [metaLeads, setMetaLeads] = useState(false);
-  const [googleLeads, setGoogleLeads] = useState(false);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [cartOpenDate, setCartOpenDate] = useState("");
+  const [form, setForm] = useState<ProjectFormData>({
+    name: "", description: "", strategy: "perpetuo",
+    startDate: "", endDate: "", cartOpenDate: "",
+    manualInvestment: "0,00", isActive: true, budget: "0,00",
+    metaLeads: false, googleLeads: false,
+  });
 
   useEffect(() => {
     if (project) {
-      setStrategy((project.strategy as ProjectStrategy) || "perpetuo");
-      setManualInvestment(Number(project.manual_investment || 0).toFixed(2).replace(".", ","));
-      setIsActive(project.is_active ?? true);
-      setBudget(Number(project.budget || 0).toFixed(2).replace(".", ","));
-      setMetaLeads(project.meta_leads_enabled ?? false);
-      setGoogleLeads(project.google_leads_enabled ?? false);
-      setStartDate(project.start_date || "");
-      setEndDate(project.end_date || "");
-      setCartOpenDate(project.cart_open_date || "");
+      setForm({
+        name: project.name,
+        description: project.description || "",
+        strategy: (project.strategy as any) || "perpetuo",
+        startDate: project.start_date || "",
+        endDate: project.end_date || "",
+        cartOpenDate: project.cart_open_date || "",
+        manualInvestment: Number(project.manual_investment || 0).toFixed(2).replace(".", ","),
+        isActive: project.is_active ?? true,
+        budget: Number(project.budget || 0).toFixed(2).replace(".", ","),
+        metaLeads: project.meta_leads_enabled ?? false,
+        googleLeads: project.google_leads_enabled ?? false,
+      });
     }
   }, [project]);
 
@@ -117,15 +117,17 @@ function GeneralTab({ projectId }: { projectId: string }) {
     try {
       await updateProject.mutateAsync({
         id: projectId,
-        strategy,
-        manual_investment: parseFloat(manualInvestment.replace(",", ".")) || 0,
-        is_active: isActive,
-        budget: parseFloat(budget.replace(",", ".")) || 0,
-        meta_leads_enabled: metaLeads,
-        google_leads_enabled: googleLeads,
-        start_date: startDate || null,
-        end_date: endDate || null,
-        cart_open_date: cartOpenDate || null,
+        name: form.name.trim(),
+        description: form.description.trim() || null,
+        strategy: form.strategy as any,
+        manual_investment: parseFloat(form.manualInvestment.replace(",", ".")) || 0,
+        is_active: form.isActive,
+        budget: parseFloat(form.budget.replace(",", ".")) || 0,
+        meta_leads_enabled: form.metaLeads,
+        google_leads_enabled: form.googleLeads,
+        start_date: form.startDate || null,
+        end_date: form.endDate || null,
+        cart_open_date: form.cartOpenDate || null,
       });
       toast({ title: "Projeto atualizado!" });
     } catch (err: any) {
@@ -139,123 +141,10 @@ function GeneralTab({ projectId }: { projectId: string }) {
         <CardHeader>
           <CardTitle>Informações do Projeto</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Label>Estratégia</Label>
-              <span className="text-xs text-muted-foreground" title="Define como as métricas de conversão são calculadas">ⓘ</span>
-            </div>
-            <RadioGroup value={strategy} onValueChange={(v) => setStrategy(v as ProjectStrategy)} className="space-y-3">
-              <div className="flex items-start space-x-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50">
-                <RadioGroupItem value="perpetuo" id="cfg-perpetuo" className="mt-0.5" />
-                <div>
-                  <Label htmlFor="cfg-perpetuo" className="cursor-pointer font-semibold">Perpétuo</Label>
-                  <p className="text-sm text-muted-foreground">Ideal para produtos evergreen com vendas contínuas. Taxa de conversão = vendas / visitas.</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50">
-                <RadioGroupItem value="lancamento" id="cfg-lancamento" className="mt-0.5" />
-                <div>
-                  <Label htmlFor="cfg-lancamento" className="cursor-pointer font-semibold">Lançamento</Label>
-                  <p className="text-sm text-muted-foreground">Para lançamentos com período definido e captação de leads. Taxa de conversão = vendas / leads.</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50">
-                <RadioGroupItem value="lancamento_pago" id="cfg-lancamento-pago" className="mt-0.5" />
-                <div>
-                  <Label htmlFor="cfg-lancamento-pago" className="cursor-pointer font-semibold">Lançamento Pago</Label>
-                  <p className="text-sm text-muted-foreground">Lançamento com investimento intensivo em tráfego pago. Taxa de conversão = vendas / leads.</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50">
-                <RadioGroupItem value="funis" id="cfg-funis" className="mt-0.5" />
-                <div>
-                  <Label htmlFor="cfg-funis" className="cursor-pointer font-semibold">Funis (Webinar/WhatsApp/Chatbot)</Label>
-                  <p className="text-sm text-muted-foreground">Para vendas via funis automatizados ou semi-automatizados. Taxa de conversão = vendas / leads.</p>
-                </div>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {(strategy === "lancamento" || strategy === "lancamento_pago") && (
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-2">
-                <Label>Início</Label>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Término</Label>
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Abertura Carrinho</Label>
-                <Input type="date" value={cartOpenDate} onChange={(e) => setCartOpenDate(e.target.value)} />
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label>Investimento Manual Adicional (R$)</Label>
-            <Input
-              placeholder="0,00"
-              value={manualInvestment}
-              onChange={(e) => setManualInvestment(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">Valor adicional de investimento que não vem das APIs (Meta/Google)</p>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Label>Status</Label>
-            <div className="flex items-center gap-2">
-              <Switch checked={isActive} onCheckedChange={setIsActive} />
-              <span className="text-sm">{isActive ? "Ativo" : "Inativo"}</span>
-            </div>
-          </div>
+        <CardContent>
+          <ProjectStrategyForm data={form} onChange={setForm} showExtendedFields />
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-primary" />
-            Orçamento e Configurações
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Orçamento Total Provisionado (R$)</Label>
-            <Input
-              placeholder="10000,00"
-              value={budget}
-              onChange={(e) => setBudget(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">Orçamento total previsto para este projeto (Meta + Google + Manual)</p>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Captação de Leads (Meta Ads)</Label>
-              <p className="text-xs text-muted-foreground">Desative se este projeto não utiliza Meta Ads para captar leads</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch checked={metaLeads} onCheckedChange={setMetaLeads} />
-              <span className="text-sm">{metaLeads ? "Sim" : "Não"}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Contabilizar Leads do Google Ads</Label>
-              <p className="text-xs text-muted-foreground">Desative se não deseja incluir leads do Google Ads nas métricas</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch checked={googleLeads} onCheckedChange={setGoogleLeads} />
-              <span className="text-sm">{googleLeads ? "Sim" : "Não"}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       <div className="flex justify-end gap-3">
         <Button variant="outline" onClick={() => window.history.back()}>Cancelar</Button>
         <Button onClick={handleSave} disabled={updateProject.isPending}>
