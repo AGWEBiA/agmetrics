@@ -6,6 +6,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import type { ProjectStrategy } from "@/types/database";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +43,7 @@ export default function ProjectsHub() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [strategy, setStrategy] = useState<ProjectStrategy>("perpetuo");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [cartOpenDate, setCartOpenDate] = useState("");
@@ -50,6 +54,7 @@ export default function ProjectsHub() {
       const project = await createProject.mutateAsync({
         name: name.trim(),
         description: description.trim() || undefined,
+        strategy,
         start_date: startDate || undefined,
         end_date: endDate || undefined,
         cart_open_date: cartOpenDate || undefined,
@@ -58,6 +63,7 @@ export default function ProjectsHub() {
       setOpen(false);
       setName("");
       setDescription("");
+      setStrategy("perpetuo");
       setStartDate("");
       setEndDate("");
       setCartOpenDate("");
@@ -95,19 +101,19 @@ export default function ProjectsHub() {
               Novo Projeto
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Criar Projeto</DialogTitle>
               <DialogDescription>
-                Preencha as informações do seu lançamento digital.
+                Preencha as informações do seu projeto digital.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="project-name">Nome *</Label>
+                <Label htmlFor="project-name">Nome do Projeto *</Label>
                 <Input
                   id="project-name"
-                  placeholder="Ex: Lançamento Curso X"
+                  placeholder="Ex: Pack de IA - Contabilidade Médica"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -121,35 +127,60 @@ export default function ProjectsHub() {
                   onChange={(e) => setDescription(e.target.value)}
                 />
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="start-date">Início</Label>
-                  <Input
-                    id="start-date"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Label>Estratégia</Label>
+                  <span className="text-xs text-muted-foreground" title="Define como as métricas de conversão são calculadas">ⓘ</span>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="end-date">Término</Label>
-                  <Input
-                    id="end-date"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cart-date">Abertura Carrinho</Label>
-                  <Input
-                    id="cart-date"
-                    type="date"
-                    value={cartOpenDate}
-                    onChange={(e) => setCartOpenDate(e.target.value)}
-                  />
-                </div>
+                <RadioGroup value={strategy} onValueChange={(v) => setStrategy(v as ProjectStrategy)} className="space-y-3">
+                  <div className="flex items-start space-x-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50">
+                    <RadioGroupItem value="perpetuo" id="strat-perpetuo" className="mt-0.5" />
+                    <div>
+                      <Label htmlFor="strat-perpetuo" className="cursor-pointer font-semibold">Perpétuo</Label>
+                      <p className="text-sm text-muted-foreground">Ideal para produtos evergreen com vendas contínuas. Taxa de conversão = vendas / visitas.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50">
+                    <RadioGroupItem value="lancamento" id="strat-lancamento" className="mt-0.5" />
+                    <div>
+                      <Label htmlFor="strat-lancamento" className="cursor-pointer font-semibold">Lançamento</Label>
+                      <p className="text-sm text-muted-foreground">Para lançamentos com período definido e captação de leads. Taxa de conversão = vendas / leads.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50">
+                    <RadioGroupItem value="lancamento_pago" id="strat-lancamento-pago" className="mt-0.5" />
+                    <div>
+                      <Label htmlFor="strat-lancamento-pago" className="cursor-pointer font-semibold">Lançamento Pago</Label>
+                      <p className="text-sm text-muted-foreground">Lançamento com investimento intensivo em tráfego pago. Taxa de conversão = vendas / leads.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50">
+                    <RadioGroupItem value="funis" id="strat-funis" className="mt-0.5" />
+                    <div>
+                      <Label htmlFor="strat-funis" className="cursor-pointer font-semibold">Funis (Webinar/WhatsApp/Chatbot)</Label>
+                      <p className="text-sm text-muted-foreground">Para vendas via funis automatizados ou semi-automatizados. Taxa de conversão = vendas / leads.</p>
+                    </div>
+                  </div>
+                </RadioGroup>
               </div>
+
+              {(strategy === "lancamento" || strategy === "lancamento_pago") && (
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="start-date">Início</Label>
+                    <Input id="start-date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="end-date">Término</Label>
+                    <Input id="end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cart-date">Abertura Carrinho</Label>
+                    <Input id="cart-date" type="date" value={cartOpenDate} onChange={(e) => setCartOpenDate(e.target.value)} />
+                  </div>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>
@@ -182,7 +213,14 @@ export default function ProjectsHub() {
           {projects.map((project) => (
             <Card key={project.id} className="group relative transition-shadow hover:shadow-md">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">{project.name}</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">{project.name}</CardTitle>
+                  {project.strategy && (
+                    <Badge variant="outline" className="text-xs capitalize">
+                      {project.strategy === "lancamento_pago" ? "Lanç. Pago" : project.strategy === "lancamento" ? "Lançamento" : project.strategy === "funis" ? "Funis" : "Perpétuo"}
+                    </Badge>
+                  )}
+                </div>
                 {project.description && (
                   <CardDescription className="line-clamp-2">{project.description}</CardDescription>
                 )}

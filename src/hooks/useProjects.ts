@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Project } from "@/types/database";
+import type { Database } from "@/integrations/supabase/types";
 
 export function useProjects() {
   return useQuery({
@@ -54,6 +55,7 @@ export function useCreateProject() {
     mutationFn: async (project: {
       name: string;
       description?: string;
+      strategy?: Database["public"]["Enums"]["project_strategy"];
       start_date?: string;
       end_date?: string;
       cart_open_date?: string;

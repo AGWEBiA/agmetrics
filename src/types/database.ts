@@ -1,3 +1,5 @@
+export type ProjectStrategy = "perpetuo" | "lancamento" | "lancamento_pago" | "funis";
+
 export interface Project {
   id: string;
   name: string;
@@ -7,6 +9,12 @@ export interface Project {
   start_date: string | null;
   end_date: string | null;
   cart_open_date: string | null;
+  strategy: ProjectStrategy;
+  is_active: boolean;
+  budget: number | null;
+  manual_investment: number | null;
+  meta_leads_enabled: boolean;
+  google_leads_enabled: boolean;
   created_at: string;
   updated_at: string;
 }

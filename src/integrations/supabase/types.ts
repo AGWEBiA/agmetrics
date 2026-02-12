@@ -399,38 +399,56 @@ export type Database = {
       }
       projects: {
         Row: {
+          budget: number | null
           cart_open_date: string | null
           created_at: string
           description: string | null
           end_date: string | null
+          google_leads_enabled: boolean
           id: string
+          is_active: boolean
+          manual_investment: number | null
+          meta_leads_enabled: boolean
           name: string
           owner_id: string
           start_date: string | null
+          strategy: Database["public"]["Enums"]["project_strategy"]
           updated_at: string
           view_token: string
         }
         Insert: {
+          budget?: number | null
           cart_open_date?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
+          google_leads_enabled?: boolean
           id?: string
+          is_active?: boolean
+          manual_investment?: number | null
+          meta_leads_enabled?: boolean
           name: string
           owner_id: string
           start_date?: string | null
+          strategy?: Database["public"]["Enums"]["project_strategy"]
           updated_at?: string
           view_token?: string
         }
         Update: {
+          budget?: number | null
           cart_open_date?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
+          google_leads_enabled?: boolean
           id?: string
+          is_active?: boolean
+          manual_investment?: number | null
+          meta_leads_enabled?: boolean
           name?: string
           owner_id?: string
           start_date?: string | null
+          strategy?: Database["public"]["Enums"]["project_strategy"]
           updated_at?: string
           view_token?: string
         }
@@ -665,6 +683,7 @@ export type Database = {
       goal_type: "revenue" | "sales" | "roi" | "leads" | "margin"
       product_platform: "kiwify" | "hotmart" | "both"
       product_type: "main" | "order_bump"
+      project_strategy: "perpetuo" | "lancamento" | "lancamento_pago" | "funis"
       sale_status: "approved" | "pending" | "cancelled" | "refunded"
       sales_platform: "kiwify" | "hotmart"
     }
@@ -800,6 +819,7 @@ export const Constants = {
       goal_type: ["revenue", "sales", "roi", "leads", "margin"],
       product_platform: ["kiwify", "hotmart", "both"],
       product_type: ["main", "order_bump"],
+      project_strategy: ["perpetuo", "lancamento", "lancamento_pago", "funis"],
       sale_status: ["approved", "pending", "cancelled", "refunded"],
       sales_platform: ["kiwify", "hotmart"],
     },
