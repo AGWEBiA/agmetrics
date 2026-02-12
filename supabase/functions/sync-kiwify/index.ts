@@ -7,6 +7,25 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+async function getOAuthToken(clientId: string, clientSecret: string): Promise<string> {
+  const res = await fetch("https://public-api.kiwify.com/v1/oauth/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`OAuth token error: ${res.status} ${errText}`);
+  }
+
+  const data = await res.json();
+  return data.access_token;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -27,12 +46,27 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get API key from secrets
-    const apiKey = Deno.env.get("KIWIFY_API_KEY");
-    if (!apiKey) {
+    // Get OAuth credentials from secrets
+    const clientId = Deno.env.get("KIWIFY_CLIENT_ID");
+    const clientSecret = Deno.env.get("KIWIFY_CLIENT_SECRET");
+    const accountId = Deno.env.get("KIWIFY_ACCOUNT_ID");
+
+    if (!clientId || !clientSecret || !accountId) {
       return new Response(
-        JSON.stringify({ error: "KIWIFY_API_KEY not configured. Add the secret in project settings." }),
+        JSON.stringify({ error: "KIWIFY_CLIENT_ID, KIWIFY_CLIENT_SECRET and KIWIFY_ACCOUNT_ID must be configured." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get OAuth bearer token
+    let bearerToken: string;
+    try {
+      bearerToken = await getOAuthToken(clientId, clientSecret);
+    } catch (err) {
+      console.error("OAuth error:", err);
+      return new Response(
+        JSON.stringify({ error: `Failed to authenticate with Kiwify: ${err.message}` }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -61,10 +95,10 @@ Deno.serve(async (req) => {
     let hasMore = true;
 
     while (hasMore) {
-      const url = `https://api.kiwify.com.br/v1/transactions?start_date=${startDate}&end_date=${endDate}&page=${page}&limit=100`;
+      const url = `https://public-api.kiwify.com/v1/transactions?start_date=${startDate}&end_date=${endDate}&page=${page}&limit=100&account_id=${accountId}`;
       const res = await fetch(url, {
         headers: {
-          "Authorization": `Bearer ${apiKey}`,
+          "Authorization": `Bearer ${bearerToken}`,
           "Content-Type": "application/json",
         },
       });
