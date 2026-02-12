@@ -266,6 +266,7 @@ function MetaAccountCard({ cred, projectId, onDelete }: { cred: any; projectId: 
   const [label, setLabel] = useState(cred.label || "");
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
   const [savingCampaigns, setSavingCampaigns] = useState(false);
+  const [showOnlyActive, setShowOnlyActive] = useState(true);
 
   const { data: campaigns, refetch: refetchCampaigns } = useQuery({
     queryKey: ["meta_campaigns", projectId, cred.id],
@@ -396,16 +397,27 @@ function MetaAccountCard({ cred, projectId, onDelete }: { cred: any; projectId: 
 
           {campaigns && campaigns.length > 0 ? (
             <div className="space-y-2">
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap items-center">
                 <Button variant="outline" size="sm" onClick={() => handleSelectAll(true)} disabled={savingCampaigns}>
                   Selecionar Todas
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => handleSelectAll(false)} disabled={savingCampaigns}>
                   Desmarcar
                 </Button>
+                <label className="flex items-center gap-1.5 ml-auto cursor-pointer">
+                  <Checkbox checked={showOnlyActive} onCheckedChange={(checked) => setShowOnlyActive(!!checked)} />
+                  <span className="text-xs text-muted-foreground">Apenas ativas</span>
+                </label>
               </div>
               <div className="max-h-60 overflow-y-auto rounded-lg border divide-y">
-                {campaigns.map((c: any) => (
+                {[...campaigns]
+                  .filter((c: any) => !showOnlyActive || c.status === "ACTIVE")
+                  .sort((a: any, b: any) => {
+                    if (a.status === "ACTIVE" && b.status !== "ACTIVE") return -1;
+                    if (a.status !== "ACTIVE" && b.status === "ACTIVE") return 1;
+                    return (a.campaign_name || "").localeCompare(b.campaign_name || "");
+                  })
+                  .map((c: any) => (
                   <label key={c.campaign_id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors">
                     <Checkbox checked={c.is_selected} onCheckedChange={(checked) => handleToggleCampaign(c.campaign_id, !!checked)} />
                     <div className="flex-1 min-w-0">
