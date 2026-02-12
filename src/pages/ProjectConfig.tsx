@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useProject, useUpdateProject } from "@/hooks/useProjects";
 import { ProjectStrategyForm, type ProjectFormData } from "@/components/ProjectStrategyForm";
 import {
-  useMetaCredentials, useSaveMetaCredentials,
+  useMetaCredentialsList, useSaveMetaCredentials, useDeleteMetaCredentials,
   useGoogleCredentials, useSaveGoogleCredentials,
   useProducts, useCreateProduct, useDeleteProduct,
   useWhatsAppGroups, useCreateWhatsAppGroup, useDeleteWhatsAppGroup,
@@ -159,42 +159,144 @@ function GeneralTab({ projectId }: { projectId: string }) {
 
 // ============ META ADS TAB ============
 function MetaTab({ projectId }: { projectId: string }) {
-  const { data: creds } = useMetaCredentials(projectId);
+  const { data: credsList, refetch: refetchCreds } = useMetaCredentialsList(projectId);
   const saveCreds = useSaveMetaCredentials();
+  const deleteCreds = useDeleteMetaCredentials();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [token, setToken] = useState("");
-  const [accountId, setAccountId] = useState("");
-  const [loadingCampaigns, setLoadingCampaigns] = useState(false);
-  const [savingCampaigns, setSavingCampaigns] = useState(false);
+  const [addingAccount, setAddingAccount] = useState(false);
+  const [newToken, setNewToken] = useState("");
+  const [newAccountId, setNewAccountId] = useState("");
+  const [newLabel, setNewLabel] = useState("");
 
-  const handleSave = async () => {
+  const handleAddAccount = async () => {
+    if (!newAccountId || !newToken) {
+      toast({ title: "Preencha o Access Token e o Ad Account ID", variant: "destructive" });
+      return;
+    }
     try {
       await saveCreds.mutateAsync({
         project_id: projectId,
-        access_token: token || creds?.access_token || "",
-        ad_account_id: accountId || creds?.ad_account_id || "",
+        access_token: newToken,
+        ad_account_id: newAccountId,
+        label: newLabel,
       });
-      toast({ title: "Credenciais salvas!" });
+      setNewToken(""); setNewAccountId(""); setNewLabel("");
+      setAddingAccount(false);
+      toast({ title: "Conta adicionada!" });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
   };
 
-  // Fetch campaigns from DB
+  const handleDeleteAccount = async (id: string) => {
+    try {
+      await deleteCreds.mutateAsync({ id, projectId });
+      toast({ title: "Conta removida!" });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Meta Ads</CardTitle>
+              <CardDescription>Gerencie as contas de anúncios vinculadas ao projeto</CardDescription>
+            </div>
+            <Button size="sm" onClick={() => setAddingAccount(true)}>
+              <Plus className="mr-1.5 h-4 w-4" /> Adicionar Conta
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {addingAccount && (
+            <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+              <p className="text-sm font-medium">Nova Conta de Anúncios</p>
+              <div className="space-y-2">
+                <Label>Label (opcional)</Label>
+                <Input placeholder="Ex: Conta Principal" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Ad Account ID</Label>
+                <Input placeholder="act_XXXXXXXXXX" value={newAccountId} onChange={(e) => setNewAccountId(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Access Token</Label>
+                <Input type="password" placeholder="Cole seu access token aqui" value={newToken} onChange={(e) => setNewToken(e.target.value)} />
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleAddAccount} disabled={saveCreds.isPending}>
+                  {saveCreds.isPending ? "Salvando..." : "Salvar"}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setAddingAccount(false)}>Cancelar</Button>
+              </div>
+            </div>
+          )}
+
+          {(!credsList || credsList.length === 0) && !addingAccount && (
+            <p className="text-sm text-muted-foreground text-center py-6">
+              Nenhuma conta configurada. Clique em "Adicionar Conta" para começar.
+            </p>
+          )}
+
+          {credsList && credsList.map((cred) => (
+            <MetaAccountCard key={cred.id} cred={cred} projectId={projectId} onDelete={() => handleDeleteAccount(cred.id)} />
+          ))}
+        </CardContent>
+      </Card>
+
+      {credsList && credsList.length > 0 && (
+        <div className="flex gap-2">
+          <SyncButton projectId={projectId} platform="meta" disabled={false} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MetaAccountCard({ cred, projectId, onDelete }: { cred: any; projectId: string; onDelete: () => void }) {
+  const { toast } = useToast();
+  const saveCreds = useSaveMetaCredentials();
+  const [editing, setEditing] = useState(false);
+  const [token, setToken] = useState("");
+  const [accountId, setAccountId] = useState(cred.ad_account_id);
+  const [label, setLabel] = useState(cred.label || "");
+  const [loadingCampaigns, setLoadingCampaigns] = useState(false);
+  const [savingCampaigns, setSavingCampaigns] = useState(false);
+
   const { data: campaigns, refetch: refetchCampaigns } = useQuery({
-    queryKey: ["meta_campaigns", projectId],
+    queryKey: ["meta_campaigns", projectId, cred.id],
     enabled: !!projectId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("meta_campaigns")
         .select("*")
         .eq("project_id", projectId)
+        .eq("credential_id", cred.id)
         .order("campaign_name");
       if (error) throw error;
       return data || [];
     },
   });
+
+  const handleUpdate = async () => {
+    try {
+      await saveCreds.mutateAsync({
+        id: cred.id,
+        project_id: projectId,
+        access_token: token || cred.access_token,
+        ad_account_id: accountId,
+        label,
+      });
+      setEditing(false);
+      toast({ title: "Conta atualizada!" });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  };
 
   const handleLoadCampaigns = async () => {
     setLoadingCampaigns(true);
@@ -203,11 +305,8 @@ function MetaTab({ projectId }: { projectId: string }) {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
       const res = await fetch(`${supabaseUrl}/functions/v1/list-meta-campaigns`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({ project_id: projectId }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ project_id: projectId, credential_id: cred.id }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Failed to load campaigns");
@@ -221,134 +320,113 @@ function MetaTab({ projectId }: { projectId: string }) {
   };
 
   const handleToggleCampaign = async (campaignId: string, selected: boolean) => {
-    const { error } = await supabase
+    await supabase
       .from("meta_campaigns")
       .update({ is_selected: selected })
       .eq("project_id", projectId)
-      .eq("campaign_id", campaignId);
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } else {
-      await refetchCampaigns();
-    }
+      .eq("campaign_id", campaignId)
+      .eq("credential_id", cred.id);
+    await refetchCampaigns();
   };
 
   const handleSelectAll = async (selected: boolean) => {
     setSavingCampaigns(true);
-    const { error } = await supabase
+    await supabase
       .from("meta_campaigns")
       .update({ is_selected: selected })
-      .eq("project_id", projectId);
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } else {
-      await refetchCampaigns();
-    }
+      .eq("project_id", projectId)
+      .eq("credential_id", cred.id);
+    await refetchCampaigns();
     setSavingCampaigns(false);
   };
 
   const selectedCount = (campaigns || []).filter((c: any) => c.is_selected).length;
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Meta Ads</CardTitle>
-              <CardDescription>Configure a integração com Facebook/Instagram Ads</CardDescription>
-            </div>
-            <Badge variant={creds ? "default" : "outline"}>{creds ? "Conectado" : "Desconectado"}</Badge>
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base">{label || cred.ad_account_id}</CardTitle>
+            <Badge variant="default" className="text-xs">Conectado</Badge>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Access Token</Label>
-            <Input
-              type="password"
-              placeholder={creds ? "••••••••" : "Cole seu access token aqui"}
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Ad Account ID</Label>
-            <Input
-              placeholder={creds?.ad_account_id || "act_XXXXXXXXXX"}
-              value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={handleSave} disabled={saveCreds.isPending}>
-              {saveCreds.isPending ? "Salvando..." : "Salvar Credenciais"}
+          <div className="flex gap-1">
+            <Button variant="ghost" size="sm" onClick={() => setEditing(!editing)}>
+              <Save className="h-4 w-4" />
             </Button>
-            <SyncButton projectId={projectId} platform="meta" disabled={!creds} />
+            <Button variant="ghost" size="sm" onClick={onDelete}>
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      {creds && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Campanhas</CardTitle>
-                <CardDescription>
-                  Selecione as campanhas que devem compor as métricas do projeto.
-                  {selectedCount > 0 ? ` ${selectedCount} selecionada(s)` : " Nenhuma selecionada = todas as campanhas"}
-                </CardDescription>
-              </div>
-              <Button variant="outline" size="sm" onClick={handleLoadCampaigns} disabled={loadingCampaigns}>
-                {loadingCampaigns ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                {loadingCampaigns ? "Carregando..." : "Carregar Campanhas"}
-              </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">ID: {cred.ad_account_id}</p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {editing && (
+          <div className="rounded-lg border p-3 space-y-3 bg-muted/30">
+            <div className="space-y-2">
+              <Label>Label</Label>
+              <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Ex: Conta Principal" />
             </div>
-          </CardHeader>
-          <CardContent>
-            {campaigns && campaigns.length > 0 ? (
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => handleSelectAll(true)} disabled={savingCampaigns}>
-                    Selecionar Todas
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleSelectAll(false)} disabled={savingCampaigns}>
-                    Desmarcar Todas
-                  </Button>
-                </div>
-                <div className="max-h-80 overflow-y-auto rounded-lg border divide-y">
-                  {campaigns.map((c: any) => (
-                    <label
-                      key={c.campaign_id}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors"
-                    >
-                      <Checkbox
-                        checked={c.is_selected}
-                        onCheckedChange={(checked) => handleToggleCampaign(c.campaign_id, !!checked)}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{c.campaign_name}</p>
-                        <p className="text-xs text-muted-foreground">ID: {c.campaign_id}</p>
-                      </div>
-                      <Badge variant={c.status === "ACTIVE" ? "default" : "outline"} className="text-xs shrink-0">
-                        {c.status === "ACTIVE" ? "Ativa" : c.status === "PAUSED" ? "Pausada" : c.status || "—"}
-                      </Badge>
-                    </label>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  💡 Após selecionar as campanhas, clique em "Sincronizar Métricas" para atualizar os dados filtrados.
-                </p>
+            <div className="space-y-2">
+              <Label>Ad Account ID</Label>
+              <Input value={accountId} onChange={(e) => setAccountId(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Novo Access Token (deixe vazio para manter)</Label>
+              <Input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="••••••••" />
+            </div>
+            <Button size="sm" onClick={handleUpdate} disabled={saveCreds.isPending}>
+              {saveCreds.isPending ? "Salvando..." : "Atualizar"}
+            </Button>
+          </div>
+        )}
+
+        {/* Campaigns section */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium">
+              Campanhas {selectedCount > 0 ? `(${selectedCount} selecionada${selectedCount > 1 ? "s" : ""})` : ""}
+            </p>
+            <Button variant="outline" size="sm" onClick={handleLoadCampaigns} disabled={loadingCampaigns}>
+              {loadingCampaigns ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-1.5 h-3.5 w-3.5" />}
+              {loadingCampaigns ? "Carregando..." : "Carregar"}
+            </Button>
+          </div>
+
+          {campaigns && campaigns.length > 0 ? (
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => handleSelectAll(true)} disabled={savingCampaigns}>
+                  Selecionar Todas
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => handleSelectAll(false)} disabled={savingCampaigns}>
+                  Desmarcar
+                </Button>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-6">
-                Clique em "Carregar Campanhas" para buscar as campanhas da conta de anúncios.
+              <div className="max-h-60 overflow-y-auto rounded-lg border divide-y">
+                {campaigns.map((c: any) => (
+                  <label key={c.campaign_id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors">
+                    <Checkbox checked={c.is_selected} onCheckedChange={(checked) => handleToggleCampaign(c.campaign_id, !!checked)} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm truncate">{c.campaign_name}</p>
+                    </div>
+                    <Badge variant={c.status === "ACTIVE" ? "default" : "outline"} className="text-xs shrink-0">
+                      {c.status === "ACTIVE" ? "Ativa" : c.status === "PAUSED" ? "Pausada" : c.status || "—"}
+                    </Badge>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Nenhuma selecionada = todas as campanhas serão consideradas.
               </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </div>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Clique em "Carregar" para buscar campanhas desta conta.</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

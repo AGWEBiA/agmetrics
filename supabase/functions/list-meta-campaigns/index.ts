@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { project_id } = await req.json();
+    const { project_id, credential_id } = await req.json();
     if (!project_id) {
       return new Response(JSON.stringify({ error: "project_id is required" }), {
         status: 400,
@@ -59,15 +59,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get Meta credentials
+    // Get specific credential or fail
+    if (!credential_id) {
+      return new Response(JSON.stringify({ error: "credential_id is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: creds } = await supabase
       .from("meta_credentials")
       .select("*")
+      .eq("id", credential_id)
       .eq("project_id", project_id)
       .single();
 
     if (!creds) {
-      return new Response(JSON.stringify({ error: "Meta credentials not configured" }), {
+      return new Response(JSON.stringify({ error: "Meta credentials not found" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -89,17 +97,18 @@ Deno.serve(async (req) => {
     const metaData = await metaRes.json();
     const campaigns = metaData.data || [];
 
-    // Get existing selections from DB
+    // Get existing selections from DB for this credential
     const { data: existingSelections } = await supabase
       .from("meta_campaigns")
       .select("campaign_id, is_selected")
-      .eq("project_id", project_id);
+      .eq("project_id", project_id)
+      .eq("credential_id", credential_id);
 
     const selectionMap = new Map(
       (existingSelections || []).map((s: any) => [s.campaign_id, s.is_selected])
     );
 
-    // Upsert campaigns into meta_campaigns table
+    // Upsert campaigns
     for (const campaign of campaigns) {
       const isSelected = selectionMap.get(campaign.id) ?? false;
       await supabase
@@ -107,6 +116,7 @@ Deno.serve(async (req) => {
         .upsert(
           {
             project_id,
+            credential_id,
             campaign_id: campaign.id,
             campaign_name: campaign.name,
             status: campaign.status,
@@ -116,11 +126,12 @@ Deno.serve(async (req) => {
         );
     }
 
-    // Return campaigns with selection state
+    // Return campaigns
     const { data: allCampaigns } = await supabase
       .from("meta_campaigns")
       .select("*")
       .eq("project_id", project_id)
+      .eq("credential_id", credential_id)
       .order("campaign_name");
 
     return new Response(
