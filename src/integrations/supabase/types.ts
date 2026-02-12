@@ -149,6 +149,47 @@ export type Database = {
           },
         ]
       }
+      meta_campaigns: {
+        Row: {
+          campaign_id: string
+          campaign_name: string
+          created_at: string
+          id: string
+          is_selected: boolean
+          project_id: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          campaign_name: string
+          created_at?: string
+          id?: string
+          is_selected?: boolean
+          project_id: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          campaign_name?: string
+          created_at?: string
+          id?: string
+          is_selected?: boolean
+          project_id?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_campaigns_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meta_credentials: {
         Row: {
           access_token: string

@@ -22,8 +22,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, Check, Upload, RefreshCw, Send, Save } from "lucide-react";
+import { Plus, Trash2, Copy, Check, Upload, RefreshCw, Send, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function ProjectConfig() {
   const { projectId } = useParams();
@@ -160,8 +162,11 @@ function MetaTab({ projectId }: { projectId: string }) {
   const { data: creds } = useMetaCredentials(projectId);
   const saveCreds = useSaveMetaCredentials();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [token, setToken] = useState("");
   const [accountId, setAccountId] = useState("");
+  const [loadingCampaigns, setLoadingCampaigns] = useState(false);
+  const [savingCampaigns, setSavingCampaigns] = useState(false);
 
   const handleSave = async () => {
     try {
@@ -176,43 +181,174 @@ function MetaTab({ projectId }: { projectId: string }) {
     }
   };
 
+  // Fetch campaigns from DB
+  const { data: campaigns, refetch: refetchCampaigns } = useQuery({
+    queryKey: ["meta_campaigns", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("meta_campaigns")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("campaign_name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const handleLoadCampaigns = async () => {
+    setLoadingCampaigns(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+      const res = await fetch(`${supabaseUrl}/functions/v1/list-meta-campaigns`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ project_id: projectId }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed to load campaigns");
+      await refetchCampaigns();
+      toast({ title: "Campanhas carregadas!", description: `${result.campaigns?.length || 0} campanhas encontradas` });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setLoadingCampaigns(false);
+    }
+  };
+
+  const handleToggleCampaign = async (campaignId: string, selected: boolean) => {
+    const { error } = await supabase
+      .from("meta_campaigns")
+      .update({ is_selected: selected })
+      .eq("project_id", projectId)
+      .eq("campaign_id", campaignId);
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } else {
+      await refetchCampaigns();
+    }
+  };
+
+  const handleSelectAll = async (selected: boolean) => {
+    setSavingCampaigns(true);
+    const { error } = await supabase
+      .from("meta_campaigns")
+      .update({ is_selected: selected })
+      .eq("project_id", projectId);
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } else {
+      await refetchCampaigns();
+    }
+    setSavingCampaigns(false);
+  };
+
+  const selectedCount = (campaigns || []).filter((c: any) => c.is_selected).length;
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Meta Ads</CardTitle>
-            <CardDescription>Configure a integração com Facebook/Instagram Ads</CardDescription>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Meta Ads</CardTitle>
+              <CardDescription>Configure a integração com Facebook/Instagram Ads</CardDescription>
+            </div>
+            <Badge variant={creds ? "default" : "outline"}>{creds ? "Conectado" : "Desconectado"}</Badge>
           </div>
-          <Badge variant={creds ? "default" : "outline"}>{creds ? "Conectado" : "Desconectado"}</Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label>Access Token</Label>
-          <Input
-            type="password"
-            placeholder={creds ? "••••••••" : "Cole seu access token aqui"}
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Ad Account ID</Label>
-          <Input
-            placeholder={creds?.ad_account_id || "act_XXXXXXXXXX"}
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={handleSave} disabled={saveCreds.isPending}>
-            {saveCreds.isPending ? "Salvando..." : "Salvar Credenciais"}
-          </Button>
-          <SyncButton projectId={projectId} platform="meta" disabled={!creds} />
-        </div>
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Access Token</Label>
+            <Input
+              type="password"
+              placeholder={creds ? "••••••••" : "Cole seu access token aqui"}
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Ad Account ID</Label>
+            <Input
+              placeholder={creds?.ad_account_id || "act_XXXXXXXXXX"}
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleSave} disabled={saveCreds.isPending}>
+              {saveCreds.isPending ? "Salvando..." : "Salvar Credenciais"}
+            </Button>
+            <SyncButton projectId={projectId} platform="meta" disabled={!creds} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {creds && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Campanhas</CardTitle>
+                <CardDescription>
+                  Selecione as campanhas que devem compor as métricas do projeto.
+                  {selectedCount > 0 ? ` ${selectedCount} selecionada(s)` : " Nenhuma selecionada = todas as campanhas"}
+                </CardDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleLoadCampaigns} disabled={loadingCampaigns}>
+                {loadingCampaigns ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                {loadingCampaigns ? "Carregando..." : "Carregar Campanhas"}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {campaigns && campaigns.length > 0 ? (
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => handleSelectAll(true)} disabled={savingCampaigns}>
+                    Selecionar Todas
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleSelectAll(false)} disabled={savingCampaigns}>
+                    Desmarcar Todas
+                  </Button>
+                </div>
+                <div className="max-h-80 overflow-y-auto rounded-lg border divide-y">
+                  {campaigns.map((c: any) => (
+                    <label
+                      key={c.campaign_id}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors"
+                    >
+                      <Checkbox
+                        checked={c.is_selected}
+                        onCheckedChange={(checked) => handleToggleCampaign(c.campaign_id, !!checked)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{c.campaign_name}</p>
+                        <p className="text-xs text-muted-foreground">ID: {c.campaign_id}</p>
+                      </div>
+                      <Badge variant={c.status === "ACTIVE" ? "default" : "outline"} className="text-xs shrink-0">
+                        {c.status === "ACTIVE" ? "Ativa" : c.status === "PAUSED" ? "Pausada" : c.status || "—"}
+                      </Badge>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  💡 Após selecionar as campanhas, clique em "Sincronizar Métricas" para atualizar os dados filtrados.
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                Clique em "Carregar Campanhas" para buscar as campanhas da conta de anúncios.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
 
