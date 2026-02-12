@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL } from "@/lib/formatters";
+import { AnimatedPage } from "@/components/AnimatedCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +43,6 @@ export default function SalesTable() {
     refetchInterval: 60000,
   });
 
-  // Filter
   const filtered = allSales.filter((s) => {
     if (statusFilter !== "all" && s.status !== statusFilter) return false;
     if (platformFilter !== "all" && s.platform !== platformFilter) return false;
@@ -62,9 +62,9 @@ export default function SalesTable() {
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   return (
-    <div className="space-y-6">
+    <AnimatedPage className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Vendas</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Vendas</h1>
         <p className="text-sm text-muted-foreground">{filtered.length} registros</p>
       </div>
 
@@ -72,34 +72,36 @@ export default function SalesTable() {
         <CardHeader className="pb-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-lg">Todas as Vendas</CardTitle>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar nome, email, produto..."
+                  placeholder="Buscar..."
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-                  className="pl-8 w-[220px]"
+                  className="pl-8 w-full sm:w-[220px]"
                 />
               </div>
-              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
-                <SelectTrigger className="w-[130px]"><SelectValue placeholder="Status" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="approved">Aprovadas</SelectItem>
-                  <SelectItem value="pending">Pendentes</SelectItem>
-                  <SelectItem value="cancelled">Canceladas</SelectItem>
-                  <SelectItem value="refunded">Reembolsadas</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={platformFilter} onValueChange={(v) => { setPlatformFilter(v); setPage(0); }}>
-                <SelectTrigger className="w-[120px]"><SelectValue placeholder="Plataforma" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="kiwify">Kiwify</SelectItem>
-                  <SelectItem value="hotmart">Hotmart</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
+                  <SelectTrigger className="w-full sm:w-[130px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="approved">Aprovadas</SelectItem>
+                    <SelectItem value="pending">Pendentes</SelectItem>
+                    <SelectItem value="cancelled">Canceladas</SelectItem>
+                    <SelectItem value="refunded">Reembolsadas</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={platformFilter} onValueChange={(v) => { setPlatformFilter(v); setPage(0); }}>
+                  <SelectTrigger className="w-full sm:w-[120px]"><SelectValue placeholder="Plataforma" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="kiwify">Kiwify</SelectItem>
+                    <SelectItem value="hotmart">Hotmart</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -110,7 +112,8 @@ export default function SalesTable() {
             <p className="py-8 text-center text-muted-foreground">Nenhuma venda encontrada</p>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -153,9 +156,33 @@ export default function SalesTable() {
                 </Table>
               </div>
 
+              {/* Mobile cards */}
+              <div className="sm:hidden space-y-3">
+                {paginated.map((s) => {
+                  const st = STATUS_MAP[s.status] || STATUS_MAP.pending;
+                  return (
+                    <div key={s.id} className="rounded-lg border p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-sm">{s.buyer_name || "—"}</p>
+                        <Badge variant={st.variant} className="text-[10px]">{st.label}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{s.buyer_email || ""}</p>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{s.product_name || "—"}</span>
+                        <span className="font-bold">{formatBRL(Number(s.amount || 0))}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{s.sale_date ? new Date(s.sale_date).toLocaleDateString("pt-BR") : "—"}</span>
+                        <Badge variant="outline" className="capitalize text-[10px]">{s.platform}</Badge>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
               {totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     Página {page + 1} de {totalPages}
                   </p>
                   <div className="flex gap-1">
@@ -172,6 +199,6 @@ export default function SalesTable() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </AnimatedPage>
   );
 }
