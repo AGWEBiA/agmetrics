@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, BarChart3, Calendar, Trash2, ExternalLink, Settings, Pencil } from "lucide-react";
+import { Plus, BarChart3, Calendar, Trash2, ExternalLink, Settings, Pencil, GitCompare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProjectStrategyForm, strategyLabel, type ProjectFormData } from "@/components/ProjectStrategyForm";
@@ -147,13 +147,18 @@ export default function ProjectsHub() {
           <h1 className="text-3xl font-bold tracking-tight">Projetos</h1>
           <p className="text-muted-foreground">Gerencie seus lançamentos digitais</p>
         </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Projeto
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate("/admin/compare")}>
+            <GitCompare className="mr-2 h-4 w-4" />
+            Comparar
+          </Button>
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Projeto
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Criar Projeto</DialogTitle>
@@ -168,6 +173,7 @@ export default function ProjectsHub() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Edit Dialog */}
