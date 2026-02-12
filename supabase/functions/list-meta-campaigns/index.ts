@@ -81,8 +81,11 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Ensure ad_account_id has act_ prefix
+    const adAccountId = creds.ad_account_id.startsWith("act_") ? creds.ad_account_id : `act_${creds.ad_account_id}`;
+
     // Fetch campaigns from Meta API
-    const url = `https://graph.facebook.com/v21.0/${creds.ad_account_id}/campaigns?fields=id,name,status,objective&limit=500&access_token=${creds.access_token}`;
+    const url = `https://graph.facebook.com/v21.0/${adAccountId}/campaigns?fields=id,name,status,objective&limit=500&access_token=${creds.access_token}`;
 
     const metaRes = await fetch(url);
     if (!metaRes.ok) {
