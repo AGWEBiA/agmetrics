@@ -206,7 +206,8 @@ function GoogleTab({ projectId }: { projectId: string }) {
 // ============ WEBHOOK TAB (Kiwify / Hotmart) ============
 function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiwify" | "hotmart" }) {
   const [copied, setCopied] = useState(false);
-  const webhookUrl = `${window.location.origin}/api/webhooks/${platform}/${projectId}`;
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+  const webhookUrl = `${supabaseUrl}/functions/v1/webhook-${platform}/${projectId}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(webhookUrl);

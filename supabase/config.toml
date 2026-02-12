@@ -1,1 +1,7 @@
 project_id = "iwrrijemxtudyakmhajk"
+
+[functions.webhook-kiwify]
+verify_jwt = false
+
+[functions.webhook-hotmart]
+verify_jwt = false
