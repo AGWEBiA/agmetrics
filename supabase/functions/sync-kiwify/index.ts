@@ -147,8 +147,11 @@ Deno.serve(async (req) => {
 
         const orderId = tx.reference || tx.id || "";
         const orderStatus = tx.status || "";
-        const orderAmount = parseFloat(tx.charge_amount || tx.order_amount || "0") / 100;
-        const netValue = parseFloat(tx.net_amount || tx.charge_amount || "0") / 100;
+        const rawCharge = parseFloat(tx.charge_amount || tx.order_amount || "0") / 100;
+        const rawNet = parseFloat(tx.net_amount || "0") / 100;
+        // Kiwify OAuth API may not return charge_amount; fallback to net_amount
+        const netValue = rawNet || rawCharge;
+        const orderAmount = rawCharge > 0 ? rawCharge : netValue;
         const buyerEmail = tx.customer?.email || "";
         const buyerName = tx.customer?.name || "";
         const createdAt = tx.created_at || new Date().toISOString();
