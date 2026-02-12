@@ -34,7 +34,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 const COLORS = ["hsl(220, 90%, 56%)", "hsl(265, 80%, 60%)", "hsl(152, 60%, 42%)", "hsl(38, 92%, 50%)"];
 
-const DEFAULT_OVERVIEW_ORDER = ["financial", "roi", "sales_overview", "funnel", "meta_ads", "google_ads", "whatsapp", "products", "platform_pie"];
+const DEFAULT_OVERVIEW_ORDER = ["financial", "roi", "sales_overview", "funnel", "meta_ads", "google_ads", "payment_methods", "whatsapp", "products", "platform_pie"];
 
 function SortableCard({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -300,6 +300,80 @@ export default function AdminDashboard() {
                 <Tooltip formatter={(v: number) => formatBRL(v)} />
               </PieChart>
             </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </AnimatedCard>
+    ) : null,
+    payment_methods: m.paymentPieData.length > 0 ? (
+      <AnimatedCard index={4}>
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">💲</span>
+              <CardTitle className="text-lg">Métricas de Pagamento</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm font-medium mb-1">Distribuição por Tipo de Pagamento</p>
+                <p className="text-xs text-muted-foreground mb-3">Proporção de vendas por método</p>
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={m.paymentPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
+                        <Cell fill={COLORS[0]} />
+                        <Cell fill="hsl(152, 60%, 42%)" />
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium mb-1">Parcelamento por Método</p>
+                <p className="text-xs text-muted-foreground mb-3">Comparação entre à vista e parcelado</p>
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={m.installmentBarData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                      <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                      <Bar dataKey="avista" name="À vista" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="parcelado" name="Parcelado" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Cartão de Crédito</p>
+                <p className="text-xl font-bold mt-1">{m.paymentBreakdown.card.count}</p>
+                <p className="text-xs text-muted-foreground">{formatBRL(m.paymentBreakdown.card.revenue)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">PIX</p>
+                <p className="text-xl font-bold mt-1">{m.paymentBreakdown.pix.count}</p>
+                <p className="text-xs text-muted-foreground">{formatBRL(m.paymentBreakdown.pix.revenue)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">PIX - À Vista</p>
+                <p className="text-xl font-bold mt-1">{formatPercent(m.paymentBreakdown.pix.count > 0 ? 100 : 0)}</p>
+                <p className="text-xs text-muted-foreground">{m.paymentBreakdown.pix.count} vendas</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Cartão - À Vista</p>
+                <p className="text-xl font-bold mt-1">{formatPercent(m.cardCashPct)}</p>
+                <p className="text-xs text-muted-foreground">{m.paymentBreakdown.cardCash.count} vendas</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Cartão - Parcelado</p>
+                <p className="text-xl font-bold mt-1">{formatPercent(m.cardInstallmentPct)}</p>
+                <p className="text-xs text-muted-foreground">{m.paymentBreakdown.cardInstallment.count} vendas</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </AnimatedCard>

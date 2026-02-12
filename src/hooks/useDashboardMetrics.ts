@@ -201,6 +201,42 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     { name: "Hotmart", value: hotmartSales.reduce((s, e) => s + Number(e.amount), 0) },
   ].filter((d) => d.value > 0);
 
+  // Payment method metrics from payload
+  const paymentBreakdown = { pix: { count: 0, revenue: 0 }, card: { count: 0, revenue: 0 }, cardCash: { count: 0, revenue: 0 }, cardInstallment: { count: 0, revenue: 0 } };
+  approvedSales.forEach((s) => {
+    const payload = (s as any).payload || {};
+    const method = (payload.pagamento || payload.payment_method || "").toLowerCase();
+    const installments = parseInt(payload.parcelas || payload.installments || "1", 10);
+    const amount = Number(s.gross_amount || 0);
+    if (method === "pix") {
+      paymentBreakdown.pix.count++;
+      paymentBreakdown.pix.revenue += amount;
+    } else if (method) {
+      paymentBreakdown.card.count++;
+      paymentBreakdown.card.revenue += amount;
+      if (installments <= 1) {
+        paymentBreakdown.cardCash.count++;
+        paymentBreakdown.cardCash.revenue += amount;
+      } else {
+        paymentBreakdown.cardInstallment.count++;
+        paymentBreakdown.cardInstallment.revenue += amount;
+      }
+    }
+  });
+  const paymentPieData = [
+    { name: "Cartão de Crédito", value: paymentBreakdown.card.count },
+    { name: "PIX", value: paymentBreakdown.pix.count },
+  ].filter((d) => d.value > 0);
+  const installmentBarData = [
+    { name: "Cartão de Crédito", avista: paymentBreakdown.cardCash.count, parcelado: paymentBreakdown.cardInstallment.count },
+    { name: "PIX", avista: paymentBreakdown.pix.count, parcelado: 0 },
+  ];
+  const totalPaymentSales = paymentBreakdown.pix.count + paymentBreakdown.card.count;
+  const pixPct = totalPaymentSales > 0 ? (paymentBreakdown.pix.count / totalPaymentSales) * 100 : 0;
+  const cardPct = totalPaymentSales > 0 ? (paymentBreakdown.card.count / totalPaymentSales) * 100 : 0;
+  const cardCashPct = paymentBreakdown.card.count > 0 ? (paymentBreakdown.cardCash.count / paymentBreakdown.card.count) * 100 : 0;
+  const cardInstallmentPct = paymentBreakdown.card.count > 0 ? (paymentBreakdown.cardInstallment.count / paymentBreakdown.card.count) * 100 : 0;
+
   // Previous period metrics for comparison
   const prevApproved = prevSales.filter((s) => s.status === "approved");
   const prevRevenue = prevApproved.reduce((s, e) => s + Number(e.amount), 0);
@@ -254,6 +290,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     gConversionRate: gClicks > 0 ? (gConversions / gClicks) * 100 : 0,
     gCostPerConversion: gConversions > 0 ? googleInvestment / gConversions : 0,
     salesChartData, productData, platformChartData, metaMetrics, googleMetrics,
+    paymentBreakdown, paymentPieData, installmentBarData, pixPct, cardPct, cardCashPct, cardInstallmentPct,
     ...changes,
   };
 }
