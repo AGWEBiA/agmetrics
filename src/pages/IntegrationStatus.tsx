@@ -24,7 +24,7 @@ export default function IntegrationStatus() {
   const { data: googleCreds } = useGoogleCredentials(projectId);
   const metaConnected = (metaCreds || []).length > 0;
   const googleConnected = !!googleCreds;
-  const kiwifyConnected = !!project?.kiwify_webhook_token;
+  const kiwifyConnected = !!project?.kiwify_webhook_token || !!((project as any)?.kiwify_client_id && (project as any)?.kiwify_client_secret && (project as any)?.kiwify_account_id);
   const hotmartConnected = !!project?.hotmart_webhook_token;
   const whatsappConnected = !!(project as any)?.evolution_api_url && !!(project as any)?.evolution_api_key && !!(project as any)?.evolution_instance_name;
 

@@ -46,14 +46,27 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get OAuth credentials from secrets
-    const clientId = Deno.env.get("KIWIFY_CLIENT_ID");
-    const clientSecret = Deno.env.get("KIWIFY_CLIENT_SECRET");
-    const accountId = Deno.env.get("KIWIFY_ACCOUNT_ID");
+    // Get OAuth credentials from project row
+    const { data: projectData, error: projectError } = await supabase
+      .from("projects")
+      .select("kiwify_client_id, kiwify_client_secret, kiwify_account_id")
+      .eq("id", project_id)
+      .single();
+
+    if (projectError || !projectData) {
+      return new Response(
+        JSON.stringify({ error: "Project not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const clientId = projectData.kiwify_client_id;
+    const clientSecret = projectData.kiwify_client_secret;
+    const accountId = projectData.kiwify_account_id;
 
     if (!clientId || !clientSecret || !accountId) {
       return new Response(
-        JSON.stringify({ error: "KIWIFY_CLIENT_ID, KIWIFY_CLIENT_SECRET and KIWIFY_ACCOUNT_ID must be configured." }),
+        JSON.stringify({ error: "Credenciais Kiwify (Client ID, Client Secret e Account ID) não configuradas neste projeto." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -119,13 +132,6 @@ Deno.serve(async (req) => {
       if (transactions.length === 0) {
         hasMore = false;
         break;
-      }
-
-      // Log unique product names for debugging
-      if (page === 1) {
-        const uniqueProducts = [...new Set(transactions.map((t: any) => t.product?.name || "unknown"))];
-        console.log("Products found in API:", JSON.stringify(uniqueProducts));
-        console.log("Registered products:", JSON.stringify(registeredProducts.map((p: any) => p.name)));
       }
 
       for (const tx of transactions) {

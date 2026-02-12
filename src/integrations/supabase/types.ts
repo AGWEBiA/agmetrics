@@ -465,6 +465,9 @@ export type Database = {
           hotmart_webhook_token: string | null
           id: string
           is_active: boolean
+          kiwify_account_id: string | null
+          kiwify_client_id: string | null
+          kiwify_client_secret: string | null
           kiwify_webhook_token: string | null
           manual_investment: number | null
           meta_leads_enabled: boolean
@@ -488,6 +491,9 @@ export type Database = {
           hotmart_webhook_token?: string | null
           id?: string
           is_active?: boolean
+          kiwify_account_id?: string | null
+          kiwify_client_id?: string | null
+          kiwify_client_secret?: string | null
           kiwify_webhook_token?: string | null
           manual_investment?: number | null
           meta_leads_enabled?: boolean
@@ -511,6 +517,9 @@ export type Database = {
           hotmart_webhook_token?: string | null
           id?: string
           is_active?: boolean
+          kiwify_account_id?: string | null
+          kiwify_client_id?: string | null
+          kiwify_client_secret?: string | null
           kiwify_webhook_token?: string | null
           manual_investment?: number | null
           meta_leads_enabled?: boolean
