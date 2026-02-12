@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.webhook-hotmart]
 verify_jwt = false
+
+[functions.import-csv]
+verify_jwt = false
+
+[functions.sync-meta]
+verify_jwt = false
+
+[functions.sync-google]
+verify_jwt = false
