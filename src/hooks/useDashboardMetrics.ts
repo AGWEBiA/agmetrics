@@ -202,15 +202,18 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   ].filter((d) => d.value > 0);
 
   // Payment method metrics from payload
-  const paymentBreakdown = { pix: { count: 0, revenue: 0 }, card: { count: 0, revenue: 0 }, cardCash: { count: 0, revenue: 0 }, cardInstallment: { count: 0, revenue: 0 } };
+  const paymentBreakdown = { pix: { count: 0, revenue: 0 }, card: { count: 0, revenue: 0 }, cardCash: { count: 0, revenue: 0 }, cardInstallment: { count: 0, revenue: 0 }, boleto: { count: 0, revenue: 0 } };
   approvedSales.forEach((s) => {
     const payload = (s as any).payload || {};
-    const method = (payload.pagamento || payload.payment_method || "").toLowerCase();
-    const installments = parseInt(payload.parcelas || payload.installments || "1", 10);
+    const method = (payload.pagamento || payload.payment_method || payload.data?.purchase?.payment?.type || payload.purchase?.payment?.type || payload.payment?.type || "").toLowerCase();
+    const installments = parseInt(payload.parcelas || payload.installments || payload.data?.purchase?.payment?.installments_number || "1", 10);
     const amount = Number(s.gross_amount || 0);
     if (method === "pix") {
       paymentBreakdown.pix.count++;
       paymentBreakdown.pix.revenue += amount;
+    } else if (["boleto", "billet", "bank_slip", "boleto_bancario"].includes(method)) {
+      paymentBreakdown.boleto.count++;
+      paymentBreakdown.boleto.revenue += amount;
     } else if (method) {
       paymentBreakdown.card.count++;
       paymentBreakdown.card.revenue += amount;
@@ -224,12 +227,26 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     }
   });
 
-  // Boleto metrics: count boletos across ALL sales, cross-referenced by platform
-  const boletoSales = sales.filter((s) => {
+  // Boleto metrics: detect boletos from Kiwify and Hotmart payload structures
+  const getPaymentMethod = (s: SalesEvent): string => {
     const payload = (s as any).payload || {};
-    const method = (payload.pagamento || payload.payment_method || payload.payment?.type || "").toLowerCase();
-    return method === "boleto" || method === "billet" || method === "bank_slip";
-  });
+    // Kiwify: payload.pagamento or payload.payment_method
+    // Hotmart: payload.data.purchase.payment.type
+    const method = (
+      payload.pagamento ||
+      payload.payment_method ||
+      payload.data?.purchase?.payment?.type ||
+      payload.purchase?.payment?.type ||
+      payload.payment?.type ||
+      ""
+    ).toLowerCase();
+    return method;
+  };
+
+  const isBoleto = (method: string): boolean =>
+    ["boleto", "billet", "bank_slip", "boleto_bancario"].includes(method);
+
+  const boletoSales = sales.filter((s) => isBoleto(getPaymentMethod(s)));
   const boletoTotal = boletoSales.length;
   const boletoPaid = boletoSales.filter((s) => s.status === "approved").length;
   const boletoPending = boletoSales.filter((s) => s.status === "pending").length;
@@ -250,12 +267,14 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const paymentPieData = [
     { name: "Cartão de Crédito", value: paymentBreakdown.card.count },
     { name: "PIX", value: paymentBreakdown.pix.count },
+    { name: "Boleto", value: paymentBreakdown.boleto.count },
   ].filter((d) => d.value > 0);
   const installmentBarData = [
     { name: "Cartão de Crédito", avista: paymentBreakdown.cardCash.count, parcelado: paymentBreakdown.cardInstallment.count },
     { name: "PIX", avista: paymentBreakdown.pix.count, parcelado: 0 },
+    { name: "Boleto", avista: paymentBreakdown.boleto.count, parcelado: 0 },
   ];
-  const totalPaymentSales = paymentBreakdown.pix.count + paymentBreakdown.card.count;
+  const totalPaymentSales = paymentBreakdown.pix.count + paymentBreakdown.card.count + paymentBreakdown.boleto.count;
   const pixPct = totalPaymentSales > 0 ? (paymentBreakdown.pix.count / totalPaymentSales) * 100 : 0;
   const cardPct = totalPaymentSales > 0 ? (paymentBreakdown.card.count / totalPaymentSales) * 100 : 0;
   const cardCashPct = paymentBreakdown.card.count > 0 ? (paymentBreakdown.cardCash.count / paymentBreakdown.card.count) * 100 : 0;
