@@ -552,12 +552,7 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
   const [importing, setImporting] = useState(false);
   const [testing, setTesting] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [webhookToken, setWebhookToken] = useState("");
-  // Kiwify OAuth fields
-  const [kiwifyClientId, setKiwifyClientId] = useState("");
-  const [kiwifyClientSecret, setKiwifyClientSecret] = useState("");
-  const [kiwifyAccountId, setKiwifyAccountId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
@@ -568,13 +563,8 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
   useEffect(() => {
     if (project) {
       setWebhookToken((project as any)[tokenField] || "");
-      if (platform === "kiwify") {
-        setKiwifyClientId((project as any).kiwify_client_id || "");
-        setKiwifyClientSecret((project as any).kiwify_client_secret || "");
-        setKiwifyAccountId((project as any).kiwify_account_id || "");
-      }
     }
-  }, [project, tokenField, platform]);
+  }, [project, tokenField]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(webhookUrl);
@@ -594,40 +584,7 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
     }
   };
 
-  const handleSaveKiwifyCredentials = async () => {
-    try {
-      await updateProject.mutateAsync({
-        id: projectId,
-        kiwify_client_id: kiwifyClientId || null,
-        kiwify_client_secret: kiwifyClientSecret || null,
-        kiwify_account_id: kiwifyAccountId || null,
-      } as any);
-      toast({ title: "Credenciais Kiwify salvas!" });
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
-    }
-  };
 
-  const handleSyncKiwify = async () => {
-    setSyncing(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke("sync-kiwify", {
-        body: { project_id: projectId },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
-      if (res.error) throw res.error;
-      const result = res.data as any;
-      toast({
-        title: "Sincronização concluída",
-        description: `${result.imported} importadas, ${result.skipped} ignoradas`,
-      });
-    } catch (err: any) {
-      toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
-    } finally {
-      setSyncing(false);
-    }
-  };
   const handleTestWebhook = async () => {
     setTesting(true);
     try {
@@ -767,40 +724,6 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
           </p>
         </div>
 
-        {platform === "kiwify" && (
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-4">
-            <div>
-              <h4 className="font-semibold">Credenciais da API Kiwify (OAuth)</h4>
-              <p className="text-xs text-muted-foreground mt-1">
-                Configure para sincronizar vendas automaticamente via API. Obtenha em: Kiwify → Configurações → API.
-              </p>
-            </div>
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Client ID</Label>
-                <Input placeholder="Client ID" value={kiwifyClientId} onChange={(e) => setKiwifyClientId(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Client Secret</Label>
-                <Input type="password" placeholder="Client Secret" value={kiwifyClientSecret} onChange={(e) => setKiwifyClientSecret(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Account ID</Label>
-                <Input placeholder="Account ID" value={kiwifyAccountId} onChange={(e) => setKiwifyAccountId(e.target.value)} />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" onClick={handleSaveKiwifyCredentials} disabled={updateProject.isPending}>
-                <Save className="mr-1 h-4 w-4" />
-                {updateProject.isPending ? "Salvando..." : "Salvar Credenciais"}
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleSyncKiwify} disabled={syncing || !kiwifyClientId || !kiwifyClientSecret || !kiwifyAccountId}>
-                <RefreshCw className={`mr-1 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-                {syncing ? "Sincronizando..." : "Sincronizar Vendas"}
-              </Button>
-            </div>
-          </div>
-        )}
 
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={handleTestWebhook} disabled={testing}>
