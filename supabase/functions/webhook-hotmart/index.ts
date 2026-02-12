@@ -25,6 +25,36 @@ Deno.serve(async (req) => {
 
     const payload = await req.json();
 
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Check if project exists and get webhook token
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("id, hotmart_webhook_token")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      return new Response(
+        JSON.stringify({ error: "Project not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate webhook token if configured
+    if (project.hotmart_webhook_token) {
+      const hottok = req.headers.get("x-hotmart-hottok") || url.searchParams.get("hottok") || payload?.hottok;
+      if (hottok !== project.hotmart_webhook_token) {
+        return new Response(
+          JSON.stringify({ error: "Invalid webhook token" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Extract data from Hotmart webhook payload
     const event = payload.event || "";
     const purchase = payload.data?.purchase || {};
@@ -68,25 +98,6 @@ Deno.serve(async (req) => {
     }
 
     const platformFee = Math.max(0, grossValue - netValue);
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    // Check if project exists
-    const { data: project, error: projectError } = await supabase
-      .from("projects")
-      .select("id")
-      .eq("id", projectId)
-      .single();
-
-    if (projectError || !project) {
-      return new Response(
-        JSON.stringify({ error: "Project not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
     // Try to match product type
     let productType: string | null = null;

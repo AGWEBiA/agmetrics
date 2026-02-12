@@ -405,8 +405,10 @@ export type Database = {
           description: string | null
           end_date: string | null
           google_leads_enabled: boolean
+          hotmart_webhook_token: string | null
           id: string
           is_active: boolean
+          kiwify_webhook_token: string | null
           manual_investment: number | null
           meta_leads_enabled: boolean
           name: string
@@ -423,8 +425,10 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           google_leads_enabled?: boolean
+          hotmart_webhook_token?: string | null
           id?: string
           is_active?: boolean
+          kiwify_webhook_token?: string | null
           manual_investment?: number | null
           meta_leads_enabled?: boolean
           name: string
@@ -441,8 +445,10 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           google_leads_enabled?: boolean
+          hotmart_webhook_token?: string | null
           id?: string
           is_active?: boolean
+          kiwify_webhook_token?: string | null
           manual_investment?: number | null
           meta_leads_enabled?: boolean
           name?: string
