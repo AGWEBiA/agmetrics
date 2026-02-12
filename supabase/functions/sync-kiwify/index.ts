@@ -121,8 +121,15 @@ Deno.serve(async (req) => {
         break;
       }
 
+      // Log unique product names for debugging
+      if (page === 1) {
+        const uniqueProducts = [...new Set(transactions.map((t: any) => t.product?.name || "unknown"))];
+        console.log("Products found in API:", JSON.stringify(uniqueProducts));
+        console.log("Registered products:", JSON.stringify(registeredProducts.map((p: any) => p.name)));
+      }
+
       for (const tx of transactions) {
-        const productName = tx.product?.name || tx.Product?.product_name || "";
+        const productName = tx.product?.name || tx.Product?.product_name || tx.product_name || tx.offer?.name || "";
         const matchedProduct = registeredProducts.find(
           (p: any) => p.name.toLowerCase() === productName.toLowerCase()
         );
