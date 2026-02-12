@@ -299,10 +299,10 @@ export default function AdminDashboard() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">📄 Boletos</CardTitle>
-              <p className="text-xs text-muted-foreground">Acompanhamento de boletos gerados e taxa de conversão</p>
+              <p className="text-xs text-muted-foreground">Acompanhamento de boletos gerados e taxa de conversão por plataforma</p>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                 <div className="rounded-lg border p-3">
                   <p className="text-xs text-muted-foreground">Boletos Gerados</p>
                   <p className="text-xl font-bold mt-1">{formatNumber(m.boletoTotal)}</p>
@@ -319,7 +319,40 @@ export default function AdminDashboard() {
                   <p className="text-xs text-muted-foreground">Taxa de Conversão</p>
                   <p className="text-xl font-bold mt-1">{formatPercent(m.boletoConversionRate)}</p>
                 </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Receita Boletos</p>
+                  <p className="text-xl font-bold mt-1">{formatBRL(m.boletoRevenue)}</p>
+                </div>
               </div>
+              {(m.boletoByPlatform.kiwify.total > 0 || m.boletoByPlatform.hotmart.total > 0) && (
+                <div>
+                  <p className="text-sm font-medium mb-2">Por Plataforma</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {m.boletoByPlatform.kiwify.total > 0 && (
+                      <div className="rounded-lg border p-3">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Kiwify</p>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div><span className="text-muted-foreground">Gerados:</span> <span className="font-semibold">{m.boletoByPlatform.kiwify.total}</span></div>
+                          <div><span className="text-muted-foreground">Pagos:</span> <span className="font-semibold text-success">{m.boletoByPlatform.kiwify.paid}</span></div>
+                          <div><span className="text-muted-foreground">Abertos:</span> <span className="font-semibold text-warning">{m.boletoByPlatform.kiwify.pending}</span></div>
+                          <div><span className="text-muted-foreground">Conversão:</span> <span className="font-semibold">{formatPercent(m.boletoByPlatform.kiwify.total > 0 ? (m.boletoByPlatform.kiwify.paid / m.boletoByPlatform.kiwify.total) * 100 : 0)}</span></div>
+                        </div>
+                      </div>
+                    )}
+                    {m.boletoByPlatform.hotmart.total > 0 && (
+                      <div className="rounded-lg border p-3">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Hotmart</p>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div><span className="text-muted-foreground">Gerados:</span> <span className="font-semibold">{m.boletoByPlatform.hotmart.total}</span></div>
+                          <div><span className="text-muted-foreground">Pagos:</span> <span className="font-semibold text-success">{m.boletoByPlatform.hotmart.paid}</span></div>
+                          <div><span className="text-muted-foreground">Abertos:</span> <span className="font-semibold text-warning">{m.boletoByPlatform.hotmart.pending}</span></div>
+                          <div><span className="text-muted-foreground">Conversão:</span> <span className="font-semibold">{formatPercent(m.boletoByPlatform.hotmart.total > 0 ? (m.boletoByPlatform.hotmart.paid / m.boletoByPlatform.hotmart.total) * 100 : 0)}</span></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </AnimatedCard>
