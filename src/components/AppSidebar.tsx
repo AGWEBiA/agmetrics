@@ -6,6 +6,7 @@ import {
   LogOut,
   BarChart3,
   ShoppingCart,
+  Plug,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
@@ -54,6 +55,11 @@ export function AppSidebar() {
           title: "Configurações",
           url: `/admin/projects/${projectId}/config`,
           icon: Settings,
+        },
+        {
+          title: "Integrações",
+          url: `/admin/projects/${projectId}/integrations`,
+          icon: Plug,
         },
       ]
     : [];
