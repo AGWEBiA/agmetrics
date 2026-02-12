@@ -10,19 +10,19 @@ export function useOnboardingStatus(projectId: string | undefined) {
 
       // Check webhooks (sales_events exist)
       const { count: salesCount } = await supabase
-        .from("sales_events" as any)
+        .from("sales_events")
         .select("id", { count: "exact", head: true })
         .eq("project_id", projectId!);
       if (salesCount && salesCount > 0) completed.add("webhook");
 
       // Check ads (meta or google credentials)
       const { data: metaCreds } = await supabase
-        .from("meta_credentials" as any)
+        .from("meta_credentials")
         .select("id")
         .eq("project_id", projectId!)
         .maybeSingle();
       const { data: googleCreds } = await supabase
-        .from("google_credentials" as any)
+        .from("google_credentials")
         .select("id")
         .eq("project_id", projectId!)
         .maybeSingle();
@@ -30,14 +30,14 @@ export function useOnboardingStatus(projectId: string | undefined) {
 
       // Check products
       const { count: productCount } = await supabase
-        .from("products" as any)
+        .from("products")
         .select("id", { count: "exact", head: true })
         .eq("project_id", projectId!);
       if (productCount && productCount > 0) completed.add("products");
 
       // Check goals
       const { count: goalCount } = await supabase
-        .from("project_goals" as any)
+        .from("project_goals")
         .select("id", { count: "exact", head: true })
         .eq("project_id", projectId!);
       if (goalCount && goalCount > 0) completed.add("goals");

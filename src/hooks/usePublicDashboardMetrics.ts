@@ -6,8 +6,9 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
     queryKey: ["public_sales", projectId],
     enabled: !!projectId,
     queryFn: async () => {
+      // Use only non-PII fields — buyer_email/buyer_name are excluded
       const { data, error } = await supabase
-        .from("sales_events" as any)
+        .from("sales_events")
         .select("amount, gross_amount, platform_fee, product_name, product_type, platform, sale_date, created_at")
         .eq("project_id", projectId!)
         .eq("status", "approved");
@@ -22,7 +23,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
     enabled: !!projectId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("meta_metrics" as any)
+        .from("meta_metrics")
         .select("date, investment, impressions, clicks, results, purchases, link_clicks, landing_page_views, checkouts_initiated")
         .eq("project_id", projectId!)
         .order("date", { ascending: true });
@@ -37,7 +38,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
     enabled: !!projectId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("google_metrics" as any)
+        .from("google_metrics")
         .select("date, investment, impressions, clicks, conversions")
         .eq("project_id", projectId!)
         .order("date", { ascending: true });
@@ -52,7 +53,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
     enabled: !!projectId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("project_goals" as any)
+        .from("project_goals")
         .select("type, target_value, period, is_active")
         .eq("project_id", projectId!)
         .eq("is_active", true);
