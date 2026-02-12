@@ -85,15 +85,15 @@ Deno.serve(async (req) => {
         const row: Record<string, string> = {};
         headers.forEach((h: string, idx: number) => { row[h] = (values[idx] || "").trim().replace(/^"|"$/g, ""); });
 
-        // Flexible column mapping
-        const externalId = row["transaction_id"] || row["order_id"] || row["external_id"] || row["id"] || `csv-${i}`;
+        // Flexible column mapping (supports Kiwify PT-BR exports)
+        const externalId = row["transaction_id"] || row["order_id"] || row["external_id"] || row["id da venda"] || row["id"] || `csv-${i}`;
         const productName = row["product_name"] || row["produto"] || row["product"] || "";
-        const grossAmount = parseFloat(row["gross_amount"] || row["valor_bruto"] || row["amount"] || row["valor"] || "0");
-        const netAmount = parseFloat(row["net_amount"] || row["valor_liquido"] || row["net_value"] || String(grossAmount));
+        const grossAmount = parseFloat(row["gross_amount"] || row["total com acréscimo"] || row["total com acrescimo"] || row["valor_bruto"] || row["amount"] || row["valor"] || "0");
+        const netAmount = parseFloat(row["net_amount"] || row["valor líquido"] || row["valor liquido"] || row["valor_liquido"] || row["net_value"] || String(grossAmount));
         const buyerEmail = row["buyer_email"] || row["email"] || "";
-        const buyerName = row["buyer_name"] || row["nome"] || row["name"] || "";
+        const buyerName = row["buyer_name"] || row["cliente"] || row["nome"] || row["name"] || "";
         const status = mapStatus(row["status"] || "approved");
-        const saleDate = row["sale_date"] || row["data"] || row["date"] || row["created_at"] || new Date().toISOString();
+        const saleDate = row["sale_date"] || row["data de criação"] || row["data de criacao"] || row["data"] || row["date"] || row["created_at"] || new Date().toISOString();
 
         const platformFee = Math.max(0, grossAmount - netAmount);
 
