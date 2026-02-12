@@ -100,6 +100,10 @@ Deno.serve(async (req) => {
         const coproducerCommission = parseFloat(row["comissões dos coprodutores"] || row["comissoes dos coprodutores"] || row["coproducer_commission"] || "0");
         const platformFee = taxes > 0 ? taxes : Math.max(0, grossAmount - netAmount - coproducerCommission);
 
+        // Detect product type from "oferta" or "product_type" column
+        const oferta = (row["oferta"] || row["product_type"] || row["tipo_produto"] || "").toLowerCase();
+        const productType = oferta.includes("order bump") || oferta.includes("order_bump") ? "order_bump" : "main";
+
         const { error: upsertError } = await supabase
           .from("sales_events")
           .upsert(
@@ -108,6 +112,7 @@ Deno.serve(async (req) => {
               platform,
               external_id: externalId,
               product_name: productName,
+              product_type: productType,
               amount: netAmount,
               gross_amount: grossAmount,
               platform_fee: platformFee,
