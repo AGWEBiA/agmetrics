@@ -1,4 +1,5 @@
 import { useParams } from "react-router-dom";
+import { useProject } from "@/hooks/useProjects";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,12 +9,13 @@ import { Badge } from "@/components/ui/badge";
 
 export default function ProjectConfig() {
   const { projectId } = useParams();
+  const { data: project } = useProject(projectId);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
-        <p className="text-muted-foreground">Projeto #{projectId}</p>
+        <p className="text-muted-foreground">{project?.name || "Carregando..."}</p>
       </div>
 
       <Tabs defaultValue="meta">
