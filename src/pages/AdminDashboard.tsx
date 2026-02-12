@@ -180,6 +180,7 @@ export default function AdminDashboard() {
     return { budget, spent, available, usePct, dailyAvg, daysRemaining, exhaustionDate, chartData };
   }, [project, m.totalInvestment, m.metaMetrics, m.googleMetrics]);
 
+  const isPerpertuo = project?.strategy === "perpetuo";
   const overviewSections: Record<string, React.ReactNode> = useMemo(() => ({
     budget_provisioning: budgetData ? (
       <AnimatedCard index={0}>
@@ -358,7 +359,7 @@ export default function AdminDashboard() {
         </AnimatedCard>
       </div>
     ),
-    funnel: (
+    funnel: isPerpertuo ? null : (
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         <AnimatedCard index={0}><MetricCard title="Total de Leads" value={formatNumber(m.totalLeads)} subtitle="Meta + Google" change={m.leadsChange} /></AnimatedCard>
         <AnimatedCard index={1}><MetricCard title="CPL Médio" value={formatBRL(m.avgCpl)} subtitle="Custo por lead" /></AnimatedCard>
@@ -391,8 +392,8 @@ export default function AdminDashboard() {
               <Stat label="Conv. Checkout" value={formatPercent(m.metaCheckoutConversion)} />
               <Stat label="Impressões" value={formatNumber(m.metaImpressions)} />
               <Stat label="CPM" value={formatBRL(m.metaCpm)} />
-              <Stat label="Leads" value={formatNumber(m.metaLeads)} />
-              <Stat label="CPL" value={formatBRL(m.metaCostPerLead)} />
+              {!isPerpertuo && <Stat label="Leads" value={formatNumber(m.metaLeads)} />}
+              {!isPerpertuo && <Stat label="CPL" value={formatBRL(m.metaCostPerLead)} />}
             </div>
           </CardContent>
         </Card>
@@ -413,9 +414,9 @@ export default function AdminDashboard() {
               <Stat label="Cliques" value={formatNumber(m.gClicks)} />
               <Stat label="CTR" value={formatPercent(m.gCtr)} />
               <Stat label="CPC" value={formatBRL(m.gCpc)} />
-              <Stat label="Conversões" value={formatNumber(m.gConversions)} />
-              <Stat label="Taxa de Conv." value={formatPercent(m.gConversionRate)} />
-              <Stat label="Custo/Conv." value={formatBRL(m.gCostPerConversion)} />
+              {!isPerpertuo && <Stat label="Conversões" value={formatNumber(m.gConversions)} />}
+              {!isPerpertuo && <Stat label="Taxa de Conv." value={formatPercent(m.gConversionRate)} />}
+              {!isPerpertuo && <Stat label="Custo/Conv." value={formatBRL(m.gCostPerConversion)} />}
             </div>
           </CardContent>
         </Card>
@@ -632,7 +633,7 @@ export default function AdminDashboard() {
         </Card>
       </AnimatedCard>
     ) : null,
-  }), [m, whatsappGroups, budgetData]);
+  }), [m, whatsappGroups, budgetData, isPerpertuo]);
 
   return (
     <AnimatedPage className="space-y-6">
