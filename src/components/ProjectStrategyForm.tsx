@@ -10,10 +10,11 @@ const strategyOptions: { value: ProjectStrategy; label: string; description: str
   { value: "lancamento", label: "Lançamento", description: "Para lançamentos com período definido e captação de leads. Taxa de conversão = vendas / leads." },
   { value: "lancamento_pago", label: "Lançamento Pago", description: "Lançamento com investimento intensivo em tráfego pago. Taxa de conversão = vendas / leads." },
   { value: "funis", label: "Funis (Webinar/WhatsApp/Chatbot)", description: "Para vendas via funis automatizados ou semi-automatizados. Taxa de conversão = vendas / leads." },
+  { value: "evento_presencial", label: "Evento Presencial", description: "Para vendas em eventos presenciais com funis de captação e conversão. Taxa de conversão = vendas / leads." },
 ];
 
 export const strategyLabel = (s: ProjectStrategy) =>
-  s === "lancamento_pago" ? "Lanç. Pago" : s === "lancamento" ? "Lançamento" : s === "funis" ? "Funis" : "Perpétuo";
+  s === "lancamento_pago" ? "Lanç. Pago" : s === "lancamento" ? "Lançamento" : s === "funis" ? "Funis" : s === "evento_presencial" ? "Evento Presencial" : "Perpétuo";
 
 interface ProjectFormData {
   name: string;

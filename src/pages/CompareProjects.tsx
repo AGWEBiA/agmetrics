@@ -23,6 +23,7 @@ const STRATEGY_LABELS: Record<string, string> = {
   lancamento: "Lançamento",
   lancamento_pago: "Lançamento_pago",
   funis: "Funis",
+  evento_presencial: "Evento Presencial",
 };
 
 export default function CompareProjects() {
