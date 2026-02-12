@@ -95,10 +95,11 @@ Deno.serve(async (req) => {
     let hasMore = true;
 
     while (hasMore) {
-      const url = `https://public-api.kiwify.com/v1/transactions?start_date=${startDate}&end_date=${endDate}&page=${page}&limit=100&account_id=${accountId}`;
+      const url = `https://public-api.kiwify.com/v1/sales?start_date=${startDate}&end_date=${endDate}&page=${page}&limit=100`;
       const res = await fetch(url, {
         headers: {
           "Authorization": `Bearer ${bearerToken}`,
+          "x-kiwify-account-id": accountId,
           "Content-Type": "application/json",
         },
       });
