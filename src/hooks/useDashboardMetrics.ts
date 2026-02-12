@@ -223,6 +223,18 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
       }
     }
   });
+
+  // Boleto metrics: count boletos across ALL sales (not just approved)
+  const allFilteredSales = sales;
+  const boletoSales = allFilteredSales.filter((s) => {
+    const payload = (s as any).payload || {};
+    const method = (payload.pagamento || payload.payment_method || "").toLowerCase();
+    return method === "boleto" || method === "billet";
+  });
+  const boletoTotal = boletoSales.length;
+  const boletoPaid = boletoSales.filter((s) => s.status === "approved").length;
+  const boletoPending = boletoSales.filter((s) => s.status === "pending").length;
+  const boletoConversionRate = boletoTotal > 0 ? (boletoPaid / boletoTotal) * 100 : 0;
   const paymentPieData = [
     { name: "Cartão de Crédito", value: paymentBreakdown.card.count },
     { name: "PIX", value: paymentBreakdown.pix.count },
@@ -306,6 +318,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     gCostPerConversion: gConversions > 0 ? googleInvestment / gConversions : 0,
     salesChartData, productData, platformChartData, metaMetrics, googleMetrics,
     paymentBreakdown, paymentPieData, installmentBarData, pixPct, cardPct, cardCashPct, cardInstallmentPct,
+    boletoTotal, boletoPaid, boletoPending, boletoConversionRate,
     salesByDayOfWeek, salesByHour, bestDay, bestHour,
     ...changes,
   };

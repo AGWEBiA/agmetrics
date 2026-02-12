@@ -286,13 +286,43 @@ export default function AdminDashboard() {
       </div>
     ),
     sales_overview: (
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-        <AnimatedCard index={0}><MetricCard title="Total de Vendas" value={formatNumber(m.totalSalesCount)} subtitle="Todas" /></AnimatedCard>
-        <AnimatedCard index={1}><MetricCard title="Aprovadas" value={formatNumber(m.salesCount)} color="text-success" /></AnimatedCard>
-        <AnimatedCard index={2}><MetricCard title="Pendentes" value={formatNumber(m.pendingSalesCount)} color="text-warning" /></AnimatedCard>
-        <AnimatedCard index={3}><MetricCard title="Canceladas" value={formatNumber(m.cancelledSalesCount)} color="text-destructive" /></AnimatedCard>
-        <AnimatedCard index={4}><MetricCard title="Reembolsadas" value={formatNumber(m.refundedSalesCount)} /></AnimatedCard>
-        <AnimatedCard index={5}><MetricCard title="Conversão L→V" value={formatPercent(m.conversionRate)} subtitle="Leads → Vendas" /></AnimatedCard>
+      <div className="space-y-4">
+        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+          <AnimatedCard index={0}><MetricCard title="Total de Vendas" value={formatNumber(m.totalSalesCount)} subtitle="Todas" /></AnimatedCard>
+          <AnimatedCard index={1}><MetricCard title="Aprovadas" value={formatNumber(m.salesCount)} color="text-success" /></AnimatedCard>
+          <AnimatedCard index={2}><MetricCard title="Pendentes" value={formatNumber(m.pendingSalesCount)} color="text-warning" /></AnimatedCard>
+          <AnimatedCard index={3}><MetricCard title="Canceladas" value={formatNumber(m.cancelledSalesCount)} color="text-destructive" /></AnimatedCard>
+          <AnimatedCard index={4}><MetricCard title="Reembolsadas" value={formatNumber(m.refundedSalesCount)} /></AnimatedCard>
+          <AnimatedCard index={5}><MetricCard title="Conversão L→V" value={formatPercent(m.conversionRate)} subtitle="Leads → Vendas" /></AnimatedCard>
+        </div>
+        <AnimatedCard index={6}>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">📄 Boletos</CardTitle>
+              <p className="text-xs text-muted-foreground">Acompanhamento de boletos gerados e taxa de conversão</p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Boletos Gerados</p>
+                  <p className="text-xl font-bold mt-1">{formatNumber(m.boletoTotal)}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Boletos Pagos</p>
+                  <p className="text-xl font-bold mt-1 text-success">{formatNumber(m.boletoPaid)}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Boletos em Aberto</p>
+                  <p className="text-xl font-bold mt-1 text-warning">{formatNumber(m.boletoPending)}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Taxa de Conversão</p>
+                  <p className="text-xl font-bold mt-1">{formatPercent(m.boletoConversionRate)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </AnimatedCard>
       </div>
     ),
     funnel: (
