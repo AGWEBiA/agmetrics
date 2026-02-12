@@ -281,7 +281,7 @@ export default function AdminDashboard() {
         </Card>
       </AnimatedCard>
     ) : null,
-    financial: (
+    financial: m.salesCount > 0 ? (
       <AnimatedCard index={0}>
         <Card>
           <CardHeader className="pb-3">
@@ -299,8 +299,8 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </AnimatedCard>
-    ),
-    roi: (
+    ) : null,
+    roi: (m.totalInvestment > 0 || m.salesCount > 0) ? (
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
         <AnimatedCard index={0}>
           <MetricCard title="ROI Total" value={formatPercent(m.roi)} color={m.roi >= 0 ? "text-success" : "text-destructive"} icon={m.roi >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />} change={m.roiChange} />
@@ -312,8 +312,8 @@ export default function AdminDashboard() {
           <MetricCard title="Margem Líquida" value={formatPercent(m.margin)} color={m.margin >= 0 ? "text-success" : "text-destructive"} />
         </AnimatedCard>
       </div>
-    ),
-    sales_overview: (
+    ) : null,
+    sales_overview: m.totalSalesCount > 0 ? (
       <div className="space-y-4">
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
           <AnimatedCard index={0}><MetricCard title="Total de Vendas" value={formatNumber(m.totalSalesCount)} subtitle="Todas" /></AnimatedCard>
@@ -385,8 +385,8 @@ export default function AdminDashboard() {
           </Card>
         </AnimatedCard>
       </div>
-    ),
-    funnel: isPerpertuo ? null : (
+    ) : null,
+    funnel: isPerpertuo ? null : (m.totalLeads > 0 || m.totalInvestment > 0) ? (
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         <AnimatedCard index={0}><MetricCard title="Total de Leads" value={formatNumber(m.totalLeads)} subtitle="Meta + Google" change={m.leadsChange} /></AnimatedCard>
         <AnimatedCard index={1}><MetricCard title="CPL Médio" value={formatBRL(m.avgCpl)} subtitle="Custo por lead" /></AnimatedCard>
@@ -394,8 +394,8 @@ export default function AdminDashboard() {
         <AnimatedCard index={3}><MetricCard title="Receita Líquida" value={formatBRL(m.totalRevenue)} change={m.revenueChange} /></AnimatedCard>
         <AnimatedCard index={4}><MetricCard title="Nº Vendas Aprovadas" value={formatNumber(m.salesCount)} change={m.salesCountChange} /></AnimatedCard>
       </div>
-    ),
-    meta_ads: (
+    ) : null,
+    meta_ads: (m.metaInvestment > 0 || m.metaImpressions > 0) ? (
       <AnimatedCard index={0}>
         <Card>
           <CardHeader className="pb-3">
@@ -425,8 +425,8 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </AnimatedCard>
-    ),
-    google_ads: (
+    ) : null,
+    google_ads: (m.googleInvestment > 0 || m.gImpressions > 0) ? (
       <AnimatedCard index={1}>
         <Card>
           <CardHeader className="pb-3">
@@ -448,7 +448,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </AnimatedCard>
-    ),
+    ) : null,
     products: m.productData.length > 0 ? (
       <AnimatedCard index={2}>
         <Card>
@@ -697,9 +697,15 @@ export default function AdminDashboard() {
       <Tabs defaultValue="overview">
         <TabsList className="w-full sm:w-auto overflow-x-auto">
           <TabsTrigger value="overview" className="text-xs sm:text-sm">Visão Geral</TabsTrigger>
-          <TabsTrigger value="acquisition" className="text-xs sm:text-sm">Captação</TabsTrigger>
-          <TabsTrigger value="sales" className="text-xs sm:text-sm">Vendas</TabsTrigger>
-          <TabsTrigger value="timeline" className="text-xs sm:text-sm">Temporal</TabsTrigger>
+          {!isPerpertuo && (m.totalLeads > 0 || m.totalInvestment > 0) && (
+            <TabsTrigger value="acquisition" className="text-xs sm:text-sm">Captação</TabsTrigger>
+          )}
+          {m.totalSalesCount > 0 && (
+            <TabsTrigger value="sales" className="text-xs sm:text-sm">Vendas</TabsTrigger>
+          )}
+          {m.salesCount > 0 && (
+            <TabsTrigger value="timeline" className="text-xs sm:text-sm">Temporal</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6 pt-4">
