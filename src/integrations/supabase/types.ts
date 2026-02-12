@@ -818,7 +818,12 @@ export type Database = {
       goal_type: "revenue" | "sales" | "roi" | "leads" | "margin"
       product_platform: "kiwify" | "hotmart" | "both"
       product_type: "main" | "order_bump"
-      project_strategy: "perpetuo" | "lancamento" | "lancamento_pago" | "funis"
+      project_strategy:
+        | "perpetuo"
+        | "lancamento"
+        | "lancamento_pago"
+        | "funis"
+        | "evento_presencial"
       sale_status: "approved" | "pending" | "cancelled" | "refunded"
       sales_platform: "kiwify" | "hotmart"
     }
@@ -954,7 +959,13 @@ export const Constants = {
       goal_type: ["revenue", "sales", "roi", "leads", "margin"],
       product_platform: ["kiwify", "hotmart", "both"],
       product_type: ["main", "order_bump"],
-      project_strategy: ["perpetuo", "lancamento", "lancamento_pago", "funis"],
+      project_strategy: [
+        "perpetuo",
+        "lancamento",
+        "lancamento_pago",
+        "funis",
+        "evento_presencial",
+      ],
       sale_status: ["approved", "pending", "cancelled", "refunded"],
       sales_platform: ["kiwify", "hotmart"],
     },

@@ -1,0 +1,1 @@
+ALTER TYPE public.project_strategy ADD VALUE IF NOT EXISTS 'evento_presencial';

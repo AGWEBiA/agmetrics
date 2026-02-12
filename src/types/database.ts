@@ -1,4 +1,4 @@
-export type ProjectStrategy = "perpetuo" | "lancamento" | "lancamento_pago" | "funis";
+export type ProjectStrategy = "perpetuo" | "lancamento" | "lancamento_pago" | "funis" | "evento_presencial";
 
 export interface Project {
   id: string;
