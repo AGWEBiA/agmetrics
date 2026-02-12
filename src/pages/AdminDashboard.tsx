@@ -4,6 +4,8 @@ import { useProject } from "@/hooks/useProjects";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useSalesRealtime } from "@/hooks/useSalesRealtime";
 import { useGoalAlerts } from "@/hooks/useGoalAlerts";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useDashboardPreferences, useSaveDashboardPreferences } from "@/hooks/useDashboardPreferences";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
@@ -65,6 +67,19 @@ export default function AdminDashboard() {
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const m = useDashboardMetrics(projectId, dateRange, project?.strategy);
   const { data: whatsappGroups } = useWhatsAppGroups(projectId);
+  const { data: whatsappHistory } = useQuery({
+    queryKey: ["whatsapp_member_history", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("whatsapp_member_history" as any)
+        .select("*")
+        .eq("project_id", projectId!)
+        .order("recorded_at", { ascending: true });
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
   const { data: onboardingSteps } = useOnboardingStatus(projectId);
   useSalesRealtime(projectId);
   useGoalAlerts(projectId, {
@@ -489,15 +504,96 @@ export default function AdminDashboard() {
               <CardTitle className="text-lg">Grupos WhatsApp</CardTitle>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
               <Stat label="Total de Grupos" value={formatNumber(whatsappGroups.length)} />
               <Stat label="Total Membros" value={formatNumber(whatsappGroups.reduce((s, g) => s + (g.member_count || 0), 0))} />
+              <Stat label="Pico Total" value={formatNumber(whatsappGroups.reduce((s, g: any) => s + (g.peak_members || g.member_count || 0), 0))} />
+              <Stat label="Saíram (Total)" value={formatNumber(whatsappGroups.reduce((s, g: any) => s + (g.members_left || 0), 0))} />
               <Stat label="Engajamento Médio" value={formatPercent(whatsappGroups.reduce((s, g) => s + (g.engagement_rate || 0), 0) / whatsappGroups.length)} />
-              {whatsappGroups.slice(0, 5).map((g) => (
-                <Stat key={g.id} label={g.name} value={`${formatNumber(g.member_count || 0)} membros`} />
-              ))}
             </div>
+
+            {/* Per-group stats */}
+            {whatsappGroups.length > 0 && (
+              <div>
+                <p className="text-sm font-medium mb-2">Por Grupo</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {whatsappGroups.slice(0, 6).map((g: any) => (
+                    <div key={g.id} className="rounded-lg border p-3 space-y-1">
+                      <p className="text-sm font-medium truncate">{g.name}</p>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Membros: {formatNumber(g.member_count || 0)}</span>
+                        <span>Pico: {formatNumber(g.peak_members || g.member_count || 0)}</span>
+                      </div>
+                      {(g.peak_members || 0) > 0 && (
+                        <Progress value={((g.member_count || 0) / (g.peak_members || 1)) * 100} className="h-1.5" />
+                      )}
+                      <div className="flex justify-between text-xs">
+                        <span className="text-destructive">Saíram: {g.members_left || 0}</span>
+                        <span className="text-muted-foreground">Engaj: {g.engagement_rate || 0}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* History charts */}
+            {whatsappHistory && whatsappHistory.length > 1 && (() => {
+              // Aggregate history by date
+              const byDate = new Map<string, { members: number; joined: number; left: number }>();
+              whatsappHistory.forEach((h: any) => {
+                const d = new Date(h.recorded_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "numeric" });
+                const existing = byDate.get(d) || { members: 0, joined: 0, left: 0 };
+                byDate.set(d, {
+                  members: existing.members + (h.member_count || 0),
+                  joined: existing.joined + (h.members_joined || 0),
+                  left: existing.left + (h.members_left || 0),
+                });
+              });
+              const chartData = Array.from(byDate.entries()).map(([date, v]) => ({
+                date, ...v,
+              }));
+
+              return (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium mb-2">📈 Evolução de Membros</p>
+                    <div className="h-56">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                          <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                          <Legend />
+                          <Line type="monotone" dataKey="members" name="Membros" stroke={COLORS[0]} strokeWidth={2} dot={{ r: 2 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {chartData.some(d => d.joined > 0 || d.left > 0) && (
+                    <div>
+                      <p className="text-sm font-medium mb-2">🔄 Entradas vs Saídas</p>
+                      <div className="h-56">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                            <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                            <Legend />
+                            <Bar dataKey="joined" name="Entradas" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="left" name="Saídas" fill="hsl(0, 72%, 51%)" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
       </AnimatedCard>
