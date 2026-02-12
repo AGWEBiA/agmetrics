@@ -100,19 +100,22 @@ Deno.serve(async (req) => {
 
     const platformFee = Math.max(0, grossValue - netValue);
 
-    // Try to match product type
-    let productType: string | null = null;
-    if (productName) {
-      const { data: matchedProduct } = await supabase
-        .from("products")
-        .select("type")
-        .eq("project_id", projectId)
-        .ilike("name", productName)
-        .maybeSingle();
-      if (matchedProduct) {
-        productType = matchedProduct.type;
-      }
+    // Match product — only accept sales for registered products
+    const { data: matchedProduct } = await supabase
+      .from("products")
+      .select("type")
+      .eq("project_id", projectId)
+      .ilike("name", productName)
+      .maybeSingle();
+
+    if (!matchedProduct) {
+      return new Response(
+        JSON.stringify({ skipped: true, reason: "Product not registered in project", product_name: productName }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    const productType = matchedProduct.type;
 
     // Upsert sale
     const { data: sale, error: saleError } = await supabase
