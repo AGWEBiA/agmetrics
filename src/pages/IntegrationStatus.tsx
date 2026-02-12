@@ -105,10 +105,10 @@ export default function IntegrationStatus() {
   // Sync actions
   const [syncing, setSyncing] = useState<Record<string, boolean>>({});
 
-  const handleSync = async (platform: "meta" | "google" | "whatsapp") => {
+  const handleSync = async (platform: "meta" | "google" | "whatsapp" | "kiwify" | "hotmart") => {
     setSyncing((p) => ({ ...p, [platform]: true }));
     try {
-      const fnMap = { meta: "sync-meta", google: "sync-google", whatsapp: "sync-whatsapp" };
+      const fnMap: Record<string, string> = { meta: "sync-meta", google: "sync-google", whatsapp: "sync-whatsapp", kiwify: "sync-kiwify", hotmart: "sync-hotmart" };
       const fn = fnMap[platform];
       const { data: session } = await supabase.auth.getSession();
       const res = await supabase.functions.invoke(fn, {
@@ -116,7 +116,7 @@ export default function IntegrationStatus() {
         headers: { Authorization: `Bearer ${session.session?.access_token}` },
       });
       if (res.error) throw res.error;
-      const labels = { meta: "Meta Ads", google: "Google Ads", whatsapp: "WhatsApp" };
+      const labels: Record<string, string> = { meta: "Meta Ads", google: "Google Ads", whatsapp: "WhatsApp", kiwify: "Kiwify", hotmart: "Hotmart" };
       toast({ title: "Sincronização concluída", description: `${labels[platform]} sincronizado com sucesso.` });
     } catch (err: any) {
       toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
@@ -159,7 +159,8 @@ export default function IntegrationStatus() {
       description: "Vendas e transações da plataforma Kiwify",
       connected: kiwifyConnected,
       lastSync: kiwifyLastSync,
-      canSync: false,
+      canSync: true,
+      onSync: () => handleSync("kiwify"),
     },
     {
       key: "hotmart",
@@ -167,7 +168,8 @@ export default function IntegrationStatus() {
       description: "Vendas e transações da plataforma Hotmart",
       connected: hotmartConnected,
       lastSync: hotmartLastSync,
-      canSync: false,
+      canSync: true,
+      onSync: () => handleSync("hotmart"),
     },
     {
       key: "whatsapp",

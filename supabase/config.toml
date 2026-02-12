@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.sync-whatsapp]
 verify_jwt = false
+
+[functions.sync-kiwify]
+verify_jwt = false
+
+[functions.sync-hotmart]
+verify_jwt = false
