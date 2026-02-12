@@ -41,7 +41,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     enabled: !!projectId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("sales_events" as any)
+        .from("sales_events")
         .select("*")
         .eq("project_id", projectId!);
       if (error) throw error;
@@ -55,7 +55,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     enabled: !!projectId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("meta_metrics" as any)
+        .from("meta_metrics")
         .select("*")
         .eq("project_id", projectId!)
         .order("date", { ascending: true });
@@ -70,7 +70,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     enabled: !!projectId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("google_metrics" as any)
+        .from("google_metrics")
         .select("*")
         .eq("project_id", projectId!)
         .order("date", { ascending: true });
@@ -85,7 +85,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     enabled: !!projectId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("manual_investments" as any)
+        .from("manual_investments")
         .select("*")
         .eq("project_id", projectId!);
       if (error) throw error;

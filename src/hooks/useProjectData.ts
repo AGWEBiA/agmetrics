@@ -2,13 +2,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 // Generic hook factory for project-scoped CRUD
-function useProjectList<T>(table: string, projectId: string | undefined) {
+type TableName = "products" | "whatsapp_groups" | "manual_investments" | "project_goals";
+
+function useProjectList<T>(table: TableName, projectId: string | undefined) {
   return useQuery({
     queryKey: [table, projectId],
     enabled: !!projectId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from(table as any)
+        .from(table)
         .select("*")
         .eq("project_id", projectId!)
         .order("created_at", { ascending: false });
@@ -18,12 +20,12 @@ function useProjectList<T>(table: string, projectId: string | undefined) {
   });
 }
 
-function useProjectCreate<T>(table: string) {
+function useProjectCreate<T>(table: TableName) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (values: Record<string, any>) => {
       const { data, error } = await supabase
-        .from(table as any)
+        .from(table)
         .insert(values as any)
         .select()
         .single();
@@ -34,12 +36,12 @@ function useProjectCreate<T>(table: string) {
   });
 }
 
-function useProjectUpdate<T>(table: string) {
+function useProjectUpdate<T>(table: TableName) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, project_id, ...updates }: Record<string, any> & { id: string; project_id: string }) => {
       const { data, error } = await supabase
-        .from(table as any)
+        .from(table)
         .update(updates as any)
         .eq("id", id)
         .select()
@@ -51,11 +53,11 @@ function useProjectUpdate<T>(table: string) {
   });
 }
 
-function useProjectDelete(table: string) {
+function useProjectDelete(table: TableName) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, project_id }: { id: string; project_id: string }) => {
-      const { error } = await supabase.from(table as any).delete().eq("id", id);
+      const { error } = await supabase.from(table).delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: [table, vars.project_id] }),
@@ -142,7 +144,7 @@ export const useMetaCredentials = (projectId?: string) => {
     enabled: !!projectId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("meta_credentials" as any)
+        .from("meta_credentials")
         .select("*")
         .eq("project_id", projectId!)
         .maybeSingle();
@@ -157,8 +159,8 @@ export const useSaveMetaCredentials = () => {
   return useMutation({
     mutationFn: async (values: { project_id: string; access_token: string; ad_account_id: string }) => {
       const { data, error } = await supabase
-        .from("meta_credentials" as any)
-        .upsert(values as any, { onConflict: "project_id" })
+        .from("meta_credentials")
+        .upsert(values, { onConflict: "project_id" })
         .select()
         .single();
       if (error) throw error;
@@ -186,7 +188,7 @@ export const useGoogleCredentials = (projectId?: string) => {
     enabled: !!projectId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("google_credentials" as any)
+        .from("google_credentials")
         .select("*")
         .eq("project_id", projectId!)
         .maybeSingle();
@@ -201,8 +203,8 @@ export const useSaveGoogleCredentials = () => {
   return useMutation({
     mutationFn: async (values: { project_id: string; client_id: string; client_secret: string; refresh_token: string; customer_id: string }) => {
       const { data, error } = await supabase
-        .from("google_credentials" as any)
-        .upsert(values as any, { onConflict: "project_id" })
+        .from("google_credentials")
+        .upsert(values, { onConflict: "project_id" })
         .select()
         .single();
       if (error) throw error;

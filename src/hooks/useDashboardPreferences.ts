@@ -10,7 +10,7 @@ export function useDashboardPreferences(projectId: string | undefined, dashboard
       if (!user) return null;
 
       const { data, error } = await supabase
-        .from("user_dashboard_preferences" as any)
+        .from("user_dashboard_preferences")
         .select("*")
         .eq("project_id", projectId!)
         .eq("user_id", user.id)
@@ -39,7 +39,7 @@ export function useSaveDashboardPreferences() {
       if (!user) throw new Error("Not authenticated");
 
       const { data: existing } = await supabase
-        .from("user_dashboard_preferences" as any)
+        .from("user_dashboard_preferences")
         .select("id")
         .eq("project_id", projectId)
         .eq("user_id", user.id)
@@ -48,19 +48,19 @@ export function useSaveDashboardPreferences() {
 
       if (existing) {
         const { error } = await supabase
-          .from("user_dashboard_preferences" as any)
-          .update({ section_order: sectionOrder } as any)
+          .from("user_dashboard_preferences")
+          .update({ section_order: sectionOrder })
           .eq("id", (existing as any).id);
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from("user_dashboard_preferences" as any)
+          .from("user_dashboard_preferences")
           .insert({
             project_id: projectId,
             user_id: user.id,
             dashboard_type: dashboardType,
             section_order: sectionOrder,
-          } as any);
+          });
         if (error) throw error;
       }
     },

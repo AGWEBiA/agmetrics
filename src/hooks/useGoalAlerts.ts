@@ -28,7 +28,7 @@ export function useGoalAlerts(
     enabled: !!projectId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("project_goals" as any)
+        .from("project_goals")
         .select("*")
         .eq("project_id", projectId!)
         .eq("is_active", true);

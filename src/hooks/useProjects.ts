@@ -7,7 +7,7 @@ export function useProjects() {
     queryKey: ["projects"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("projects" as any)
+        .from("projects")
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -22,7 +22,7 @@ export function useProject(id: string | undefined) {
     enabled: !!id,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("projects" as any)
+        .from("projects")
         .select("*")
         .eq("id", id!)
         .single();
@@ -38,7 +38,7 @@ export function useProjectByToken(viewToken: string | undefined) {
     enabled: !!viewToken,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("projects" as any)
+        .from("projects")
         .select("*")
         .eq("view_token", viewToken!)
         .single();
@@ -62,8 +62,8 @@ export function useCreateProject() {
       if (!user) throw new Error("Não autenticado");
 
       const { data, error } = await supabase
-        .from("projects" as any)
-        .insert({ ...project, owner_id: user.id } as any)
+        .from("projects")
+        .insert({ ...project, owner_id: user.id })
         .select()
         .single();
       if (error) throw error;
@@ -78,8 +78,8 @@ export function useUpdateProject() {
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Project> & { id: string }) => {
       const { data, error } = await supabase
-        .from("projects" as any)
-        .update(updates as any)
+        .from("projects")
+        .update(updates)
         .eq("id", id)
         .select()
         .single();
@@ -98,7 +98,7 @@ export function useDeleteProject() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("projects" as any)
+        .from("projects")
         .delete()
         .eq("id", id);
       if (error) throw error;

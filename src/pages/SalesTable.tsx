@@ -34,7 +34,7 @@ export default function SalesTable() {
     enabled: !!projectId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("sales_events" as any)
+        .from("sales_events")
         .select("*")
         .eq("project_id", projectId!)
         .order("sale_date", { ascending: false });
