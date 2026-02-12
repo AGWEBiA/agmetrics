@@ -20,9 +20,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ExternalLink, TrendingUp, TrendingDown, GripVertical, Download, FileSpreadsheet, MessageCircle, Users } from "lucide-react";
 import { useWhatsAppGroups } from "@/hooks/useProjectData";
 import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, Legend,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
+import { Progress } from "@/components/ui/progress";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -34,7 +35,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 const COLORS = ["hsl(220, 90%, 56%)", "hsl(265, 80%, 60%)", "hsl(152, 60%, 42%)", "hsl(38, 92%, 50%)"];
 
-const DEFAULT_OVERVIEW_ORDER = ["financial", "roi", "sales_overview", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "whatsapp", "products", "platform_pie"];
+const DEFAULT_OVERVIEW_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "whatsapp", "products", "platform_pie"];
 
 function SortableCard({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -128,7 +129,130 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  // Budget provisioning computation
+  const budgetData = useMemo(() => {
+    const budget = Number(project?.budget || 0);
+    if (budget <= 0) return null;
+    const spent = m.totalInvestment;
+    const available = Math.max(0, budget - spent);
+    const usePct = budget > 0 ? (spent / budget) * 100 : 0;
+
+    // Build daily spending timeline from meta + google + manual
+    const dailySpending = new Map<string, number>();
+    (m.metaMetrics || []).forEach((met: any) => {
+      const d = met.date;
+      dailySpending.set(d, (dailySpending.get(d) || 0) + Number(met.investment || 0));
+    });
+    (m.googleMetrics || []).forEach((met: any) => {
+      const d = met.date;
+      dailySpending.set(d, (dailySpending.get(d) || 0) + Number(met.investment || 0));
+    });
+
+    const sortedDays = Array.from(dailySpending.entries()).sort(([a], [b]) => a.localeCompare(b));
+    const daysWithSpending = sortedDays.filter(([, v]) => v > 0).length;
+    const dailyAvg = daysWithSpending > 0 ? spent / daysWithSpending : 0;
+    const daysRemaining = dailyAvg > 0 ? Math.ceil(available / dailyAvg) : null;
+    const exhaustionDate = daysRemaining ? new Date(Date.now() + daysRemaining * 86400000) : null;
+
+    // Build projection chart
+    let cumulative = 0;
+    const chartData: { date: string; real: number; projecao?: number }[] = [];
+    sortedDays.forEach(([date, val]) => {
+      cumulative += val;
+      chartData.push({ date: new Date(date).toLocaleDateString("pt-BR", { day: "2-digit", month: "numeric" }), real: cumulative });
+    });
+    // Add projection points
+    if (dailyAvg > 0 && chartData.length > 0) {
+      let projCum = cumulative;
+      const lastDate = new Date(sortedDays[sortedDays.length - 1][0]);
+      for (let i = 1; i <= Math.min(daysRemaining || 60, 60); i++) {
+        const d = new Date(lastDate.getTime() + i * 86400000);
+        projCum += dailyAvg;
+        if (projCum > budget * 1.1) break;
+        chartData.push({
+          date: d.toLocaleDateString("pt-BR", { day: "2-digit", month: "numeric" }),
+          real: undefined as any,
+          projecao: projCum,
+        });
+      }
+    }
+
+    return { budget, spent, available, usePct, dailyAvg, daysRemaining, exhaustionDate, chartData };
+  }, [project, m.totalInvestment, m.metaMetrics, m.googleMetrics]);
+
   const overviewSections: Record<string, React.ReactNode> = useMemo(() => ({
+    budget_provisioning: budgetData ? (
+      <AnimatedCard index={0}>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">💲 Orçamento Provisionado</CardTitle>
+            <p className="text-xs text-muted-foreground">Acompanhe o uso do orçamento total do projeto</p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span>Uso do Orçamento</span>
+                <span className={budgetData.usePct > 90 ? "text-destructive font-semibold" : budgetData.usePct > 70 ? "text-warning font-semibold" : "text-success font-semibold"}>
+                  {formatPercent(budgetData.usePct)}
+                </span>
+              </div>
+              <Progress value={Math.min(budgetData.usePct, 100)} className="h-3" />
+            </div>
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">Provisionado</p>
+                <p className="text-lg font-bold">{formatBRL(budgetData.budget)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Gasto</p>
+                <p className="text-lg font-bold text-destructive">{formatBRL(budgetData.spent)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Disponível</p>
+                <p className="text-lg font-bold text-success">{formatBRL(budgetData.available)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="mt-4">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">📈 Projeção de Orçamento</CardTitle>
+            <p className="text-xs text-muted-foreground">Tendência de gasto e previsão de esgotamento</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">📊 Média Diária</p>
+                <p className="text-lg font-bold">{formatBRL(budgetData.dailyAvg)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">📅 Dias Restantes</p>
+                <p className="text-lg font-bold text-warning">~{budgetData.daysRemaining ?? "∞"} dias</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">📅 Esgotamento</p>
+                <p className="text-lg font-bold">{budgetData.exhaustionDate ? budgetData.exhaustionDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</p>
+              </div>
+            </div>
+            {budgetData.chartData.length > 0 && (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={budgetData.chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} interval="preserveStartEnd" />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                    <Tooltip formatter={(v: number) => formatBRL(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                    <Legend />
+                    <Line type="monotone" dataKey="real" name="Gasto Real" stroke={COLORS[0]} strokeWidth={2} dot={{ r: 2 }} connectNulls={false} />
+                    <Line type="monotone" dataKey="projecao" name="Projeção" stroke="hsl(38, 92%, 50%)" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 2 }} connectNulls={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </AnimatedCard>
+    ) : null,
     financial: (
       <AnimatedCard index={0}>
         <Card>
@@ -445,7 +569,7 @@ export default function AdminDashboard() {
         </Card>
       </AnimatedCard>
     ) : null,
-  }), [m, whatsappGroups]);
+  }), [m, whatsappGroups, budgetData]);
 
   return (
     <AnimatedPage className="space-y-6">
