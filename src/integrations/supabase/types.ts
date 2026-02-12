@@ -458,6 +458,9 @@ export type Database = {
           created_at: string
           description: string | null
           end_date: string | null
+          evolution_api_key: string | null
+          evolution_api_url: string | null
+          evolution_instance_name: string | null
           google_leads_enabled: boolean
           hotmart_webhook_token: string | null
           id: string
@@ -478,6 +481,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_date?: string | null
+          evolution_api_key?: string | null
+          evolution_api_url?: string | null
+          evolution_instance_name?: string | null
           google_leads_enabled?: boolean
           hotmart_webhook_token?: string | null
           id?: string
@@ -498,6 +504,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_date?: string | null
+          evolution_api_key?: string | null
+          evolution_api_url?: string | null
+          evolution_instance_name?: string | null
           google_leads_enabled?: boolean
           hotmart_webhook_token?: string | null
           id?: string
@@ -642,36 +651,96 @@ export type Database = {
         Row: {
           created_at: string
           engagement_rate: number | null
+          group_jid: string | null
           id: string
+          last_synced_at: string | null
           member_count: number | null
+          members_left: number | null
           name: string
           notes: string | null
+          peak_members: number | null
           project_id: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           engagement_rate?: number | null
+          group_jid?: string | null
           id?: string
+          last_synced_at?: string | null
           member_count?: number | null
+          members_left?: number | null
           name: string
           notes?: string | null
+          peak_members?: number | null
           project_id: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           engagement_rate?: number | null
+          group_jid?: string | null
           id?: string
+          last_synced_at?: string | null
           member_count?: number | null
+          members_left?: number | null
           name?: string
           notes?: string | null
+          peak_members?: number | null
           project_id?: string
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "whatsapp_groups_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_member_history: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          member_count: number
+          members_joined: number
+          members_left: number
+          project_id: string
+          recorded_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          member_count?: number
+          members_joined?: number
+          members_left?: number
+          project_id: string
+          recorded_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          member_count?: number
+          members_joined?: number
+          members_left?: number
+          project_id?: string
+          recorded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_member_history_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_member_history_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"

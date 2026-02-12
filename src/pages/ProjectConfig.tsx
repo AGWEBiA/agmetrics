@@ -749,6 +749,8 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
 
 // ============ WHATSAPP TAB ============
 function WhatsAppTab({ projectId }: { projectId: string }) {
+  const { data: project } = useProject(projectId);
+  const updateProject = useUpdateProject();
   const { data: groups, isLoading } = useWhatsAppGroups(projectId);
   const createGroup = useCreateWhatsAppGroup();
   const deleteGroup = useDeleteWhatsAppGroup();
@@ -758,6 +760,54 @@ function WhatsAppTab({ projectId }: { projectId: string }) {
   const [members, setMembers] = useState("");
   const [engagement, setEngagement] = useState("");
   const [notes, setNotes] = useState("");
+
+  // Evolution API config state
+  const [evoUrl, setEvoUrl] = useState("");
+  const [evoKey, setEvoKey] = useState("");
+  const [evoInstance, setEvoInstance] = useState("");
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    if (project) {
+      setEvoUrl((project as any).evolution_api_url || "");
+      setEvoKey((project as any).evolution_api_key || "");
+      setEvoInstance((project as any).evolution_instance_name || "");
+    }
+  }, [project]);
+
+  const handleSaveEvo = async () => {
+    try {
+      await updateProject.mutateAsync({
+        id: projectId,
+        evolution_api_url: evoUrl || null,
+        evolution_api_key: evoKey || null,
+        evolution_instance_name: evoInstance || null,
+      } as any);
+      toast({ title: "Credenciais da Evolution API salvas!" });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+      const res = await fetch(`${supabaseUrl}/functions/v1/sync-whatsapp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ project_id: projectId }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Sync failed");
+      toast({ title: "Sincronização concluída!", description: `${result.synced} grupos sincronizados` });
+    } catch (err: any) {
+      toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const handleCreate = async () => {
     try {
@@ -776,64 +826,115 @@ function WhatsAppTab({ projectId }: { projectId: string }) {
     }
   };
 
+  const evoConnected = !!(evoUrl && evoKey && evoInstance);
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Grupos WhatsApp</CardTitle>
-            <CardDescription>Gerencie os grupos do seu lançamento</CardDescription>
+    <div className="space-y-4">
+      {/* Evolution API Config */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Evolution API</CardTitle>
+              <CardDescription>Configure a integração com a Evolution API para sincronizar grupos automaticamente</CardDescription>
+            </div>
+            <Badge variant={evoConnected ? "default" : "outline"}>{evoConnected ? "Conectado" : "Desconectado"}</Badge>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm"><Plus className="mr-1 h-4 w-4" />Adicionar Grupo</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Novo Grupo</DialogTitle></DialogHeader>
-              <div className="space-y-3">
-                <div className="space-y-1"><Label>Nome</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
-                <div className="space-y-1"><Label>Membros</Label><Input type="number" value={members} onChange={(e) => setMembers(e.target.value)} /></div>
-                <div className="space-y-1"><Label>Taxa de Engajamento (%)</Label><Input type="number" step="0.01" value={engagement} onChange={(e) => setEngagement(e.target.value)} /></div>
-                <div className="space-y-1"><Label>Notas</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
-              </div>
-              <DialogFooter>
-                <Button onClick={handleCreate} disabled={!name || createGroup.isPending}>Adicionar</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {!groups?.length ? (
-          <p className="py-8 text-center text-muted-foreground">Nenhum grupo cadastrado</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Membros</TableHead>
-                <TableHead>Engajamento</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {groups.map((g) => (
-                <TableRow key={g.id}>
-                  <TableCell className="font-medium">{g.name}</TableCell>
-                  <TableCell>{g.member_count}</TableCell>
-                  <TableCell>{g.engagement_rate}%</TableCell>
-                  <TableCell>
-                    <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteGroup.mutate({ id: g.id, project_id: projectId })}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label>URL da Instância</Label>
+              <Input placeholder="https://sua-instancia.com" value={evoUrl} onChange={(e) => setEvoUrl(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>API Key</Label>
+              <Input type="password" placeholder="Sua API Key" value={evoKey} onChange={(e) => setEvoKey(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Nome da Instância</Label>
+              <Input placeholder="Ex: minha-instancia" value={evoInstance} onChange={(e) => setEvoInstance(e.target.value)} />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleSaveEvo} disabled={updateProject.isPending}>
+              <Save className="mr-1 h-4 w-4" />
+              {updateProject.isPending ? "Salvando..." : "Salvar Credenciais"}
+            </Button>
+            <Button variant="outline" onClick={handleSync} disabled={!evoConnected || syncing}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Sincronizando..." : "Sincronizar Grupos"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Manual Groups */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Grupos WhatsApp</CardTitle>
+              <CardDescription>Grupos sincronizados e manuais</CardDescription>
+            </div>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm"><Plus className="mr-1 h-4 w-4" />Adicionar Manual</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Novo Grupo</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div className="space-y-1"><Label>Nome</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
+                  <div className="space-y-1"><Label>Membros</Label><Input type="number" value={members} onChange={(e) => setMembers(e.target.value)} /></div>
+                  <div className="space-y-1"><Label>Taxa de Engajamento (%)</Label><Input type="number" step="0.01" value={engagement} onChange={(e) => setEngagement(e.target.value)} /></div>
+                  <div className="space-y-1"><Label>Notas</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
+                </div>
+                <DialogFooter>
+                  <Button onClick={handleCreate} disabled={!name || createGroup.isPending}>Adicionar</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {!groups?.length ? (
+            <p className="py-8 text-center text-muted-foreground">Nenhum grupo cadastrado</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Membros</TableHead>
+                  <TableHead>Pico</TableHead>
+                  <TableHead>Saíram</TableHead>
+                  <TableHead>Engajamento</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+              </TableHeader>
+              <TableBody>
+                {groups.map((g: any) => (
+                  <TableRow key={g.id}>
+                    <TableCell className="font-medium">
+                      {g.name}
+                      {g.group_jid && <Badge variant="outline" className="ml-2 text-xs">API</Badge>}
+                    </TableCell>
+                    <TableCell>{g.member_count}</TableCell>
+                    <TableCell>{g.peak_members || "—"}</TableCell>
+                    <TableCell>{g.members_left || 0}</TableCell>
+                    <TableCell>{g.engagement_rate}%</TableCell>
+                    <TableCell>
+                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteGroup.mutate({ id: g.id, project_id: projectId })}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
