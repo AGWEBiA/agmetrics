@@ -26,6 +26,7 @@ export default function IntegrationStatus() {
   const googleConnected = !!googleCreds;
   const kiwifyConnected = !!project?.kiwify_webhook_token;
   const hotmartConnected = !!project?.hotmart_webhook_token;
+  const whatsappConnected = !!(project as any)?.evolution_api_url && !!(project as any)?.evolution_api_key && !!(project as any)?.evolution_instance_name;
 
   // Last sync times
   const { data: metaLastSync } = useQuery({
@@ -86,20 +87,37 @@ export default function IntegrationStatus() {
     },
   });
 
+  const { data: whatsappLastSync } = useQuery({
+    queryKey: ["whatsapp_last_sync", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("whatsapp_groups")
+        .select("last_synced_at")
+        .eq("project_id", projectId!)
+        .not("last_synced_at", "is", null)
+        .order("last_synced_at", { ascending: false })
+        .limit(1);
+      return (data as any)?.[0]?.last_synced_at || null;
+    },
+  });
+
   // Sync actions
   const [syncing, setSyncing] = useState<Record<string, boolean>>({});
 
-  const handleSync = async (platform: "meta" | "google") => {
+  const handleSync = async (platform: "meta" | "google" | "whatsapp") => {
     setSyncing((p) => ({ ...p, [platform]: true }));
     try {
-      const fn = platform === "meta" ? "sync-meta" : "sync-google";
+      const fnMap = { meta: "sync-meta", google: "sync-google", whatsapp: "sync-whatsapp" };
+      const fn = fnMap[platform];
       const { data: session } = await supabase.auth.getSession();
       const res = await supabase.functions.invoke(fn, {
         body: { project_id: projectId },
         headers: { Authorization: `Bearer ${session.session?.access_token}` },
       });
       if (res.error) throw res.error;
-      toast({ title: "Sincronização concluída", description: `${platform === "meta" ? "Meta Ads" : "Google Ads"} sincronizado com sucesso.` });
+      const labels = { meta: "Meta Ads", google: "Google Ads", whatsapp: "WhatsApp" };
+      toast({ title: "Sincronização concluída", description: `${labels[platform]} sincronizado com sucesso.` });
     } catch (err: any) {
       toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
     } finally {
@@ -150,6 +168,15 @@ export default function IntegrationStatus() {
       connected: hotmartConnected,
       lastSync: hotmartLastSync,
       canSync: false,
+    },
+    {
+      key: "whatsapp",
+      name: "WhatsApp (Evolution API)",
+      description: "Dados de grupos do WhatsApp via Evolution API",
+      connected: whatsappConnected,
+      lastSync: whatsappLastSync,
+      canSync: true,
+      onSync: () => handleSync("whatsapp"),
     },
   ];
 

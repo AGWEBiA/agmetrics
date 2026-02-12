@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.list-meta-campaigns]
 verify_jwt = false
+
+[functions.sync-whatsapp]
+verify_jwt = false
