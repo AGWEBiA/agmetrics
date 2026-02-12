@@ -17,52 +17,25 @@ interface SalesEvent {
   created_at: string;
 }
 
-interface MetaMetric {
-  id: string;
-  date: string;
-  investment: number;
-  impressions: number;
-  clicks: number;
-  leads: number;
-  results: number;
-  purchases: number;
-  link_clicks: number;
-  landing_page_views: number;
-  checkouts_initiated: number;
-  cpm: number;
-  ctr: number;
-  cpc: number;
-  cost_per_lead: number;
-  cost_per_result: number;
-  cost_per_purchase: number;
-  link_ctr: number;
-  link_cpc: number;
-  connect_rate: number;
-  page_conversion_rate: number;
-  checkout_conversion_rate: number;
+interface DateFilter {
+  from?: Date;
+  to?: Date;
 }
 
-interface GoogleMetric {
-  id: string;
-  date: string;
-  investment: number;
-  impressions: number;
-  clicks: number;
-  conversions: number;
-  cpc: number;
-  ctr: number;
-  conversion_rate: number;
-  cost_per_conversion: number;
+function inRange(dateStr: string | null, filter: DateFilter): boolean {
+  if (!filter.from && !filter.to) return true;
+  if (!dateStr) return true;
+  const d = new Date(dateStr);
+  if (filter.from && d < filter.from) return false;
+  if (filter.to) {
+    const end = new Date(filter.to);
+    end.setHours(23, 59, 59, 999);
+    if (d > end) return false;
+  }
+  return true;
 }
 
-interface ManualInvestment {
-  id: string;
-  amount: number;
-  date: string;
-  description: string | null;
-}
-
-export function useDashboardMetrics(projectId: string | undefined) {
+export function useDashboardMetrics(projectId: string | undefined, dateFilter?: DateFilter) {
   const salesQuery = useQuery({
     queryKey: ["sales_events", projectId],
     enabled: !!projectId,
@@ -74,7 +47,7 @@ export function useDashboardMetrics(projectId: string | undefined) {
       if (error) throw error;
       return data as unknown as SalesEvent[];
     },
-    refetchInterval: 300000, // 5 min
+    refetchInterval: 300000,
   });
 
   const metaQuery = useQuery({
@@ -87,7 +60,7 @@ export function useDashboardMetrics(projectId: string | undefined) {
         .eq("project_id", projectId!)
         .order("date", { ascending: true });
       if (error) throw error;
-      return data as unknown as MetaMetric[];
+      return (data as any[]) || [];
     },
     refetchInterval: 300000,
   });
@@ -102,7 +75,7 @@ export function useDashboardMetrics(projectId: string | undefined) {
         .eq("project_id", projectId!)
         .order("date", { ascending: true });
       if (error) throw error;
-      return data as unknown as GoogleMetric[];
+      return (data as any[]) || [];
     },
     refetchInterval: 300000,
   });
@@ -116,73 +89,65 @@ export function useDashboardMetrics(projectId: string | undefined) {
         .select("*")
         .eq("project_id", projectId!);
       if (error) throw error;
-      return data as unknown as ManualInvestment[];
+      return (data as any[]) || [];
     },
     refetchInterval: 300000,
   });
 
-  // Compute metrics
-  const sales = salesQuery.data || [];
-  const metaMetrics = metaQuery.data || [];
-  const googleMetrics = googleQuery.data || [];
-  const manualInvestments = investmentsQuery.data || [];
+  const df = dateFilter || {};
+
+  // Apply date filters
+  const allSales = salesQuery.data || [];
+  const sales = allSales.filter((s) => inRange(s.sale_date || s.created_at, df));
+  const metaMetrics = (metaQuery.data || []).filter((m: any) => inRange(m.date, df));
+  const googleMetrics = (googleQuery.data || []).filter((m: any) => inRange(m.date, df));
+  const manualInvestments = (investmentsQuery.data || []).filter((m: any) => inRange(m.date, df));
 
   const approvedSales = sales.filter((s) => s.status === "approved");
   const pendingSales = sales.filter((s) => s.status === "pending");
 
-  // Sales metrics
   const totalRevenue = approvedSales.reduce((s, e) => s + Number(e.amount), 0);
   const grossRevenue = approvedSales.reduce((s, e) => s + Number(e.gross_amount), 0);
   const totalFees = approvedSales.reduce((s, e) => s + Number(e.platform_fee), 0);
   const salesCount = approvedSales.length;
   const avgTicket = salesCount > 0 ? totalRevenue / salesCount : 0;
 
-  // Platform breakdown
   const kiwifySales = approvedSales.filter((s) => s.platform === "kiwify");
   const hotmartSales = approvedSales.filter((s) => s.platform === "hotmart");
 
-  // Investment metrics
-  const metaInvestment = metaMetrics.reduce((s, m) => s + Number(m.investment), 0);
-  const googleInvestment = googleMetrics.reduce((s, m) => s + Number(m.investment), 0);
-  const manualInvestment = manualInvestments.reduce((s, m) => s + Number(m.amount), 0);
+  const metaInvestment = metaMetrics.reduce((s: number, m: any) => s + Number(m.investment), 0);
+  const googleInvestment = googleMetrics.reduce((s: number, m: any) => s + Number(m.investment), 0);
+  const manualInvestment = manualInvestments.reduce((s: number, m: any) => s + Number(m.amount), 0);
   const totalInvestment = metaInvestment + googleInvestment + manualInvestment;
 
-  // ROI metrics
   const netProfit = totalRevenue - totalInvestment;
   const roi = totalInvestment > 0 ? (netProfit / totalInvestment) * 100 : 0;
   const roas = totalInvestment > 0 ? totalRevenue / totalInvestment : 0;
   const margin = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0;
 
-  // Lead metrics
-  const metaLeads = metaMetrics.reduce((s, m) => s + (m.leads || 0), 0);
-  const googleLeads = googleMetrics.reduce((s, m) => s + (m.conversions || 0), 0);
+  const metaLeads = metaMetrics.reduce((s: number, m: any) => s + (m.leads || 0), 0);
+  const googleLeads = googleMetrics.reduce((s: number, m: any) => s + (m.conversions || 0), 0);
   const totalLeads = metaLeads + googleLeads;
   const conversionRate = totalLeads > 0 ? (salesCount / totalLeads) * 100 : 0;
   const avgCpl = totalLeads > 0 ? totalInvestment / totalLeads : 0;
 
-  // Meta aggregated
-  const metaImpressions = metaMetrics.reduce((s, m) => s + (m.impressions || 0), 0);
-  const metaClicks = metaMetrics.reduce((s, m) => s + (m.clicks || 0), 0);
-  const metaResults = metaMetrics.reduce((s, m) => s + (m.results || 0), 0);
-  const metaPurchases = metaMetrics.reduce((s, m) => s + (m.purchases || 0), 0);
-  const metaLinkClicks = metaMetrics.reduce((s, m) => s + (m.link_clicks || 0), 0);
-  const metaLpViews = metaMetrics.reduce((s, m) => s + (m.landing_page_views || 0), 0);
-  const metaCheckouts = metaMetrics.reduce((s, m) => s + (m.checkouts_initiated || 0), 0);
+  const metaImpressions = metaMetrics.reduce((s: number, m: any) => s + (m.impressions || 0), 0);
+  const metaClicks = metaMetrics.reduce((s: number, m: any) => s + (m.clicks || 0), 0);
+  const metaResults = metaMetrics.reduce((s: number, m: any) => s + (m.results || 0), 0);
+  const metaPurchases = metaMetrics.reduce((s: number, m: any) => s + (m.purchases || 0), 0);
+  const metaLinkClicks = metaMetrics.reduce((s: number, m: any) => s + (m.link_clicks || 0), 0);
+  const metaLpViews = metaMetrics.reduce((s: number, m: any) => s + (m.landing_page_views || 0), 0);
+  const metaCheckouts = metaMetrics.reduce((s: number, m: any) => s + (m.checkouts_initiated || 0), 0);
 
-  // Google aggregated
-  const gImpressions = googleMetrics.reduce((s, m) => s + (m.impressions || 0), 0);
-  const gClicks = googleMetrics.reduce((s, m) => s + (m.clicks || 0), 0);
-  const gConversions = googleMetrics.reduce((s, m) => s + (m.conversions || 0), 0);
+  const gImpressions = googleMetrics.reduce((s: number, m: any) => s + (m.impressions || 0), 0);
+  const gClicks = googleMetrics.reduce((s: number, m: any) => s + (m.clicks || 0), 0);
+  const gConversions = googleMetrics.reduce((s: number, m: any) => s + (m.conversions || 0), 0);
 
-  // Sales by date (for charts)
   const salesByDate = new Map<string, { count: number; revenue: number }>();
   approvedSales.forEach((s) => {
     const d = s.sale_date ? s.sale_date.split("T")[0] : s.created_at.split("T")[0];
     const existing = salesByDate.get(d) || { count: 0, revenue: 0 };
-    salesByDate.set(d, {
-      count: existing.count + 1,
-      revenue: existing.revenue + Number(s.amount),
-    });
+    salesByDate.set(d, { count: existing.count + 1, revenue: existing.revenue + Number(s.amount) });
   });
 
   const salesChartData = Array.from(salesByDate.entries())
@@ -193,7 +158,6 @@ export function useDashboardMetrics(projectId: string | undefined) {
       receita: data.revenue,
     }));
 
-  // Products breakdown
   const productBreakdown = new Map<string, { count: number; revenue: number; type: string | null }>();
   approvedSales.forEach((s) => {
     const name = s.product_name || "Sem nome";
@@ -206,12 +170,10 @@ export function useDashboardMetrics(projectId: string | undefined) {
   });
 
   const productData = Array.from(productBreakdown.entries()).map(([name, data]) => ({
-    name,
-    ...data,
+    name, ...data,
     pct: totalRevenue > 0 ? (data.revenue / totalRevenue) * 100 : 0,
   }));
 
-  // Platform chart data
   const platformChartData = [
     { name: "Kiwify", value: kiwifySales.reduce((s, e) => s + Number(e.amount), 0) },
     { name: "Hotmart", value: hotmartSales.reduce((s, e) => s + Number(e.amount), 0) },
@@ -219,39 +181,12 @@ export function useDashboardMetrics(projectId: string | undefined) {
 
   return {
     isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || investmentsQuery.isLoading,
-    // Sales
-    totalRevenue,
-    grossRevenue,
-    totalFees,
-    salesCount,
-    avgTicket,
-    pendingSalesCount: pendingSales.length,
-    kiwifySales,
-    hotmartSales,
-    // Investment
-    metaInvestment,
-    googleInvestment,
-    manualInvestment,
-    totalInvestment,
-    // ROI
-    roi,
-    roas,
-    margin,
-    netProfit,
-    // Leads
-    totalLeads,
-    metaLeads,
-    googleLeads,
-    conversionRate,
-    avgCpl,
-    // Meta
-    metaImpressions,
-    metaClicks,
-    metaResults,
-    metaPurchases,
-    metaLinkClicks,
-    metaLpViews,
-    metaCheckouts,
+    totalRevenue, grossRevenue, totalFees, salesCount, avgTicket,
+    pendingSalesCount: pendingSales.length, kiwifySales, hotmartSales,
+    metaInvestment, googleInvestment, manualInvestment, totalInvestment,
+    roi, roas, margin, netProfit,
+    totalLeads, metaLeads, googleLeads, conversionRate, avgCpl,
+    metaImpressions, metaClicks, metaResults, metaPurchases, metaLinkClicks, metaLpViews, metaCheckouts,
     metaInvestment_total: metaInvestment,
     metaCpm: metaImpressions > 0 ? (metaInvestment / metaImpressions) * 1000 : 0,
     metaCtr: metaImpressions > 0 ? (metaClicks / metaImpressions) * 100 : 0,
@@ -264,19 +199,11 @@ export function useDashboardMetrics(projectId: string | undefined) {
     metaConnectRate: metaLinkClicks > 0 ? (metaLpViews / metaLinkClicks) * 100 : 0,
     metaPageConversion: metaLpViews > 0 ? (metaCheckouts / metaLpViews) * 100 : 0,
     metaCheckoutConversion: metaCheckouts > 0 ? (metaPurchases / metaCheckouts) * 100 : 0,
-    // Google
-    gImpressions,
-    gClicks,
-    gConversions,
+    gImpressions, gClicks, gConversions,
     gCpc: gClicks > 0 ? googleInvestment / gClicks : 0,
     gCtr: gImpressions > 0 ? (gClicks / gImpressions) * 100 : 0,
     gConversionRate: gClicks > 0 ? (gConversions / gClicks) * 100 : 0,
     gCostPerConversion: gConversions > 0 ? googleInvestment / gConversions : 0,
-    // Charts
-    salesChartData,
-    productData,
-    platformChartData,
-    metaMetrics,
-    googleMetrics,
+    salesChartData, productData, platformChartData, metaMetrics, googleMetrics,
   };
 }

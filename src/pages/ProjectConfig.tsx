@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useProject } from "@/hooks/useProjects";
 import {
@@ -9,6 +9,7 @@ import {
   useManualInvestments, useCreateManualInvestment, useDeleteManualInvestment,
   useProjectGoals, useCreateProjectGoal, useDeleteProjectGoal, useUpdateProjectGoal,
 } from "@/hooks/useProjectData";
+import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, Check } from "lucide-react";
+import { Plus, Trash2, Copy, Check, Upload, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ProjectConfig() {
@@ -130,7 +131,7 @@ function MetaTab({ projectId }: { projectId: string }) {
           <Button onClick={handleSave} disabled={saveCreds.isPending}>
             {saveCreds.isPending ? "Salvando..." : "Salvar Credenciais"}
           </Button>
-          <Button variant="outline" disabled>Sincronizar Métricas</Button>
+          <SyncButton projectId={projectId} platform="meta" disabled={!creds} />
         </div>
       </CardContent>
     </Card>
@@ -196,16 +197,55 @@ function GoogleTab({ projectId }: { projectId: string }) {
           <Button onClick={handleSave} disabled={saveCreds.isPending}>
             {saveCreds.isPending ? "Salvando..." : "Salvar Credenciais"}
           </Button>
-          <Button variant="outline" disabled>Sincronizar Métricas</Button>
+          <SyncButton projectId={projectId} platform="google" disabled={!creds} />
         </div>
       </CardContent>
     </Card>
   );
 }
 
+// ============ SYNC BUTTON ============
+function SyncButton({ projectId, platform, disabled }: { projectId: string; platform: "meta" | "google"; disabled: boolean }) {
+  const [syncing, setSyncing] = useState(false);
+  const { toast } = useToast();
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+      const res = await fetch(`${supabaseUrl}/functions/v1/sync-${platform}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ project_id: projectId }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Sync failed");
+      toast({ title: `Sincronização concluída`, description: `${result.synced} dias sincronizados` });
+    } catch (err: any) {
+      toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  return (
+    <Button variant="outline" onClick={handleSync} disabled={disabled || syncing}>
+      <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+      {syncing ? "Sincronizando..." : "Sincronizar Métricas"}
+    </Button>
+  );
+}
+
 // ============ WEBHOOK TAB (Kiwify / Hotmart) ============
 function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiwify" | "hotmart" }) {
   const [copied, setCopied] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
   const webhookUrl = `${supabaseUrl}/functions/v1/webhook-${platform}/${projectId}`;
 
@@ -213,6 +253,36 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
     navigator.clipboard.writeText(webhookUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("project_id", projectId);
+      formData.append("platform", platform);
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/import-csv`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+        body: formData,
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Import failed");
+      toast({
+        title: "Importação concluída",
+        description: `${result.imported} vendas importadas, ${result.skipped} ignoradas`,
+      });
+    } catch (err: any) {
+      toast({ title: "Erro na importação", description: err.message, variant: "destructive" });
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   return (
@@ -235,9 +305,15 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" disabled>Importar Vendas CSV</Button>
-          <Button variant="outline" disabled>Testar Webhook</Button>
+          <input ref={fileInputRef} type="file" accept=".csv" onChange={handleCSVImport} className="hidden" />
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+            <Upload className="mr-2 h-4 w-4" />
+            {importing ? "Importando..." : "Importar Vendas CSV"}
+          </Button>
         </div>
+        <p className="text-xs text-muted-foreground">
+          Colunas aceitas: transaction_id/order_id, product_name/produto, gross_amount/valor_bruto, net_amount/valor_liquido, buyer_email/email, buyer_name/nome, status, sale_date/data
+        </p>
       </CardContent>
     </Card>
   );
