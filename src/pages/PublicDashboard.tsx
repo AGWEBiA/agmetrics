@@ -187,7 +187,7 @@ export default function PublicDashboard() {
                             <Pie data={m.platformChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                               {m.platformChartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                             </Pie>
-                            <Tooltip formatter={(v: number) => formatBRL(v)} />
+                            <Tooltip cursor={false} formatter={(v: number) => formatBRL(v)} />
                             <Legend />
                           </PieChart>
                         </ResponsiveContainer>
@@ -207,7 +207,7 @@ export default function PublicDashboard() {
                             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                             <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                             <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                            <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
+                            <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
                             <Bar dataKey="vendas" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
@@ -234,7 +234,7 @@ export default function PublicDashboard() {
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                           <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                           <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                          <Tooltip formatter={(v: number) => formatBRL(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
+                          <Tooltip cursor={false} formatter={(v: number) => formatBRL(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
                           <Area type="monotone" dataKey="receita" stroke={COLORS[0]} strokeWidth={2} fill="url(#revenueGradient)" />
                         </AreaChart>
                       </ResponsiveContainer>
