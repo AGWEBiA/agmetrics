@@ -123,6 +123,8 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
 
   const approvedSales = sales.filter((s) => s.status === "approved");
   const pendingSales = sales.filter((s) => s.status === "pending");
+  const cancelledSales = sales.filter((s) => s.status === "cancelled");
+  const refundedSales = sales.filter((s) => s.status === "refunded");
 
   const totalRevenue = approvedSales.reduce((s, e) => s + Number(e.amount), 0);
   const grossRevenue = approvedSales.reduce((s, e) => s + Number(e.gross_amount), 0);
@@ -228,7 +230,8 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   return {
     isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || investmentsQuery.isLoading,
     totalRevenue, grossRevenue, totalFees, totalTaxes, totalCoproducerCommission, salesCount, avgTicket,
-    pendingSalesCount: pendingSales.length, kiwifySales, hotmartSales,
+    pendingSalesCount: pendingSales.length, cancelledSalesCount: cancelledSales.length, refundedSalesCount: refundedSales.length,
+    totalSalesCount: sales.length, kiwifySales, hotmartSales,
     metaInvestment, googleInvestment, manualInvestment, totalInvestment,
     roi, roas, margin, netProfit,
     totalLeads, metaLeads, googleLeads, conversionRate, avgCpl,

@@ -34,7 +34,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 const COLORS = ["hsl(220, 90%, 56%)", "hsl(265, 80%, 60%)", "hsl(152, 60%, 42%)", "hsl(38, 92%, 50%)"];
 
-const DEFAULT_OVERVIEW_ORDER = ["roi", "sales_overview", "meta_ads", "google_ads", "whatsapp", "products", "platform_pie"];
+const DEFAULT_OVERVIEW_ORDER = ["financial", "roi", "sales_overview", "funnel", "meta_ads", "google_ads", "whatsapp", "products", "platform_pie"];
 
 function SortableCard({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -129,6 +129,25 @@ export default function AdminDashboard() {
   }, []);
 
   const overviewSections: Record<string, React.ReactNode> = useMemo(() => ({
+    financial: (
+      <AnimatedCard index={0}>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Resumo Financeiro</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-3 lg:grid-cols-6">
+              <Stat label="Receita Bruta" value={formatBRL(m.grossRevenue)} />
+              <Stat label="Receita Líquida (Produtor)" value={formatBRL(m.totalRevenue)} />
+              <Stat label="Comissão Coprodutor" value={formatBRL(m.totalCoproducerCommission)} />
+              <Stat label="Taxas Plataforma" value={formatBRL(m.totalTaxes)} />
+              <Stat label="Lucro Líquido" value={formatBRL(m.netProfit)} />
+              <Stat label="Ticket Médio" value={formatBRL(m.avgTicket)} />
+            </div>
+          </CardContent>
+        </Card>
+      </AnimatedCard>
+    ),
     roi: (
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
         <AnimatedCard index={0}>
@@ -143,12 +162,22 @@ export default function AdminDashboard() {
       </div>
     ),
     sales_overview: (
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+        <AnimatedCard index={0}><MetricCard title="Total de Vendas" value={formatNumber(m.totalSalesCount)} subtitle="Todas" /></AnimatedCard>
+        <AnimatedCard index={1}><MetricCard title="Aprovadas" value={formatNumber(m.salesCount)} color="text-success" /></AnimatedCard>
+        <AnimatedCard index={2}><MetricCard title="Pendentes" value={formatNumber(m.pendingSalesCount)} color="text-warning" /></AnimatedCard>
+        <AnimatedCard index={3}><MetricCard title="Canceladas" value={formatNumber(m.cancelledSalesCount)} color="text-destructive" /></AnimatedCard>
+        <AnimatedCard index={4}><MetricCard title="Reembolsadas" value={formatNumber(m.refundedSalesCount)} /></AnimatedCard>
+        <AnimatedCard index={5}><MetricCard title="Conversão L→V" value={formatPercent(m.conversionRate)} subtitle="Leads → Vendas" /></AnimatedCard>
+      </div>
+    ),
+    funnel: (
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-        <AnimatedCard index={0}><MetricCard title="Vendas Totais" value={formatBRL(m.totalRevenue)} subtitle="Valor líquido" change={m.revenueChange} /></AnimatedCard>
-        <AnimatedCard index={1}><MetricCard title="Nº de Vendas" value={formatNumber(m.salesCount)} subtitle="Aprovadas" change={m.salesCountChange} /></AnimatedCard>
-        <AnimatedCard index={2}><MetricCard title="Ticket Médio" value={formatBRL(m.avgTicket)} /></AnimatedCard>
-        <AnimatedCard index={3}><MetricCard title="Conversão" value={formatPercent(m.conversionRate)} subtitle="Leads → Vendas" /></AnimatedCard>
-        <AnimatedCard index={4}><MetricCard title="Pendentes" value={formatNumber(m.pendingSalesCount)} subtitle="Aguardando" /></AnimatedCard>
+        <AnimatedCard index={0}><MetricCard title="Total de Leads" value={formatNumber(m.totalLeads)} subtitle="Meta + Google" change={m.leadsChange} /></AnimatedCard>
+        <AnimatedCard index={1}><MetricCard title="CPL Médio" value={formatBRL(m.avgCpl)} subtitle="Custo por lead" /></AnimatedCard>
+        <AnimatedCard index={2}><MetricCard title="Investimento Total" value={formatBRL(m.totalInvestment)} change={m.investmentChange} /></AnimatedCard>
+        <AnimatedCard index={3}><MetricCard title="Receita Líquida" value={formatBRL(m.totalRevenue)} change={m.revenueChange} /></AnimatedCard>
+        <AnimatedCard index={4}><MetricCard title="Nº Vendas Aprovadas" value={formatNumber(m.salesCount)} change={m.salesCountChange} /></AnimatedCard>
       </div>
     ),
     meta_ads: (
