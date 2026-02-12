@@ -134,6 +134,7 @@ export interface MetaCredentials {
   project_id: string;
   access_token: string;
   ad_account_id: string;
+  label: string;
   created_at: string;
   updated_at: string;
 }
@@ -154,19 +155,69 @@ export const useMetaCredentials = (projectId?: string) => {
   });
 };
 
+export const useMetaCredentialsList = (projectId?: string) => {
+  return useQuery({
+    queryKey: ["meta_credentials_list", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("meta_credentials")
+        .select("*")
+        .eq("project_id", projectId!)
+        .order("created_at");
+      if (error) throw error;
+      return (data || []) as unknown as MetaCredentials[];
+    },
+  });
+};
+
 export const useSaveMetaCredentials = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (values: { project_id: string; access_token: string; ad_account_id: string }) => {
-      const { data, error } = await supabase
-        .from("meta_credentials")
-        .upsert(values, { onConflict: "project_id" })
-        .select()
-        .single();
-      if (error) throw error;
-      return data as unknown as MetaCredentials;
+    mutationFn: async (values: { id?: string; project_id: string; access_token: string; ad_account_id: string; label?: string }) => {
+      if (values.id) {
+        // Update existing
+        const { data, error } = await supabase
+          .from("meta_credentials")
+          .update({ access_token: values.access_token, ad_account_id: values.ad_account_id, label: values.label || "" })
+          .eq("id", values.id)
+          .select()
+          .single();
+        if (error) throw error;
+        return data as unknown as MetaCredentials;
+      } else {
+        // Insert new
+        const { data, error } = await supabase
+          .from("meta_credentials")
+          .insert({ project_id: values.project_id, access_token: values.access_token, ad_account_id: values.ad_account_id, label: values.label || "" })
+          .select()
+          .single();
+        if (error) throw error;
+        return data as unknown as MetaCredentials;
+      }
     },
-    onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ["meta_credentials", vars.project_id] }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["meta_credentials", vars.project_id] });
+      qc.invalidateQueries({ queryKey: ["meta_credentials_list", vars.project_id] });
+    },
+  });
+};
+
+export const useDeleteMetaCredentials = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, projectId }: { id: string; projectId: string }) => {
+      const { error } = await supabase
+        .from("meta_credentials")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+      return projectId;
+    },
+    onSuccess: (projectId) => {
+      qc.invalidateQueries({ queryKey: ["meta_credentials", projectId] });
+      qc.invalidateQueries({ queryKey: ["meta_credentials_list", projectId] });
+    },
   });
 };
 

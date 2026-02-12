@@ -59,31 +59,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get Meta credentials
-    const { data: creds } = await supabase
+    // Get ALL Meta credentials for this project
+    const { data: allCreds } = await supabase
       .from("meta_credentials")
       .select("*")
-      .eq("project_id", project_id)
-      .single();
+      .eq("project_id", project_id);
 
-    if (!creds) {
+    if (!allCreds || allCreds.length === 0) {
       return new Response(JSON.stringify({ error: "Meta credentials not configured" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get selected campaigns for filtering
-    const { data: selectedCampaigns } = await supabase
-      .from("meta_campaigns")
-      .select("campaign_id")
-      .eq("project_id", project_id)
-      .eq("is_selected", true);
-
-    const campaignIds = (selectedCampaigns || []).map((c: any) => c.campaign_id);
-    const hasFilter = campaignIds.length > 0;
-
-    // Fetch last 30 days from Meta Ads API
     const today = new Date();
     const since = new Date(today);
     since.setDate(since.getDate() - 30);
@@ -95,70 +83,72 @@ Deno.serve(async (req) => {
       "cost_per_action_type", "cpm", "cpc", "ctr",
     ].join(",");
 
-    // If campaigns are selected, fetch at campaign level and aggregate
-    // If no campaigns selected, fetch at account level (all campaigns)
-    let allRows: any[] = [];
+    // Aggregate data across all accounts into a single date map
+    const dateMap = new Map<string, any>();
+    let totalAccountsSynced = 0;
 
-    if (hasFilter) {
-      // Fetch insights per selected campaign and aggregate by date
-      const dateMap = new Map<string, any>();
+    for (const creds of allCreds) {
+      // Get selected campaigns for this credential
+      const { data: selectedCampaigns } = await supabase
+        .from("meta_campaigns")
+        .select("campaign_id")
+        .eq("project_id", project_id)
+        .eq("credential_id", creds.id)
+        .eq("is_selected", true);
 
-      for (const cid of campaignIds) {
-        const url = `https://graph.facebook.com/v21.0/${cid}/insights?fields=${fields}&time_range={"since":"${sinceStr}","until":"${untilStr}"}&time_increment=1&access_token=${creds.access_token}&limit=100`;
+      const campaignIds = (selectedCampaigns || []).map((c: any) => c.campaign_id);
+      const hasFilter = campaignIds.length > 0;
 
+      let rows: any[] = [];
+
+      if (hasFilter) {
+        // Fetch per selected campaign
+        for (const cid of campaignIds) {
+          const url = `https://graph.facebook.com/v21.0/${cid}/insights?fields=${fields}&time_range={"since":"${sinceStr}","until":"${untilStr}"}&time_increment=1&access_token=${creds.access_token}&limit=100`;
+          const metaRes = await fetch(url);
+          if (!metaRes.ok) {
+            console.error(`Campaign ${cid} fetch error:`, await metaRes.text());
+            continue;
+          }
+          const metaData = await metaRes.json();
+          rows.push(...(metaData.data || []));
+        }
+      } else {
+        // No filter: fetch account-level
+        const url = `https://graph.facebook.com/v21.0/${creds.ad_account_id}/insights?fields=${fields}&time_range={"since":"${sinceStr}","until":"${untilStr}"}&time_increment=1&level=account&access_token=${creds.access_token}&limit=100`;
         const metaRes = await fetch(url);
         if (!metaRes.ok) {
-          console.error(`Campaign ${cid} fetch error:`, await metaRes.text());
+          console.error(`Account ${creds.ad_account_id} error:`, await metaRes.text());
           continue;
         }
-
         const metaData = await metaRes.json();
-        for (const row of (metaData.data || [])) {
-          const date = row.date_start;
-          if (!dateMap.has(date)) {
-            dateMap.set(date, {
-              date_start: date,
-              spend: 0,
-              impressions: 0,
-              clicks: 0,
-              actions: [],
-            });
-          }
-          const agg = dateMap.get(date)!;
-          agg.spend += parseFloat(row.spend || "0");
-          agg.impressions += parseInt(row.impressions || "0");
-          agg.clicks += parseInt(row.clicks || "0");
-          // Merge actions
-          for (const action of (row.actions || [])) {
-            const existing = agg.actions.find((a: any) => a.action_type === action.action_type);
-            if (existing) {
-              existing.value = String(parseInt(existing.value) + parseInt(action.value));
-            } else {
-              agg.actions.push({ ...action });
-            }
+        rows = metaData.data || [];
+      }
+
+      // Aggregate rows into dateMap
+      for (const row of rows) {
+        const date = row.date_start;
+        if (!dateMap.has(date)) {
+          dateMap.set(date, { date_start: date, spend: 0, impressions: 0, clicks: 0, actions: [] });
+        }
+        const agg = dateMap.get(date)!;
+        agg.spend += parseFloat(row.spend || "0");
+        agg.impressions += parseInt(row.impressions || "0");
+        agg.clicks += parseInt(row.clicks || "0");
+        for (const action of (row.actions || [])) {
+          const existing = agg.actions.find((a: any) => a.action_type === action.action_type);
+          if (existing) {
+            existing.value = String(parseInt(existing.value) + parseInt(action.value));
+          } else {
+            agg.actions.push({ ...action });
           }
         }
       }
 
-      allRows = Array.from(dateMap.values());
-    } else {
-      // No filter: fetch account-level insights
-      const url = `https://graph.facebook.com/v21.0/${creds.ad_account_id}/insights?fields=${fields}&time_range={"since":"${sinceStr}","until":"${untilStr}"}&time_increment=1&level=account&access_token=${creds.access_token}&limit=100`;
-
-      const metaRes = await fetch(url);
-      if (!metaRes.ok) {
-        const errBody = await metaRes.text();
-        console.error("Meta API error:", errBody);
-        return new Response(JSON.stringify({ error: "Meta API error", details: errBody }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const metaData = await metaRes.json();
-      allRows = metaData.data || [];
+      totalAccountsSynced++;
     }
 
+    const allRows = Array.from(dateMap.values());
     let synced = 0;
 
     for (const row of allRows) {
@@ -183,7 +173,7 @@ Deno.serve(async (req) => {
         .from("meta_metrics")
         .upsert(
           {
-            project_id: project_id,
+            project_id,
             date: row.date_start,
             investment,
             impressions,
@@ -218,7 +208,7 @@ Deno.serve(async (req) => {
         success: true,
         synced,
         total: allRows.length,
-        filtered_campaigns: hasFilter ? campaignIds.length : "all",
+        accounts_synced: totalAccountsSynced,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

@@ -154,6 +154,7 @@ export type Database = {
           campaign_id: string
           campaign_name: string
           created_at: string
+          credential_id: string | null
           id: string
           is_selected: boolean
           project_id: string
@@ -164,6 +165,7 @@ export type Database = {
           campaign_id: string
           campaign_name: string
           created_at?: string
+          credential_id?: string | null
           id?: string
           is_selected?: boolean
           project_id: string
@@ -174,6 +176,7 @@ export type Database = {
           campaign_id?: string
           campaign_name?: string
           created_at?: string
+          credential_id?: string | null
           id?: string
           is_selected?: boolean
           project_id?: string
@@ -181,6 +184,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "meta_campaigns_credential_id_fkey"
+            columns: ["credential_id"]
+            isOneToOne: false
+            referencedRelation: "meta_credentials"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "meta_campaigns_project_id_fkey"
             columns: ["project_id"]
@@ -196,6 +206,7 @@ export type Database = {
           ad_account_id: string
           created_at: string
           id: string
+          label: string | null
           project_id: string
           updated_at: string
         }
@@ -204,6 +215,7 @@ export type Database = {
           ad_account_id: string
           created_at?: string
           id?: string
+          label?: string | null
           project_id: string
           updated_at?: string
         }
@@ -212,6 +224,7 @@ export type Database = {
           ad_account_id?: string
           created_at?: string
           id?: string
+          label?: string | null
           project_id?: string
           updated_at?: string
         }
@@ -219,7 +232,7 @@ export type Database = {
           {
             foreignKeyName: "meta_credentials_project_id_fkey"
             columns: ["project_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
