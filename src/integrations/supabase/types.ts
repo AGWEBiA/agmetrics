@@ -597,7 +597,56 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_sales_summary: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          gross_amount: number | null
+          id: string | null
+          platform: Database["public"]["Enums"]["sales_platform"] | null
+          platform_fee: number | null
+          product_name: string | null
+          product_type: Database["public"]["Enums"]["product_type"] | null
+          project_id: string | null
+          sale_date: string | null
+          status: Database["public"]["Enums"]["sale_status"] | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          gross_amount?: number | null
+          id?: string | null
+          platform?: Database["public"]["Enums"]["sales_platform"] | null
+          platform_fee?: number | null
+          product_name?: string | null
+          product_type?: Database["public"]["Enums"]["product_type"] | null
+          project_id?: string | null
+          sale_date?: string | null
+          status?: Database["public"]["Enums"]["sale_status"] | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          gross_amount?: number | null
+          id?: string | null
+          platform?: Database["public"]["Enums"]["sales_platform"] | null
+          platform_fee?: number | null
+          product_name?: string | null
+          product_type?: Database["public"]["Enums"]["product_type"] | null
+          project_id?: string | null
+          sale_date?: string | null
+          status?: Database["public"]["Enums"]["sale_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {
