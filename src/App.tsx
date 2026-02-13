@@ -16,6 +16,7 @@ import IntegrationStatus from "./pages/IntegrationStatus";
 import UserManagement from "./pages/UserManagement";
 import Guide from "./pages/Guide";
 import NotFound from "./pages/NotFound";
+import { PermissionGuard } from "./components/PermissionGuard";
 
 const queryClient = new QueryClient();
 
@@ -37,13 +38,13 @@ const App = () => (
             }
           >
             <Route index element={<Navigate to="projects" replace />} />
-            <Route path="projects" element={<ProjectsHub />} />
-            <Route path="compare" element={<CompareProjects />} />
-            <Route path="projects/:projectId/dashboard" element={<AdminDashboard />} />
-            <Route path="projects/:projectId/sales" element={<SalesTable />} />
-            <Route path="projects/:projectId/config" element={<ProjectConfig />} />
-            <Route path="projects/:projectId/integrations" element={<IntegrationStatus />} />
-            <Route path="users" element={<UserManagement />} />
+            <Route path="projects" element={<PermissionGuard permission="projects.view"><ProjectsHub /></PermissionGuard>} />
+            <Route path="compare" element={<PermissionGuard permission="projects.view"><CompareProjects /></PermissionGuard>} />
+            <Route path="projects/:projectId/dashboard" element={<PermissionGuard permission="projects.view"><AdminDashboard /></PermissionGuard>} />
+            <Route path="projects/:projectId/sales" element={<PermissionGuard permission="sales.view"><SalesTable /></PermissionGuard>} />
+            <Route path="projects/:projectId/config" element={<PermissionGuard permission="projects.edit"><ProjectConfig /></PermissionGuard>} />
+            <Route path="projects/:projectId/integrations" element={<PermissionGuard permission="integrations.manage"><IntegrationStatus /></PermissionGuard>} />
+            <Route path="users" element={<PermissionGuard adminOnly><UserManagement /></PermissionGuard>} />
             <Route path="guide" element={<Guide />} />
           </Route>
           <Route path="/" element={<Navigate to="/admin/projects" replace />} />
