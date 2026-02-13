@@ -8,6 +8,7 @@ import {
   ShoppingCart,
   Plug,
   Users,
+  BookOpen,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
@@ -45,6 +46,7 @@ export function AppSidebar() {
   const mainItems = [
     { title: "Projetos", url: "/admin/projects", icon: FolderKanban },
     { title: "Usuários", url: "/admin/users", icon: Users },
+    { title: "Guia", url: "/admin/guide", icon: BookOpen },
   ];
 
   const projectItems = projectId

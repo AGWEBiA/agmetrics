@@ -14,6 +14,7 @@ import SalesTable from "./pages/SalesTable";
 import CompareProjects from "./pages/CompareProjects";
 import IntegrationStatus from "./pages/IntegrationStatus";
 import UserManagement from "./pages/UserManagement";
+import Guide from "./pages/Guide";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="projects/:projectId/config" element={<ProjectConfig />} />
             <Route path="projects/:projectId/integrations" element={<IntegrationStatus />} />
             <Route path="users" element={<UserManagement />} />
+            <Route path="guide" element={<Guide />} />
           </Route>
           <Route path="/" element={<Navigate to="/admin/projects" replace />} />
           <Route path="*" element={<NotFound />} />
