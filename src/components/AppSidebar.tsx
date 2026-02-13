@@ -7,6 +7,7 @@ import {
   BarChart3,
   ShoppingCart,
   Plug,
+  Users,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
@@ -37,6 +38,7 @@ export function AppSidebar() {
 
   const mainItems = [
     { title: "Projetos", url: "/admin/projects", icon: FolderKanban },
+    { title: "Usuários", url: "/admin/users", icon: Users },
   ];
 
   const projectItems = projectId
