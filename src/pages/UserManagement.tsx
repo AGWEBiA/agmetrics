@@ -1,11 +1,18 @@
 import { useState } from "react";
-import { useAdminUsers, useUpdateUserRole, useDeleteUser, type AdminUser } from "@/hooks/useAdminUsers";
+import {
+  useAdminUsers,
+  useUpdateUserRole,
+  useDeleteUser,
+  useUpdatePermissions,
+  type AdminUser,
+  type AppPermission,
+} from "@/hooks/useAdminUsers";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -30,20 +37,37 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Trash2, Users, Pencil } from "lucide-react";
 
+const ALL_PERMISSIONS: { value: AppPermission; label: string }[] = [
+  { value: "projects.view", label: "Visualizar projetos" },
+  { value: "projects.edit", label: "Editar projetos" },
+  { value: "sales.view", label: "Visualizar vendas" },
+  { value: "integrations.manage", label: "Gerenciar integrações" },
+  { value: "data.export", label: "Exportar dados" },
+];
+
 export default function UserManagement() {
   const { data: users, isLoading, error } = useAdminUsers();
   const updateRole = useUpdateUserRole();
   const deleteUser = useDeleteUser();
+  const updatePermissions = useUpdatePermissions();
   const { toast } = useToast();
 
   const [editOpen, setEditOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [editRole, setEditRole] = useState<"admin" | "user">("user");
+  const [editPerms, setEditPerms] = useState<AppPermission[]>([]);
 
   const openEdit = (user: AdminUser) => {
     setEditingUser(user);
     setEditRole(user.role);
+    setEditPerms([...user.permissions]);
     setEditOpen(true);
+  };
+
+  const togglePerm = (perm: AppPermission) => {
+    setEditPerms((prev) =>
+      prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]
+    );
   };
 
   const handleSaveEdit = async () => {
@@ -51,6 +75,12 @@ export default function UserManagement() {
     try {
       if (editRole !== editingUser.role) {
         await updateRole.mutateAsync({ user_id: editingUser.id, role: editRole });
+      }
+      const permsChanged =
+        editPerms.length !== editingUser.permissions.length ||
+        editPerms.some((p) => !editingUser.permissions.includes(p));
+      if (permsChanged) {
+        await updatePermissions.mutateAsync({ user_id: editingUser.id, permissions: editPerms });
       }
       toast({ title: "Usuário atualizado com sucesso" });
       setEditOpen(false);
@@ -86,7 +116,7 @@ export default function UserManagement() {
           <Users className="h-7 w-7" />
           Gestão de Usuários
         </h1>
-        <p className="text-muted-foreground">Gerencie os usuários e seus papéis no sistema</p>
+        <p className="text-muted-foreground">Gerencie os usuários, papéis e permissões do sistema</p>
       </div>
 
       {isLoading ? (
@@ -103,6 +133,7 @@ export default function UserManagement() {
                 <TableHead>Usuário</TableHead>
                 <TableHead>E-mail</TableHead>
                 <TableHead>Papel</TableHead>
+                <TableHead>Permissões</TableHead>
                 <TableHead>Cadastro</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -132,6 +163,21 @@ export default function UserManagement() {
                         "Usuário"
                       )}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {user.role === "admin" ? (
+                        <Badge variant="outline" className="text-xs">Todas</Badge>
+                      ) : user.permissions.length === 0 ? (
+                        <span className="text-muted-foreground text-xs">Nenhuma</span>
+                      ) : (
+                        user.permissions.map((p) => (
+                          <Badge key={p} variant="outline" className="text-xs">
+                            {ALL_PERMISSIONS.find((ap) => ap.value === p)?.label || p}
+                          </Badge>
+                        ))
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {new Date(user.created_at).toLocaleDateString("pt-BR")}
@@ -179,10 +225,10 @@ export default function UserManagement() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Editar Usuário</DialogTitle>
-            <DialogDescription>Altere o papel do usuário no sistema.</DialogDescription>
+            <DialogDescription>Altere o papel e as permissões do usuário.</DialogDescription>
           </DialogHeader>
           {editingUser && (
-            <div className="space-y-4 py-2">
+            <div className="space-y-5 py-2">
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={editingUser.avatar_url || undefined} />
@@ -195,6 +241,7 @@ export default function UserManagement() {
                   <p className="text-sm text-muted-foreground">{editingUser.email}</p>
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label>Papel</Label>
                 <Select value={editRole} onValueChange={(v) => setEditRole(v as "admin" | "user")}>
@@ -211,12 +258,37 @@ export default function UserManagement() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {editRole !== "admin" && (
+                <div className="space-y-3">
+                  <Label>Permissões</Label>
+                  <div className="space-y-2 rounded-md border p-3">
+                    {ALL_PERMISSIONS.map((perm) => (
+                      <div key={perm.value} className="flex items-center gap-2">
+                        <Checkbox
+                          id={perm.value}
+                          checked={editPerms.includes(perm.value)}
+                          onCheckedChange={() => togglePerm(perm.value)}
+                        />
+                        <Label htmlFor={perm.value} className="cursor-pointer font-normal">
+                          {perm.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {editRole === "admin" && (
+                <p className="text-sm text-muted-foreground">
+                  Administradores possuem todas as permissões automaticamente.
+                </p>
+              )}
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSaveEdit} disabled={updateRole.isPending}>
-              {updateRole.isPending ? "Salvando..." : "Salvar"}
+            <Button onClick={handleSaveEdit} disabled={updateRole.isPending || updatePermissions.isPending}>
+              {updateRole.isPending || updatePermissions.isPending ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>
