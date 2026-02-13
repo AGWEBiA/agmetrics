@@ -3,7 +3,17 @@ import { useAdminUsers, useUpdateUserRole, useDeleteUser, type AdminUser } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +28,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Trash2, Users } from "lucide-react";
+import { Shield, Trash2, Users, Pencil } from "lucide-react";
 
 export default function UserManagement() {
   const { data: users, isLoading, error } = useAdminUsers();
@@ -26,10 +36,25 @@ export default function UserManagement() {
   const deleteUser = useDeleteUser();
   const { toast } = useToast();
 
-  const handleRoleChange = async (userId: string, role: "admin" | "user") => {
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [editRole, setEditRole] = useState<"admin" | "user">("user");
+
+  const openEdit = (user: AdminUser) => {
+    setEditingUser(user);
+    setEditRole(user.role);
+    setEditOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingUser) return;
     try {
-      await updateRole.mutateAsync({ user_id: userId, role });
-      toast({ title: "Papel atualizado com sucesso" });
+      if (editRole !== editingUser.role) {
+        await updateRole.mutateAsync({ user_id: editingUser.id, role: editRole });
+      }
+      toast({ title: "Usuário atualizado com sucesso" });
+      setEditOpen(false);
+      setEditingUser(null);
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
@@ -98,51 +123,49 @@ export default function UserManagement() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{user.email || "—"}</TableCell>
                   <TableCell>
-                    <Select
-                      value={user.role}
-                      onValueChange={(v) => handleRoleChange(user.id, v as "admin" | "user")}
-                    >
-                      <SelectTrigger className="w-28">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">
-                          <span className="flex items-center gap-1">
-                            <Shield className="h-3 w-3" /> Admin
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="user">Usuário</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+                      {user.role === "admin" ? (
+                        <span className="flex items-center gap-1">
+                          <Shield className="h-3 w-3" /> Admin
+                        </span>
+                      ) : (
+                        "Usuário"
+                      )}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {new Date(user.created_at).toLocaleDateString("pt-BR")}
                   </TableCell>
                   <TableCell className="text-right">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Remover usuário?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta ação é irreversível. O usuário "{user.email}" será removido permanentemente.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDelete(user)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Remover
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => openEdit(user)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remover usuário?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação é irreversível. O usuário "{user.email}" será removido permanentemente.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(user)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Remover
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -150,6 +173,54 @@ export default function UserManagement() {
           </Table>
         </div>
       )}
+
+      {/* Edit User Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+            <DialogDescription>Altere o papel do usuário no sistema.</DialogDescription>
+          </DialogHeader>
+          {editingUser && (
+            <div className="space-y-4 py-2">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={editingUser.avatar_url || undefined} />
+                  <AvatarFallback>
+                    {(editingUser.name || editingUser.email || "U").slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{editingUser.name || "—"}</p>
+                  <p className="text-sm text-muted-foreground">{editingUser.email}</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Papel</Label>
+                <Select value={editRole} onValueChange={(v) => setEditRole(v as "admin" | "user")}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">
+                      <span className="flex items-center gap-1">
+                        <Shield className="h-3 w-3" /> Administrador
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="user">Usuário</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveEdit} disabled={updateRole.isPending}>
+              {updateRole.isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
