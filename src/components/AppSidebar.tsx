@@ -22,6 +22,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,11 @@ export function AppSidebar() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { data: project } = useProject(projectId);
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const closeSidebar = () => {
+    if (isMobile) setOpenMobile(false);
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -88,6 +94,7 @@ export function AppSidebar() {
                       end
                       className="hover:bg-sidebar-accent"
                       activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      onClick={closeSidebar}
                     >
                       <item.icon className="mr-2 h-4 w-4" />
                       <span>{item.title}</span>
@@ -114,6 +121,7 @@ export function AppSidebar() {
                         end={false}
                         className="hover:bg-sidebar-accent"
                         activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                        onClick={closeSidebar}
                       >
                         <item.icon className="mr-2 h-4 w-4" />
                         <span>{item.title}</span>
@@ -129,6 +137,7 @@ export function AppSidebar() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center hover:bg-sidebar-accent"
+                        onClick={closeSidebar}
                       >
                         <ExternalLink className="mr-2 h-4 w-4" />
                         <span>Dashboard Público</span>
