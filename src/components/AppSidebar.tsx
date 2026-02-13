@@ -13,6 +13,8 @@ import {
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
 import { useProject } from "@/hooks/useProjects";
+import { useCurrentUser, hasPermission } from "@/hooks/useCurrentUser";
+import type { AppPermission } from "@/hooks/useAdminUsers";
 import {
   Sidebar,
   SidebarContent,
@@ -32,6 +34,7 @@ export function AppSidebar() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { data: project } = useProject(projectId);
+  const { data: currentUser } = useCurrentUser();
   const { isMobile, setOpenMobile } = useSidebar();
 
   const closeSidebar = () => {
@@ -43,11 +46,14 @@ export function AppSidebar() {
     navigate("/login");
   };
 
+  const can = (perm: AppPermission) => hasPermission(currentUser, perm);
+  const isAdmin = currentUser?.role === "admin";
+
   const mainItems = [
-    { title: "Projetos", url: "/admin/projects", icon: FolderKanban },
-    { title: "Usuários", url: "/admin/users", icon: Users },
-    { title: "Guia", url: "/admin/guide", icon: BookOpen },
-  ];
+    { title: "Projetos", url: "/admin/projects", icon: FolderKanban, visible: can("projects.view") },
+    { title: "Usuários", url: "/admin/users", icon: Users, visible: isAdmin },
+    { title: "Guia", url: "/admin/guide", icon: BookOpen, visible: true },
+  ].filter((item) => item.visible);
 
   const projectItems = projectId
     ? [
@@ -55,23 +61,27 @@ export function AppSidebar() {
           title: "Dashboard",
           url: `/admin/projects/${projectId}/dashboard`,
           icon: LayoutDashboard,
+          visible: can("projects.view"),
         },
         {
           title: "Vendas",
           url: `/admin/projects/${projectId}/sales`,
           icon: ShoppingCart,
+          visible: can("sales.view"),
         },
         {
           title: "Configurações",
           url: `/admin/projects/${projectId}/config`,
           icon: Settings,
+          visible: can("projects.edit"),
         },
         {
           title: "Integrações",
           url: `/admin/projects/${projectId}/integrations`,
           icon: Plug,
+          visible: can("integrations.manage"),
         },
-      ]
+      ].filter((item) => item.visible)
     : [];
 
   return (
