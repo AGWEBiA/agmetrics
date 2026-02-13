@@ -638,6 +638,24 @@ export type Database = {
           },
         ]
       }
+      user_permissions: {
+        Row: {
+          id: string
+          permission: Database["public"]["Enums"]["app_permission"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          permission: Database["public"]["Enums"]["app_permission"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          permission?: Database["public"]["Enums"]["app_permission"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -811,6 +829,13 @@ export type Database = {
       }
     }
     Functions: {
+      has_permission: {
+        Args: {
+          _permission: Database["public"]["Enums"]["app_permission"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -821,6 +846,12 @@ export type Database = {
       owns_project: { Args: { _project_id: string }; Returns: boolean }
     }
     Enums: {
+      app_permission:
+        | "projects.view"
+        | "projects.edit"
+        | "sales.view"
+        | "integrations.manage"
+        | "data.export"
       app_role: "admin" | "user"
       dashboard_type: "public" | "admin"
       goal_period: "daily" | "weekly" | "monthly" | "total"
@@ -962,6 +993,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_permission: [
+        "projects.view",
+        "projects.edit",
+        "sales.view",
+        "integrations.manage",
+        "data.export",
+      ],
       app_role: ["admin", "user"],
       dashboard_type: ["public", "admin"],
       goal_period: ["daily", "weekly", "monthly", "total"],
