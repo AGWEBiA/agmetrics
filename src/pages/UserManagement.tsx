@@ -4,12 +4,14 @@ import {
   useUpdateUserRole,
   useDeleteUser,
   useUpdatePermissions,
+  useCreateUser,
   type AdminUser,
   type AppPermission,
 } from "@/hooks/useAdminUsers";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -35,7 +37,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Trash2, Users, Pencil } from "lucide-react";
+import { Shield, Trash2, Users, Pencil, UserPlus } from "lucide-react";
 
 const ALL_PERMISSIONS: { value: AppPermission; label: string }[] = [
   { value: "projects.view", label: "Visualizar projetos" },
@@ -50,12 +52,19 @@ export default function UserManagement() {
   const updateRole = useUpdateUserRole();
   const deleteUser = useDeleteUser();
   const updatePermissions = useUpdatePermissions();
+  const createUser = useCreateUser();
   const { toast } = useToast();
 
   const [editOpen, setEditOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [editRole, setEditRole] = useState<"admin" | "user">("user");
   const [editPerms, setEditPerms] = useState<AppPermission[]>([]);
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newRole, setNewRole] = useState<"admin" | "user">("user");
 
   const openEdit = (user: AdminUser) => {
     setEditingUser(user);
@@ -99,6 +108,28 @@ export default function UserManagement() {
     }
   };
 
+  const handleCreateUser = async () => {
+    if (!newEmail || !newPassword) {
+      toast({ title: "Erro", description: "E-mail e senha são obrigatórios", variant: "destructive" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast({ title: "Erro", description: "Senha deve ter no mínimo 6 caracteres", variant: "destructive" });
+      return;
+    }
+    try {
+      await createUser.mutateAsync({ email: newEmail, name: newName, password: newPassword, role: newRole });
+      toast({ title: "Usuário criado com sucesso" });
+      setCreateOpen(false);
+      setNewEmail("");
+      setNewName("");
+      setNewPassword("");
+      setNewRole("user");
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  };
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -111,12 +142,18 @@ export default function UserManagement() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-          <Users className="h-7 w-7" />
-          Gestão de Usuários
-        </h1>
-        <p className="text-muted-foreground">Gerencie os usuários, papéis e permissões do sistema</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Users className="h-7 w-7" />
+            Gestão de Usuários
+          </h1>
+          <p className="text-muted-foreground">Gerencie os usuários, papéis e permissões do sistema</p>
+        </div>
+        <Button onClick={() => setCreateOpen(true)}>
+          <UserPlus className="mr-2 h-4 w-4" />
+          Novo Usuário
+        </Button>
       </div>
 
       {isLoading ? (
@@ -289,6 +326,52 @@ export default function UserManagement() {
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
             <Button onClick={handleSaveEdit} disabled={updateRole.isPending || updatePermissions.isPending}>
               {updateRole.isPending || updatePermissions.isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create User Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Novo Usuário</DialogTitle>
+            <DialogDescription>Crie uma nova conta de acesso ao sistema.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="new-name">Nome</Label>
+              <Input id="new-name" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome do usuário" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-email">E-mail *</Label>
+              <Input id="new-email" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="email@exemplo.com" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-password">Senha *</Label>
+              <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+            </div>
+            <div className="space-y-2">
+              <Label>Papel</Label>
+              <Select value={newRole} onValueChange={(v) => setNewRole(v as "admin" | "user")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">
+                    <span className="flex items-center gap-1">
+                      <Shield className="h-3 w-3" /> Administrador
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="user">Usuário</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCreateUser} disabled={createUser.isPending}>
+              {createUser.isPending ? "Criando..." : "Criar Usuário"}
             </Button>
           </DialogFooter>
         </DialogContent>

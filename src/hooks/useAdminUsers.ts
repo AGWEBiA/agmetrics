@@ -68,3 +68,12 @@ export function useUpdatePermissions() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-users"] }),
   });
 }
+
+export function useCreateUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { email: string; name: string; password: string; role: "admin" | "user" }) =>
+      callAdminUsers("POST", params),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-users"] }),
+  });
+}

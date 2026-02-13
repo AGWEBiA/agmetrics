@@ -2,8 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS",
 };
 
 Deno.serve(async (req) => {
@@ -77,6 +77,37 @@ Deno.serve(async (req) => {
     }));
 
     return new Response(JSON.stringify(users), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
+  // POST /admin-users → create user { email, name, password, role }
+  if (method === "POST") {
+    const body = await req.json();
+    const { email, name, password, role } = body;
+
+    if (!email || !password || password.length < 6) {
+      return new Response(JSON.stringify({ error: "E-mail e senha (mín. 6 caracteres) são obrigatórios" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const validRole = ["admin", "user"].includes(role) ? role : "user";
+
+    // Create user via admin API
+    const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { name: name || "" },
+    });
+
+    if (createError) {
+      return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Update role if admin
+    if (validRole === "admin" && newUser?.user?.id) {
+      await adminClient.from("user_roles").update({ role: "admin" }).eq("user_id", newUser.user.id);
+    }
+
+    return new Response(JSON.stringify({ success: true, user_id: newUser?.user?.id }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
   // PATCH /admin-users → update role { user_id, role }
