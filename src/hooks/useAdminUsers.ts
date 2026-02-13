@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type AppPermission = "projects.view" | "projects.edit" | "sales.view" | "integrations.manage" | "data.export";
+
 export interface AdminUser {
   id: string;
   name: string;
@@ -8,6 +10,7 @@ export interface AdminUser {
   avatar_url: string | null;
   created_at: string;
   role: "admin" | "user";
+  permissions: AppPermission[];
 }
 
 async function callAdminUsers(method: string, body?: any, params?: Record<string, string>) {
@@ -53,6 +56,15 @@ export function useDeleteUser() {
   return useMutation({
     mutationFn: (user_id: string) =>
       callAdminUsers("DELETE", undefined, { user_id }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-users"] }),
+  });
+}
+
+export function useUpdatePermissions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { user_id: string; permissions: AppPermission[] }) =>
+      callAdminUsers("PUT", params),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-users"] }),
   });
 }

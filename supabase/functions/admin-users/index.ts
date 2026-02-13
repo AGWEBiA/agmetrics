@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const method = req.method;
 
-  // GET /admin-users → list all users with roles
+  // GET /admin-users → list all users with roles and permissions
   if (method === "GET") {
     const { data: profiles, error } = await adminClient
       .from("profiles")
@@ -63,9 +63,17 @@ Deno.serve(async (req) => {
     const roleMap: Record<string, string> = {};
     (roles || []).forEach((r: any) => { roleMap[r.user_id] = r.role; });
 
+    const { data: perms } = await adminClient.from("user_permissions").select("user_id, permission");
+    const permMap: Record<string, string[]> = {};
+    (perms || []).forEach((p: any) => {
+      if (!permMap[p.user_id]) permMap[p.user_id] = [];
+      permMap[p.user_id].push(p.permission);
+    });
+
     const users = (profiles || []).map((p: any) => ({
       ...p,
       role: roleMap[p.id] || "user",
+      permissions: permMap[p.id] || [],
     }));
 
     return new Response(JSON.stringify(users), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -111,6 +119,31 @@ Deno.serve(async (req) => {
     const { error } = await adminClient.auth.admin.deleteUser(userId);
     if (error) {
       return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
+  // PUT /admin-users → update permissions { user_id, permissions: string[] }
+  if (method === "PUT") {
+    const body = await req.json();
+    const { user_id, permissions } = body;
+
+    const validPerms = ["projects.view", "projects.edit", "sales.view", "integrations.manage", "data.export"];
+    if (!user_id || !Array.isArray(permissions) || permissions.some((p: string) => !validPerms.includes(p))) {
+      return new Response(JSON.stringify({ error: "Invalid params" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Delete existing permissions
+    await adminClient.from("user_permissions").delete().eq("user_id", user_id);
+
+    // Insert new permissions
+    if (permissions.length > 0) {
+      const rows = permissions.map((p: string) => ({ user_id, permission: p }));
+      const { error } = await adminClient.from("user_permissions").insert(rows);
+      if (error) {
+        return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
