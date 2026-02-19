@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useProjectByToken } from "@/hooks/useProjects";
+import { useProjectBySlug } from "@/hooks/useProjects";
 import { usePublicDashboardMetrics } from "@/hooks/usePublicDashboardMetrics";
 import { formatBRL, formatPercent, formatDecimal, formatNumber } from "@/lib/formatters";
 import { AnimatedCard, AnimatedPage } from "@/components/AnimatedCard";
@@ -22,8 +22,8 @@ const GOAL_LABELS: Record<string, string> = {
 };
 
 export default function PublicDashboard() {
-  const { viewToken } = useParams();
-  const { data: project, isLoading: projectLoading, error } = useProjectByToken(viewToken);
+  const { slug } = useParams();
+  const { data: project, isLoading: projectLoading, error } = useProjectBySlug(slug);
   const m = usePublicDashboardMetrics(project?.id);
 
   if (projectLoading) {

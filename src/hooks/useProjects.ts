@@ -40,8 +40,35 @@ export function useProjectByToken(viewToken: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects_public" as any)
-        .select("id, name, description, strategy, start_date, end_date, cart_open_date, budget, manual_investment, is_active, created_at, updated_at, view_token, meta_leads_enabled, google_leads_enabled, owner_id")
+        .select("id, name, description, strategy, start_date, end_date, cart_open_date, budget, manual_investment, is_active, created_at, updated_at, view_token, meta_leads_enabled, google_leads_enabled, owner_id, slug")
         .eq("view_token", viewToken!)
+        .single();
+      if (error) throw error;
+      return data as unknown as Project;
+    },
+  });
+}
+
+function generateSlug(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
+export function useProjectBySlug(slug: string | undefined) {
+  return useQuery({
+    queryKey: ["projects", "slug", slug],
+    enabled: !!slug,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects_public" as any)
+        .select("id, name, description, strategy, start_date, end_date, cart_open_date, budget, manual_investment, is_active, created_at, updated_at, view_token, meta_leads_enabled, google_leads_enabled, owner_id, slug")
+        .eq("slug", slug!)
         .single();
       if (error) throw error;
       return data as unknown as Project;
@@ -63,9 +90,10 @@ export function useCreateProject() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
 
+      const slug = generateSlug(project.name);
       const { data, error } = await supabase
         .from("projects")
-        .insert({ ...project, owner_id: user.id })
+        .insert({ ...project, owner_id: user.id, slug })
         .select()
         .single();
       if (error) throw error;
