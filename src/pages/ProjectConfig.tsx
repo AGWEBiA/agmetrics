@@ -550,14 +550,23 @@ function GoogleTab({ projectId }: { projectId: string }) {
   const [refreshToken, setRefreshToken] = useState("");
   const [customerId, setCustomerId] = useState("");
 
+  useEffect(() => {
+    if (creds) {
+      setClientId(creds.client_id || "");
+      setClientSecret(creds.client_secret || "");
+      setRefreshToken(creds.refresh_token || "");
+      setCustomerId(creds.customer_id || "");
+    }
+  }, [creds]);
+
   const handleSave = async () => {
     try {
       await saveCreds.mutateAsync({
         project_id: projectId,
-        client_id: clientId || creds?.client_id || "",
-        client_secret: clientSecret || creds?.client_secret || "",
-        refresh_token: refreshToken || creds?.refresh_token || "",
-        customer_id: customerId || creds?.customer_id || "",
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        customer_id: customerId,
       });
       toast({ title: "Credenciais salvas!" });
     } catch (err: any) {
@@ -580,19 +589,19 @@ function GoogleTab({ projectId }: { projectId: string }) {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label>Client ID</Label>
-            <Input placeholder={creds?.client_id || "Client ID"} value={clientId} onChange={(e) => setClientId(e.target.value)} />
+            <Input placeholder="Client ID" value={clientId} onChange={(e) => setClientId(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Client Secret</Label>
-            <Input type="password" placeholder={creds ? "••••" : "Client Secret"} value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} />
+            <Input type="password" placeholder="Client Secret" value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Refresh Token</Label>
-            <Input type="password" placeholder={creds ? "••••" : "Refresh Token"} value={refreshToken} onChange={(e) => setRefreshToken(e.target.value)} />
+            <Input type="password" placeholder="Refresh Token" value={refreshToken} onChange={(e) => setRefreshToken(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Customer ID</Label>
-            <Input placeholder={creds?.customer_id || "XXX-XXX-XXXX"} value={customerId} onChange={(e) => setCustomerId(e.target.value)} />
+            <Input placeholder="XXX-XXX-XXXX" value={customerId} onChange={(e) => setCustomerId(e.target.value)} />
           </div>
         </div>
         <div className="flex gap-2">
