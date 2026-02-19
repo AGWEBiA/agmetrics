@@ -39,8 +39,8 @@ export function useProjectByToken(viewToken: string | undefined) {
     enabled: !!viewToken,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("projects")
-        .select("*")
+        .from("projects_public" as any)
+        .select("id, name, description, strategy, start_date, end_date, cart_open_date, budget, manual_investment, is_active, created_at, updated_at, view_token, meta_leads_enabled, google_leads_enabled, owner_id")
         .eq("view_token", viewToken!)
         .single();
       if (error) throw error;
