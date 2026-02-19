@@ -53,6 +53,13 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "google_credentials_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       google_metrics: {
@@ -112,6 +119,13 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "google_metrics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       manual_investments: {
@@ -145,6 +159,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_investments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
             referencedColumns: ["id"]
           },
         ]
@@ -198,6 +219,13 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "meta_campaigns_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       meta_credentials: {
@@ -234,6 +262,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meta_credentials_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
             referencedColumns: ["id"]
           },
         ]
@@ -343,6 +378,13 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "meta_metrics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       products: {
@@ -379,6 +421,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
             referencedColumns: ["id"]
           },
         ]
@@ -447,6 +496,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_goals_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
             referencedColumns: ["id"]
           },
         ]
@@ -598,6 +654,13 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sales_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_dashboard_preferences: {
@@ -634,6 +697,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_dashboard_preferences_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
             referencedColumns: ["id"]
           },
         ]
@@ -725,6 +795,13 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "whatsapp_groups_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       whatsapp_member_history: {
@@ -773,10 +850,74 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "whatsapp_member_history_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
+      projects_public: {
+        Row: {
+          budget: number | null
+          cart_open_date: string | null
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          google_leads_enabled: boolean | null
+          id: string | null
+          is_active: boolean | null
+          manual_investment: number | null
+          meta_leads_enabled: boolean | null
+          name: string | null
+          owner_id: string | null
+          start_date: string | null
+          strategy: Database["public"]["Enums"]["project_strategy"] | null
+          updated_at: string | null
+          view_token: string | null
+        }
+        Insert: {
+          budget?: number | null
+          cart_open_date?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          google_leads_enabled?: boolean | null
+          id?: string | null
+          is_active?: boolean | null
+          manual_investment?: number | null
+          meta_leads_enabled?: boolean | null
+          name?: string | null
+          owner_id?: string | null
+          start_date?: string | null
+          strategy?: Database["public"]["Enums"]["project_strategy"] | null
+          updated_at?: string | null
+          view_token?: string | null
+        }
+        Update: {
+          budget?: number | null
+          cart_open_date?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          google_leads_enabled?: boolean | null
+          id?: string | null
+          is_active?: boolean | null
+          manual_investment?: number | null
+          meta_leads_enabled?: boolean | null
+          name?: string | null
+          owner_id?: string | null
+          start_date?: string | null
+          strategy?: Database["public"]["Enums"]["project_strategy"] | null
+          updated_at?: string | null
+          view_token?: string | null
+        }
+        Relationships: []
+      }
       public_sales_summary: {
         Row: {
           amount: number | null
@@ -823,6 +964,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
             referencedColumns: ["id"]
           },
         ]
