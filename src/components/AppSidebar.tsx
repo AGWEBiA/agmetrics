@@ -145,7 +145,7 @@ export function AppSidebar() {
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
                       <a
-                        href={`/view/${project.view_token}`}
+                        href={`/view/${project.slug || project.view_token}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center hover:bg-sidebar-accent"

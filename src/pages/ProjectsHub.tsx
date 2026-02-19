@@ -252,7 +252,7 @@ export default function ProjectsHub() {
                 <Button size="sm" variant="ghost" onClick={() => openEdit(project)}>
                   <Pencil className="h-3 w-3" />
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => window.open(`/view/${project.view_token}`, "_blank")}>
+                <Button size="sm" variant="ghost" onClick={() => window.open(`/view/${project.slug || project.view_token}`, "_blank")}>
                   <ExternalLink className="h-3 w-3" />
                 </Button>
                 <AlertDialog>

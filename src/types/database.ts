@@ -6,6 +6,7 @@ export interface Project {
   description: string | null;
   owner_id: string;
   view_token: string;
+  slug: string | null;
   start_date: string | null;
   end_date: string | null;
   cart_open_date: string | null;

@@ -28,7 +28,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/view/:viewToken" element={<PublicDashboard />} />
+          <Route path="/view/:slug" element={<PublicDashboard />} />
           <Route
             path="/admin"
             element={
