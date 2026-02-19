@@ -529,6 +529,7 @@ export type Database = {
           meta_leads_enabled: boolean
           name: string
           owner_id: string
+          slug: string | null
           start_date: string | null
           strategy: Database["public"]["Enums"]["project_strategy"]
           updated_at: string
@@ -555,6 +556,7 @@ export type Database = {
           meta_leads_enabled?: boolean
           name: string
           owner_id: string
+          slug?: string | null
           start_date?: string | null
           strategy?: Database["public"]["Enums"]["project_strategy"]
           updated_at?: string
@@ -581,6 +583,7 @@ export type Database = {
           meta_leads_enabled?: boolean
           name?: string
           owner_id?: string
+          slug?: string | null
           start_date?: string | null
           strategy?: Database["public"]["Enums"]["project_strategy"]
           updated_at?: string
@@ -875,6 +878,7 @@ export type Database = {
           meta_leads_enabled: boolean | null
           name: string | null
           owner_id: string | null
+          slug: string | null
           start_date: string | null
           strategy: Database["public"]["Enums"]["project_strategy"] | null
           updated_at: string | null
@@ -893,6 +897,7 @@ export type Database = {
           meta_leads_enabled?: boolean | null
           name?: string | null
           owner_id?: string | null
+          slug?: string | null
           start_date?: string | null
           strategy?: Database["public"]["Enums"]["project_strategy"] | null
           updated_at?: string | null
@@ -911,6 +916,7 @@ export type Database = {
           meta_leads_enabled?: boolean | null
           name?: string | null
           owner_id?: string | null
+          slug?: string | null
           start_date?: string | null
           strategy?: Database["public"]["Enums"]["project_strategy"] | null
           updated_at?: string | null
