@@ -158,6 +158,14 @@ function GeneralTab({ projectId }: { projectId: string }) {
 }
 
 // ============ META ADS TAB ============
+interface MetaAdAccount {
+  id: string;
+  name: string;
+  account_status: number;
+  currency: string;
+  business_name: string | null;
+}
+
 function MetaTab({ projectId }: { projectId: string }) {
   const { data: credsList, refetch: refetchCreds } = useMetaCredentialsList(projectId);
   const saveCreds = useSaveMetaCredentials();
@@ -165,27 +173,67 @@ function MetaTab({ projectId }: { projectId: string }) {
   const { toast } = useToast();
   const [addingAccount, setAddingAccount] = useState(false);
   const [newToken, setNewToken] = useState("");
-  const [newAccountId, setNewAccountId] = useState("");
   const [newLabel, setNewLabel] = useState("");
+  const [fetchingAccounts, setFetchingAccounts] = useState(false);
+  const [adAccounts, setAdAccounts] = useState<MetaAdAccount[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState("");
+  const [accountSearch, setAccountSearch] = useState("");
+  const [step, setStep] = useState<"token" | "select">("token");
 
-  const handleAddAccount = async () => {
-    if (!newAccountId || !newToken) {
-      toast({ title: "Preencha o Access Token e o Ad Account ID", variant: "destructive" });
+  const handleFetchAccounts = async () => {
+    if (!newToken.trim()) {
+      toast({ title: "Cole o Access Token para continuar", variant: "destructive" });
       return;
     }
+    setFetchingAccounts(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+      const res = await fetch(`${supabaseUrl}/functions/v1/list-meta-ad-accounts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ access_token: newToken }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Erro ao buscar contas");
+      if (!result.accounts || result.accounts.length === 0) {
+        toast({ title: "Nenhuma conta encontrada", description: "Verifique se o token tem permissão de acesso às contas de anúncio.", variant: "destructive" });
+        return;
+      }
+      setAdAccounts(result.accounts);
+      setStep("select");
+      toast({ title: `${result.accounts.length} conta(s) encontrada(s)!` });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setFetchingAccounts(false);
+    }
+  };
+
+  const handleAddAccount = async () => {
+    if (!selectedAccountId || !newToken) {
+      toast({ title: "Selecione uma conta", variant: "destructive" });
+      return;
+    }
+    const selectedAcc = adAccounts.find(a => a.id === selectedAccountId);
     try {
       await saveCreds.mutateAsync({
         project_id: projectId,
         access_token: newToken,
-        ad_account_id: newAccountId,
-        label: newLabel,
+        ad_account_id: selectedAccountId,
+        label: newLabel || selectedAcc?.name || "",
       });
-      setNewToken(""); setNewAccountId(""); setNewLabel("");
-      setAddingAccount(false);
+      resetAddForm();
       toast({ title: "Conta adicionada!" });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
+  };
+
+  const resetAddForm = () => {
+    setNewToken(""); setNewLabel(""); setSelectedAccountId("");
+    setAdAccounts([]); setAccountSearch(""); setStep("token");
+    setAddingAccount(false);
   };
 
   const handleDeleteAccount = async (id: string) => {
@@ -197,6 +245,18 @@ function MetaTab({ projectId }: { projectId: string }) {
     }
   };
 
+  const filteredAccounts = adAccounts.filter(a => {
+    const search = accountSearch.toLowerCase();
+    return !search || a.name.toLowerCase().includes(search) || a.id.toLowerCase().includes(search) || (a.business_name || "").toLowerCase().includes(search);
+  });
+
+  const statusLabel = (s: number) => {
+    if (s === 1) return "Ativa";
+    if (s === 2) return "Desabilitada";
+    if (s === 3) return "Não publicada";
+    return `Status ${s}`;
+  };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -206,7 +266,7 @@ function MetaTab({ projectId }: { projectId: string }) {
               <CardTitle>Meta Ads</CardTitle>
               <CardDescription>Gerencie as contas de anúncios vinculadas ao projeto</CardDescription>
             </div>
-            <Button size="sm" onClick={() => setAddingAccount(true)}>
+            <Button size="sm" onClick={() => setAddingAccount(true)} disabled={addingAccount}>
               <Plus className="mr-1.5 h-4 w-4" /> Adicionar Conta
             </Button>
           </div>
@@ -215,24 +275,62 @@ function MetaTab({ projectId }: { projectId: string }) {
           {addingAccount && (
             <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
               <p className="text-sm font-medium">Nova Conta de Anúncios</p>
-              <div className="space-y-2">
-                <Label>Label (opcional)</Label>
-                <Input placeholder="Ex: Conta Principal" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Ad Account ID</Label>
-                <Input placeholder="act_XXXXXXXXXX" value={newAccountId} onChange={(e) => setNewAccountId(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Access Token</Label>
-                <Input type="password" placeholder="Cole seu access token aqui" value={newToken} onChange={(e) => setNewToken(e.target.value)} />
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleAddAccount} disabled={saveCreds.isPending}>
-                  {saveCreds.isPending ? "Salvando..." : "Salvar"}
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setAddingAccount(false)}>Cancelar</Button>
-              </div>
+
+              {step === "token" && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Access Token</Label>
+                    <Input type="password" placeholder="Cole seu access token aqui" value={newToken} onChange={(e) => setNewToken(e.target.value)} />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleFetchAccounts} disabled={fetchingAccounts || !newToken.trim()}>
+                      {fetchingAccounts ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Buscando...</> : "Buscar Contas"}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={resetAddForm}>Cancelar</Button>
+                  </div>
+                </>
+              )}
+
+              {step === "select" && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Buscar conta</Label>
+                    <Input placeholder="Pesquisar por nome, ID ou empresa..." value={accountSearch} onChange={(e) => setAccountSearch(e.target.value)} />
+                  </div>
+                  <div className="max-h-64 overflow-y-auto rounded-lg border divide-y">
+                    {filteredAccounts.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">Nenhuma conta encontrada com esse filtro.</p>
+                    )}
+                    {filteredAccounts.map(acc => (
+                      <label
+                        key={acc.id}
+                        className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors hover:bg-muted/50 ${selectedAccountId === acc.id ? "bg-accent" : ""}`}
+                        onClick={() => setSelectedAccountId(acc.id)}
+                      >
+                        <input type="radio" name="meta_account" checked={selectedAccountId === acc.id} onChange={() => setSelectedAccountId(acc.id)} className="accent-primary" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{acc.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{acc.id}{acc.business_name ? ` · ${acc.business_name}` : ""}{acc.currency ? ` · ${acc.currency}` : ""}</p>
+                        </div>
+                        <Badge variant={acc.account_status === 1 ? "default" : "outline"} className="text-xs shrink-0">
+                          {statusLabel(acc.account_status)}
+                        </Badge>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Label (opcional)</Label>
+                    <Input placeholder="Ex: Conta Principal" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleAddAccount} disabled={!selectedAccountId || saveCreds.isPending}>
+                      {saveCreds.isPending ? "Salvando..." : "Vincular Conta"}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setStep("token")}>Voltar</Button>
+                    <Button size="sm" variant="outline" onClick={resetAddForm}>Cancelar</Button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
