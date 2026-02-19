@@ -781,7 +781,7 @@ export default function AdminDashboard() {
             <FileSpreadsheet className="mr-1.5 h-4 w-4" />
             <span className="hidden sm:inline">CSV</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => window.open(`/view/${project?.slug || project?.view_token}`, "_blank")}>
+          <Button variant="outline" size="sm" onClick={() => window.open(`https://agmetrics.lovable.app/view/${project?.slug || project?.view_token}`, "_blank")}>
             <ExternalLink className="mr-1.5 h-4 w-4" />
             <span className="hidden sm:inline">Público</span>
           </Button>
