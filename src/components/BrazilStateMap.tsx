@@ -2,35 +2,36 @@ import { useMemo, useState } from "react";
 import { formatBRL, formatPercent } from "@/lib/formatters";
 import brazilMapImg from "@/assets/brazil-map.png";
 
-// Approximate percentage positions (x%, y%) of each state center on the map image
+// Positions calibrated for the Wikimedia Brazil_State_Map.svg PNG (960x845 rendered)
+// Each position is a percentage (x%, y%) of the image dimensions
 const STATE_POSITIONS: Record<string, { x: number; y: number; label: string }> = {
-  "RR": { x: 24, y: 8, label: "Roraima" },
-  "AP": { x: 46, y: 9, label: "Amapá" },
-  "AM": { x: 18, y: 22, label: "Amazonas" },
-  "PA": { x: 42, y: 22, label: "Pará" },
-  "MA": { x: 57, y: 22, label: "Maranhão" },
-  "CE": { x: 70, y: 18, label: "Ceará" },
-  "RN": { x: 79, y: 17, label: "Rio Grande do Norte" },
-  "PB": { x: 80, y: 22, label: "Paraíba" },
-  "PE": { x: 78, y: 26, label: "Pernambuco" },
-  "AL": { x: 82, y: 30, label: "Alagoas" },
-  "SE": { x: 79, y: 33, label: "Sergipe" },
+  "RR": { x: 25, y: 8, label: "Roraima" },
+  "AP": { x: 44, y: 8, label: "Amapá" },
+  "AM": { x: 17, y: 22, label: "Amazonas" },
+  "PA": { x: 41, y: 24, label: "Pará" },
+  "MA": { x: 58, y: 22, label: "Maranhão" },
+  "CE": { x: 72, y: 20, label: "Ceará" },
+  "RN": { x: 81, y: 19, label: "Rio Grande do Norte" },
+  "PB": { x: 82, y: 24, label: "Paraíba" },
+  "PE": { x: 80, y: 28, label: "Pernambuco" },
+  "AL": { x: 84, y: 33, label: "Alagoas" },
+  "SE": { x: 81, y: 36, label: "Sergipe" },
   "PI": { x: 63, y: 30, label: "Piauí" },
-  "TO": { x: 50, y: 36, label: "Tocantins" },
-  "AC": { x: 6, y: 32, label: "Acre" },
-  "RO": { x: 17, y: 36, label: "Rondônia" },
-  "MT": { x: 30, y: 42, label: "Mato Grosso" },
-  "GO": { x: 48, y: 52, label: "Goiás" },
-  "DF": { x: 53, y: 54, label: "Distrito Federal" },
-  "BA": { x: 67, y: 44, label: "Bahia" },
-  "MG": { x: 62, y: 58, label: "Minas Gerais" },
-  "ES": { x: 74, y: 58, label: "Espírito Santo" },
-  "MS": { x: 32, y: 58, label: "Mato Grosso do Sul" },
-  "SP": { x: 48, y: 66, label: "São Paulo" },
-  "RJ": { x: 65, y: 66, label: "Rio de Janeiro" },
-  "PR": { x: 40, y: 74, label: "Paraná" },
-  "SC": { x: 42, y: 81, label: "Santa Catarina" },
-  "RS": { x: 38, y: 89, label: "Rio Grande do Sul" },
+  "TO": { x: 51, y: 36, label: "Tocantins" },
+  "AC": { x: 5, y: 34, label: "Acre" },
+  "RO": { x: 18, y: 37, label: "Rondônia" },
+  "MT": { x: 31, y: 44, label: "Mato Grosso" },
+  "GO": { x: 50, y: 54, label: "Goiás" },
+  "DF": { x: 55, y: 52, label: "Distrito Federal" },
+  "BA": { x: 68, y: 44, label: "Bahia" },
+  "MG": { x: 63, y: 60, label: "Minas Gerais" },
+  "ES": { x: 76, y: 60, label: "Espírito Santo" },
+  "MS": { x: 35, y: 60, label: "Mato Grosso do Sul" },
+  "SP": { x: 51, y: 68, label: "São Paulo" },
+  "RJ": { x: 68, y: 68, label: "Rio de Janeiro" },
+  "PR": { x: 44, y: 76, label: "Paraná" },
+  "SC": { x: 46, y: 83, label: "Santa Catarina" },
+  "RS": { x: 41, y: 91, label: "Rio Grande do Sul" },
 };
 
 const NAME_TO_CODE: Record<string, string> = {
@@ -50,7 +51,6 @@ function normalizeToCode(name: string): string | null {
   const trimmed = name.trim();
   const upper = trimmed.toUpperCase();
   if (STATE_POSITIONS[upper]) return upper;
-  // Remove suffixes like "(state)" that Meta API adds
   const cleaned = trimmed.replace(/\s*\(state\)\s*/gi, "").replace(/\s*\(region\)\s*/gi, "").trim().toLowerCase();
   return NAME_TO_CODE[cleaned] || NAME_TO_CODE[trimmed.toLowerCase()] || null;
 }
@@ -109,7 +109,7 @@ export function BrazilStateMap({
   function getBubbleSize(value: number): number {
     if (value === 0) return 0;
     const ratio = Math.sqrt(value / maxValue);
-    return 8 + ratio * 16; // 8px to 24px
+    return 10 + ratio * 18;
   }
 
   function getBubbleColor(value: number): string {
@@ -123,16 +123,17 @@ export function BrazilStateMap({
   const hoveredInfo = hoveredState ? STATE_POSITIONS[hoveredState] : null;
 
   return (
-    <div className="relative w-full max-w-md mx-auto">
-      {/* Map image */}
+    <div className="relative w-full max-w-lg mx-auto select-none">
+      {/* Real Brazil map image */}
       <img
         src={brazilMapImg}
         alt="Mapa do Brasil"
-        className="w-full h-auto rounded-lg opacity-80"
+        className="w-full h-auto rounded-lg"
+        style={{ filter: "brightness(0.85) saturate(0.3) opacity(0.7)" }}
         draggable={false}
       />
 
-      {/* State markers overlay */}
+      {/* Interactive state markers */}
       {Object.entries(STATE_POSITIONS).map(([code, pos]) => {
         const sd = stateValues.get(code);
         const value = sd?.value || 0;
@@ -142,7 +143,7 @@ export function BrazilStateMap({
         return (
           <div
             key={code}
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer transition-all duration-150"
+            className="absolute transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
             style={{
               left: `${pos.x}%`,
               top: `${pos.y}%`,
@@ -153,38 +154,41 @@ export function BrazilStateMap({
           >
             {value > 0 ? (
               <div
-                className="rounded-full flex items-center justify-center border border-white/20 shadow-lg transition-transform duration-150"
+                className="rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 border-2 border-white/30"
                 style={{
-                  width: `${isHovered ? size + 6 : size}px`,
-                  height: `${isHovered ? size + 6 : size}px`,
+                  width: `${isHovered ? size + 8 : size}px`,
+                  height: `${isHovered ? size + 8 : size}px`,
                   backgroundColor: getBubbleColor(value),
                   boxShadow: isHovered
-                    ? `0 0 12px ${getBubbleColor(value)}`
-                    : `0 0 4px ${getBubbleColor(value)}50`,
+                    ? `0 0 16px 4px ${getBubbleColor(value)}80`
+                    : `0 2px 6px ${getBubbleColor(value)}40`,
                 }}
               >
                 <span
-                  className="text-white font-bold select-none"
-                  style={{ fontSize: size >= 18 ? "9px" : "7px" }}
+                  className="text-white font-bold"
+                  style={{ fontSize: size >= 20 ? "10px" : "7px" }}
                 >
                   {code}
                 </span>
               </div>
             ) : (
-              <div className="w-3 h-3 rounded-full bg-muted/50 border border-border/50 flex items-center justify-center">
-                <span className="text-[5px] text-muted-foreground font-medium select-none">{code}</span>
+              <div
+                className="rounded-full bg-muted/40 border border-border/40 flex items-center justify-center cursor-pointer hover:bg-muted/60 transition-colors"
+                style={{ width: "14px", height: "14px" }}
+              >
+                <span className="text-[6px] text-muted-foreground/70 font-medium">{code}</span>
               </div>
             )}
           </div>
         );
       })}
 
-      {/* Tooltip */}
+      {/* Tooltip card */}
       {hoveredState && hoveredInfo && (
-        <div className="absolute top-2 right-2 bg-card border border-border rounded-lg shadow-lg p-3 text-xs z-30 min-w-[160px]">
-          <p className="font-semibold text-foreground mb-1">{hoveredInfo.label} ({hoveredState})</p>
+        <div className="absolute top-3 right-3 bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-xl p-3 text-xs z-30 min-w-[170px] animate-in fade-in-0 zoom-in-95 duration-150">
+          <p className="font-semibold text-foreground mb-1.5">{hoveredInfo.label} ({hoveredState})</p>
           {hoveredData && hoveredData.value > 0 ? (
-            <>
+            <div className="space-y-0.5">
               <p className="text-muted-foreground">
                 {valueLabel}: <span className="text-foreground font-medium">{formatValue(hoveredData.value)}</span>
               </p>
@@ -196,9 +200,9 @@ export function BrazilStateMap({
               {hoveredData.pct != null && (
                 <p className="text-muted-foreground">{formatPercent(hoveredData.pct)} do total</p>
               )}
-            </>
+            </div>
           ) : (
-            <p className="text-muted-foreground">Sem dados</p>
+            <p className="text-muted-foreground italic">Sem dados</p>
           )}
         </div>
       )}
@@ -206,14 +210,14 @@ export function BrazilStateMap({
       {/* Legend */}
       <div className="flex items-center justify-center gap-2 mt-3">
         <span className="text-[10px] text-muted-foreground">Menor</span>
-        <div className="flex items-center gap-1">
-          {[0.15, 0.35, 0.55, 0.75, 0.95].map((intensity) => (
+        <div className="flex items-end gap-1">
+          {[0.1, 0.3, 0.5, 0.7, 1.0].map((intensity) => (
             <div
               key={intensity}
               className="rounded-full"
               style={{
-                width: `${8 + intensity * 14}px`,
-                height: `${8 + intensity * 14}px`,
+                width: `${10 + intensity * 14}px`,
+                height: `${10 + intensity * 14}px`,
                 backgroundColor: `hsl(${hue}, ${sat}%, ${65 - intensity * 25}%)`,
               }}
             />
