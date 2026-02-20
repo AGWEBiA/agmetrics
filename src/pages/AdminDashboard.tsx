@@ -27,6 +27,7 @@ import {
 } from "recharts";
 import { Progress } from "@/components/ui/progress";
 import { RecentSalesCard } from "@/components/RecentSalesCard";
+import { TrackingTab } from "@/components/TrackingTab";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -808,6 +809,9 @@ export default function AdminDashboard() {
           {m.salesCount > 0 && (
             <TabsTrigger value="timeline" className="text-xs sm:text-sm">Temporal</TabsTrigger>
           )}
+          {(m.metaInvestment > 0 || m.metaImpressions > 0 || m.googleInvestment > 0 || m.gImpressions > 0) && (
+            <TabsTrigger value="tracking" className="text-xs sm:text-sm">Rastreamento</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6 pt-4">
@@ -917,6 +921,10 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="tracking" className="space-y-6 pt-4">
+          <TrackingTab m={m} project={project} />
         </TabsContent>
       </Tabs>
     </AnimatedPage>
