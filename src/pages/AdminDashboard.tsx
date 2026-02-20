@@ -408,7 +408,7 @@ export default function AdminDashboard() {
         <RecentSalesCard projectId={projectId} />
       </AnimatedCard>
     ),
-    funnel: isPerpertuo ? null : (m.totalLeads > 0 || m.totalInvestment > 0) ? (
+    funnel: (m.totalLeads > 0 || m.totalInvestment > 0) ? (
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         <AnimatedCard index={0}><MetricCard title="Total de Leads" value={formatNumber(m.totalLeads)} subtitle="Meta + Google" change={m.leadsChange} /></AnimatedCard>
         <AnimatedCard index={1}><MetricCard title="CPL Médio" value={formatBRL(m.avgCpl)} subtitle="Custo por lead" /></AnimatedCard>
@@ -441,8 +441,8 @@ export default function AdminDashboard() {
               <Stat label="Conv. Checkout" value={formatPercent(m.metaCheckoutConversion)} />
               <Stat label="Impressões" value={formatNumber(m.metaImpressions)} />
               <Stat label="CPM" value={formatBRL(m.metaCpm)} />
-              {!isPerpertuo && <Stat label="Leads" value={formatNumber(m.metaLeads)} />}
-              {!isPerpertuo && <Stat label="CPL" value={formatBRL(m.metaCostPerLead)} />}
+              <Stat label="Leads" value={formatNumber(m.metaLeads)} />
+              <Stat label="CPL" value={formatBRL(m.metaCostPerLead)} />
             </div>
           </CardContent>
         </Card>
@@ -463,9 +463,9 @@ export default function AdminDashboard() {
               <Stat label="Cliques" value={formatNumber(m.gClicks)} />
               <Stat label="CTR" value={formatPercent(m.gCtr)} />
               <Stat label="CPC" value={formatBRL(m.gCpc)} />
-              {!isPerpertuo && <Stat label="Conversões" value={formatNumber(m.gConversions)} />}
-              {!isPerpertuo && <Stat label="Taxa de Conv." value={formatPercent(m.gConversionRate)} />}
-              {!isPerpertuo && <Stat label="Custo/Conv." value={formatBRL(m.gCostPerConversion)} />}
+              <Stat label="Conversões" value={formatNumber(m.gConversions)} />
+              <Stat label="Taxa de Conv." value={formatPercent(m.gConversionRate)} />
+              <Stat label="Custo/Conv." value={formatBRL(m.gCostPerConversion)} />
             </div>
           </CardContent>
         </Card>
@@ -800,7 +800,7 @@ export default function AdminDashboard() {
       <Tabs defaultValue="overview">
         <TabsList className="w-full sm:w-auto overflow-x-auto">
           <TabsTrigger value="overview" className="text-xs sm:text-sm">Visão Geral</TabsTrigger>
-          {!isPerpertuo && (m.totalLeads > 0 || m.totalInvestment > 0) && (
+          {(m.totalLeads > 0 || m.totalInvestment > 0) && (
             <TabsTrigger value="acquisition" className="text-xs sm:text-sm">Captação</TabsTrigger>
           )}
           {m.totalSalesCount > 0 && (
@@ -828,15 +828,58 @@ export default function AdminDashboard() {
 
         <TabsContent value="acquisition" className="space-y-6 pt-4">
           <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-            <AnimatedCard index={0}><MetricCard title="Total de Leads" value={formatNumber(m.totalLeads)} subtitle="Meta + Google" /></AnimatedCard>
-            <AnimatedCard index={1}><MetricCard title="CPL Médio" value={formatBRL(m.avgCpl)} subtitle="Custo por lead" /></AnimatedCard>
-            <AnimatedCard index={2}><MetricCard title="Conversão L→V" value={formatPercent(m.conversionRate)} /></AnimatedCard>
-            <AnimatedCard index={3}><MetricCard title="Investimento" value={formatBRL(m.totalInvestment)} subtitle="Total em captação" /></AnimatedCard>
+            <AnimatedCard index={0}><MetricCard title="Investimento Total" value={formatBRL(m.totalInvestment)} subtitle="Meta + Google + Manual" /></AnimatedCard>
+            <AnimatedCard index={1}><MetricCard title="ROI" value={formatPercent(m.roi)} color={m.roi >= 0 ? "text-success" : "text-destructive"} /></AnimatedCard>
+            <AnimatedCard index={2}><MetricCard title="ROAS" value={`${formatDecimal(m.roas)}x`} subtitle="Retorno sobre ads" /></AnimatedCard>
+            <AnimatedCard index={3}><MetricCard title="Taxa de Conversão" value={formatPercent(m.conversionRate)} subtitle={m.conversionLabel} /></AnimatedCard>
           </div>
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-            <AnimatedCard index={4}><MetricCard title="Leads Meta Ads" value={formatNumber(m.metaLeads)} subtitle={`CPL: ${formatBRL(m.metaCostPerLead)}`} /></AnimatedCard>
-            <AnimatedCard index={5}><MetricCard title="Leads Google Ads" value={formatNumber(m.googleLeads)} subtitle={`CPL: ${m.googleLeads > 0 ? formatBRL(m.googleInvestment / m.googleLeads) : "—"}`} /></AnimatedCard>
-          </div>
+          {(m.metaInvestment > 0 || m.metaLeads > 0) && (
+            <AnimatedCard index={4}>
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">Meta Ads — Captação</CardTitle>
+                    <Badge variant="outline">{formatBRL(m.metaInvestment)}</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
+                    <Stat label="Leads" value={formatNumber(m.metaLeads)} />
+                    <Stat label="CPL" value={formatBRL(m.metaCostPerLead)} />
+                    <Stat label="Resultados" value={formatNumber(m.metaResults)} />
+                    <Stat label="CPR" value={formatBRL(m.metaCostPerResult)} />
+                    <Stat label="Cliques no Link" value={formatNumber(m.metaLinkClicks)} />
+                    <Stat label="Views LP" value={formatNumber(m.metaLpViews)} />
+                    <Stat label="Connect Rate" value={formatPercent(m.metaConnectRate)} />
+                    <Stat label="Conv. Checkout" value={formatPercent(m.metaCheckoutConversion)} />
+                  </div>
+                </CardContent>
+              </Card>
+            </AnimatedCard>
+          )}
+          {(m.googleInvestment > 0 || m.googleLeads > 0) && (
+            <AnimatedCard index={5}>
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">Google Ads — Captação</CardTitle>
+                    <Badge variant="outline">{formatBRL(m.googleInvestment)}</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
+                    <Stat label="Conversões" value={formatNumber(m.gConversions)} />
+                    <Stat label="Custo/Conv." value={formatBRL(m.gCostPerConversion)} />
+                    <Stat label="Cliques" value={formatNumber(m.gClicks)} />
+                    <Stat label="CTR" value={formatPercent(m.gCtr)} />
+                    <Stat label="CPC" value={formatBRL(m.gCpc)} />
+                    <Stat label="Impressões" value={formatNumber(m.gImpressions)} />
+                    <Stat label="Taxa de Conv." value={formatPercent(m.gConversionRate)} />
+                  </div>
+                </CardContent>
+              </Card>
+            </AnimatedCard>
+          )}
         </TabsContent>
 
         <TabsContent value="sales" className="space-y-6 pt-4">
