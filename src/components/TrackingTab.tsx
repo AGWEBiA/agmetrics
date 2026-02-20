@@ -2,7 +2,8 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { formatBRL, formatPercent, formatNumber, formatDecimal } from "@/lib/formatters";
 import { AnimatedCard } from "@/components/AnimatedCard";
 import { DemographicsSection } from "@/components/DemographicsSection";
@@ -86,6 +87,165 @@ const tooltipStyle = {
   borderRadius: "8px",
   fontSize: "12px",
 };
+
+function TopAdsSection({ metaMetrics }: { metaMetrics: any[] }) {
+  const topAds = useMemo(() => {
+    // Collect all top_ads from meta_metrics rows and merge by ad id
+    const adsMap = new Map<string, any>();
+    for (const met of metaMetrics) {
+      const ads = met.top_ads;
+      if (!Array.isArray(ads)) continue;
+      for (const ad of ads) {
+        if (!ad.id) continue;
+        if (!adsMap.has(ad.id)) {
+          adsMap.set(ad.id, { ...ad });
+        } else {
+          const existing = adsMap.get(ad.id)!;
+          existing.spend += ad.spend || 0;
+          existing.impressions += ad.impressions || 0;
+          existing.clicks += ad.clicks || 0;
+          existing.purchases += ad.purchases || 0;
+          existing.leads += ad.leads || 0;
+          if (ad.preview_link) existing.preview_link = ad.preview_link;
+        }
+      }
+    }
+    return Array.from(adsMap.values())
+      .map((ad) => ({
+        ...ad,
+        cpm: ad.impressions > 0 ? (ad.spend / ad.impressions) * 1000 : 0,
+        ctr: ad.impressions > 0 ? (ad.clicks / ad.impressions) * 100 : 0,
+        cpc: ad.clicks > 0 ? ad.spend / ad.clicks : 0,
+        cpa: ad.purchases > 0 ? ad.spend / ad.purchases : 0,
+        cpl: ad.leads > 0 ? ad.spend / ad.leads : 0,
+      }))
+      .sort((a, b) => b.spend - a.spend);
+  }, [metaMetrics]);
+
+  if (topAds.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex h-40 items-center justify-center text-muted-foreground text-sm">
+          Nenhum dado de anúncio disponível. Sincronize o Meta Ads para ver os melhores anúncios.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-base font-semibold mb-1">Melhores Anúncios — Meta Ads</h3>
+        <p className="text-xs text-muted-foreground">Ordenados por investimento. Clique em "Ver Anúncio" para abrir o preview na Meta.</p>
+      </div>
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+        {topAds.slice(0, 12).map((ad, i) => (
+          <Card key={ad.id} className="relative overflow-hidden">
+            <div className="absolute top-3 right-3">
+              <Badge variant={ad.status === "ACTIVE" ? "default" : "secondary"} className="text-[10px]">
+                {ad.status === "ACTIVE" ? "Ativo" : ad.status || "—"}
+              </Badge>
+            </div>
+            <CardContent className="p-4 space-y-3">
+              <div className="pr-16">
+                <p className="text-[10px] text-muted-foreground font-medium">#{i + 1}</p>
+                <p className="text-sm font-semibold leading-tight line-clamp-2">{ad.name || "Anúncio sem nome"}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{ad.id}</p>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center border rounded-lg p-2 bg-muted/30">
+                <div>
+                  <p className="text-[9px] text-muted-foreground uppercase">Gasto</p>
+                  <p className="text-sm font-bold">{formatBRL(ad.spend)}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-muted-foreground uppercase">Compras</p>
+                  <p className="text-sm font-bold">{formatNumber(ad.purchases)}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-muted-foreground uppercase">Leads</p>
+                  <p className="text-sm font-bold">{formatNumber(ad.leads)}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-xs">
+                <div><span className="text-muted-foreground">CPM:</span> <span className="font-medium">{formatBRL(ad.cpm)}</span></div>
+                <div><span className="text-muted-foreground">CTR:</span> <span className="font-medium">{formatPercent(ad.ctr)}</span></div>
+                <div><span className="text-muted-foreground">CPC:</span> <span className="font-medium">{formatBRL(ad.cpc)}</span></div>
+                {ad.purchases > 0 && <div><span className="text-muted-foreground">CPA:</span> <span className="font-medium">{formatBRL(ad.cpa)}</span></div>}
+                {ad.leads > 0 && <div><span className="text-muted-foreground">CPL:</span> <span className="font-medium">{formatBRL(ad.cpl)}</span></div>}
+                <div><span className="text-muted-foreground">Cliques:</span> <span className="font-medium">{formatNumber(ad.clicks)}</span></div>
+              </div>
+              {ad.preview_link && (
+                <a
+                  href={ad.preview_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Ver Anúncio
+                </a>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Table view */}
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Tabela de Anúncios</CardTitle></CardHeader>
+        <CardContent className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-[10px]">Anúncio</TableHead>
+                <TableHead className="text-[10px] text-right whitespace-nowrap">Gasto</TableHead>
+                <TableHead className="text-[10px] text-right whitespace-nowrap">Impressões</TableHead>
+                <TableHead className="text-[10px] text-right whitespace-nowrap">Cliques</TableHead>
+                <TableHead className="text-[10px] text-right whitespace-nowrap">CTR</TableHead>
+                <TableHead className="text-[10px] text-right whitespace-nowrap">CPC</TableHead>
+                <TableHead className="text-[10px] text-right whitespace-nowrap">CPM</TableHead>
+                <TableHead className="text-[10px] text-right whitespace-nowrap">Compras</TableHead>
+                <TableHead className="text-[10px] text-right whitespace-nowrap">CPA</TableHead>
+                <TableHead className="text-[10px] text-right whitespace-nowrap">Leads</TableHead>
+                <TableHead className="text-[10px] text-right whitespace-nowrap">CPL</TableHead>
+                <TableHead className="text-[10px] text-right whitespace-nowrap">Link</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {topAds.map((ad) => (
+                <TableRow key={ad.id}>
+                  <TableCell className="text-[10px] max-w-[160px]">
+                    <p className="font-medium truncate">{ad.name || "—"}</p>
+                    <p className="text-muted-foreground">{ad.id}</p>
+                  </TableCell>
+                  <TableCell className="text-[10px] text-right">{formatBRL(ad.spend)}</TableCell>
+                  <TableCell className="text-[10px] text-right">{formatNumber(ad.impressions)}</TableCell>
+                  <TableCell className="text-[10px] text-right">{formatNumber(ad.clicks)}</TableCell>
+                  <TableCell className="text-[10px] text-right">{formatPercent(ad.ctr)}</TableCell>
+                  <TableCell className="text-[10px] text-right">{formatBRL(ad.cpc)}</TableCell>
+                  <TableCell className="text-[10px] text-right">{formatBRL(ad.cpm)}</TableCell>
+                  <TableCell className="text-[10px] text-right">{formatNumber(ad.purchases)}</TableCell>
+                  <TableCell className="text-[10px] text-right">{ad.purchases > 0 ? formatBRL(ad.cpa) : "—"}</TableCell>
+                  <TableCell className="text-[10px] text-right">{formatNumber(ad.leads)}</TableCell>
+                  <TableCell className="text-[10px] text-right">{ad.leads > 0 ? formatBRL(ad.cpl) : "—"}</TableCell>
+                  <TableCell className="text-[10px] text-right">
+                    {ad.preview_link ? (
+                      <a href={ad.preview_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
+                        <ExternalLink className="h-3 w-3" />
+                        Ver
+                      </a>
+                    ) : "—"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 
 export function TrackingTab({ m, project }: TrackingTabProps) {
   const hasMetaData = m.metaInvestment > 0 || m.metaImpressions > 0;
@@ -334,6 +494,7 @@ export function TrackingTab({ m, project }: TrackingTabProps) {
           {hasMetaData && <TabsTrigger value="meta">Meta Ads</TabsTrigger>}
           {hasGoogleData && <TabsTrigger value="google">Google Ads</TabsTrigger>}
           {m.salesCount > 0 && <TabsTrigger value="revenue">Faturamento</TabsTrigger>}
+          {hasMetaData && <TabsTrigger value="top_ads">Melhores Anúncios</TabsTrigger>}
           <TabsTrigger value="demographics">Demográficos</TabsTrigger>
         </TabsList>
 
@@ -557,6 +718,13 @@ export function TrackingTab({ m, project }: TrackingTabProps) {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+        )}
+
+        {/* ========== MELHORES ANÚNCIOS ========== */}
+        {hasMetaData && (
+          <TabsContent value="top_ads" className="space-y-6 pt-4">
+            <TopAdsSection metaMetrics={m.metaMetrics || []} />
           </TabsContent>
         )}
 
