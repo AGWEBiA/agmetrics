@@ -166,7 +166,7 @@ function TopAdsSection({ metaAds }: { metaAds: any[] }) {
                 {ad.leads > 0 && <div><span className="text-muted-foreground">CPL:</span> <span className="font-medium">{formatBRL(ad.cpl)}</span></div>}
                 <div><span className="text-muted-foreground">Cliques:</span> <span className="font-medium">{formatNumber(ad.clicks)}</span></div>
               </div>
-              {ad.preview_link ? (
+              {ad.preview_link && ad.status === "ACTIVE" ? (
                 <a
                   href={ad.preview_link}
                   target="_blank"
@@ -176,16 +176,14 @@ function TopAdsSection({ metaAds }: { metaAds: any[] }) {
                   <ExternalLink className="h-3 w-3" />
                   Ver Anúncio
                 </a>
+              ) : ad.preview_link ? (
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                  Anúncio inativo
+                </span>
               ) : (
-                <a
-                  href={`https://www.facebook.com/ads/manager/creative/?act=&selected_ad_ids=${ad.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Ver no Gerenciador
-                </a>
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                  Preview indisponível
+                </span>
               )}
             </CardContent>
           </Card>
@@ -231,11 +229,13 @@ function TopAdsSection({ metaAds }: { metaAds: any[] }) {
                   <TableCell className="text-[10px] text-right">{formatNumber(ad.leads)}</TableCell>
                   <TableCell className="text-[10px] text-right">{ad.leads > 0 ? formatBRL(ad.cpl) : "—"}</TableCell>
                   <TableCell className="text-[10px] text-right">
-                    {ad.preview_link ? (
+                    {ad.preview_link && ad.status === "ACTIVE" ? (
                       <a href={ad.preview_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
                         <ExternalLink className="h-3 w-3" />
                         Ver
                       </a>
+                    ) : ad.preview_link ? (
+                      <span className="text-muted-foreground text-[10px]">Inativo</span>
                     ) : "—"}
                   </TableCell>
                 </TableRow>
