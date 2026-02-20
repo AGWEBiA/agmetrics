@@ -46,7 +46,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify ownership
     const { data: project } = await supabase
       .from("projects")
       .select("id, owner_id")
@@ -59,7 +58,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get Google credentials
     const { data: creds } = await supabase
       .from("google_credentials")
       .select("*")
@@ -73,7 +71,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get access token via refresh token
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -96,7 +93,6 @@ Deno.serve(async (req) => {
 
     const { access_token } = await tokenRes.json();
 
-    // Fetch last 30 days
     const today = new Date();
     const since = new Date(today);
     since.setDate(since.getDate() - 30);
@@ -104,31 +100,24 @@ Deno.serve(async (req) => {
     const untilStr = today.toISOString().split("T")[0];
 
     const customerId = creds.customer_id.replace(/-/g, "");
-    const query = `
-      SELECT
-        segments.date,
-        metrics.cost_micros,
-        metrics.impressions,
-        metrics.clicks,
-        metrics.conversions,
-        metrics.cost_per_conversion,
-        metrics.ctr,
-        metrics.average_cpc
+    const devToken = Deno.env.get("GOOGLE_ADS_DEVELOPER_TOKEN") || "";
+    const headers = {
+      Authorization: `Bearer ${access_token}`,
+      "developer-token": devToken,
+      "Content-Type": "application/json",
+    };
+
+    // Main metrics query
+    const mainQuery = `
+      SELECT segments.date, metrics.cost_micros, metrics.impressions, metrics.clicks,
+             metrics.conversions, metrics.cost_per_conversion, metrics.ctr, metrics.average_cpc
       FROM customer
       WHERE segments.date BETWEEN '${sinceStr}' AND '${untilStr}'
     `;
 
     const googleRes = await fetch(
       `https://googleads.googleapis.com/v18/customers/${customerId}/googleAds:searchStream`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-          "developer-token": Deno.env.get("GOOGLE_ADS_DEVELOPER_TOKEN") || "",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ query }),
-      }
+      { method: "POST", headers, body: JSON.stringify({ query: mainQuery }) }
     );
 
     if (!googleRes.ok) {
@@ -143,14 +132,12 @@ Deno.serve(async (req) => {
     const googleData = await googleRes.json();
     let synced = 0;
 
-    // Process stream results
     const results = Array.isArray(googleData) ? googleData : [googleData];
     for (const batch of results) {
       const rows = batch.results || [];
       for (const row of rows) {
         const date = row.segments?.date;
         if (!date) continue;
-
         const costMicros = parseInt(row.metrics?.cost_micros || "0");
         const investment = costMicros / 1_000_000;
         const impressions = parseInt(row.metrics?.impressions || "0");
@@ -159,29 +146,106 @@ Deno.serve(async (req) => {
 
         const { error } = await supabase
           .from("google_metrics")
-          .upsert(
-            {
-              project_id: project_id,
-              date,
-              investment,
-              impressions,
-              clicks,
-              conversions: Math.round(conversions),
-              cpc: clicks > 0 ? investment / clicks : 0,
-              ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
-              conversion_rate: clicks > 0 ? (conversions / clicks) * 100 : 0,
-              cost_per_conversion: conversions > 0 ? investment / conversions : 0,
-              last_updated: new Date().toISOString(),
-            },
-            { onConflict: "project_id,date" }
-          );
-
+          .upsert({
+            project_id, date, investment, impressions, clicks,
+            conversions: Math.round(conversions),
+            cpc: clicks > 0 ? investment / clicks : 0,
+            ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
+            conversion_rate: clicks > 0 ? (conversions / clicks) * 100 : 0,
+            cost_per_conversion: conversions > 0 ? investment / conversions : 0,
+            last_updated: new Date().toISOString(),
+          }, { onConflict: "project_id,date" });
         if (!error) synced++;
       }
     }
 
+    // === Demographics ===
+    const demoQueries = [
+      {
+        type: "age_gender",
+        query: `SELECT ad_group_criterion.age_range_type, ad_group_criterion.gender_type,
+                       metrics.cost_micros, metrics.impressions, metrics.clicks, metrics.conversions
+                FROM gender_view WHERE segments.date BETWEEN '${sinceStr}' AND '${untilStr}'`,
+      },
+      {
+        type: "device",
+        query: `SELECT segments.device, metrics.cost_micros, metrics.impressions, metrics.clicks, metrics.conversions
+                FROM customer WHERE segments.date BETWEEN '${sinceStr}' AND '${untilStr}'`,
+      },
+      {
+        type: "location",
+        query: `SELECT geographic_view.country_criterion_id,
+                       metrics.cost_micros, metrics.impressions, metrics.clicks, metrics.conversions
+                FROM geographic_view WHERE segments.date BETWEEN '${sinceStr}' AND '${untilStr}'`,
+      },
+    ];
+
+    let demoSynced = 0;
+
+    for (const dq of demoQueries) {
+      try {
+        const dRes = await fetch(
+          `https://googleads.googleapis.com/v18/customers/${customerId}/googleAds:searchStream`,
+          { method: "POST", headers, body: JSON.stringify({ query: dq.query }) }
+        );
+        if (!dRes.ok) { console.error(`Google demo ${dq.type} error:`, await dRes.text()); continue; }
+        const dData = await dRes.json();
+        const dResults = Array.isArray(dData) ? dData : [dData];
+
+        const aggMap = new Map<string, any>();
+
+        for (const batch of dResults) {
+          for (const row of (batch.results || [])) {
+            let d1 = "", d2 = "";
+            if (dq.type === "age_gender") {
+              d1 = (row.adGroupCriterion?.ageRangeType || "UNKNOWN").replace("AGE_RANGE_", "");
+              d2 = (row.adGroupCriterion?.genderType || "UNKNOWN").replace("GENDER_", "").toLowerCase();
+            } else if (dq.type === "device") {
+              d1 = (row.segments?.device || "UNKNOWN").toLowerCase();
+              d2 = "";
+            } else if (dq.type === "location") {
+              d1 = String(row.geographicView?.countryCriterionId || "unknown");
+              d2 = "";
+            }
+
+            const key = `${d1}||${d2}`;
+            if (!aggMap.has(key)) {
+              aggMap.set(key, { d1, d2, spend: 0, impressions: 0, clicks: 0, conversions: 0 });
+            }
+            const agg = aggMap.get(key)!;
+            agg.spend += parseInt(row.metrics?.costMicros || "0") / 1_000_000;
+            agg.impressions += parseInt(row.metrics?.impressions || "0");
+            agg.clicks += parseInt(row.metrics?.clicks || "0");
+            agg.conversions += parseFloat(row.metrics?.conversions || "0");
+          }
+        }
+
+        for (const [, val] of aggMap) {
+          const { error } = await supabase
+            .from("ad_demographics")
+            .upsert({
+              project_id,
+              platform: "google",
+              breakdown_type: dq.type,
+              dimension_1: val.d1,
+              dimension_2: val.d2 || "",
+              spend: val.spend,
+              impressions: val.impressions,
+              clicks: val.clicks,
+              conversions: Math.round(val.conversions),
+              date_start: sinceStr,
+              date_end: untilStr,
+              last_updated: new Date().toISOString(),
+            }, { onConflict: "project_id,platform,breakdown_type,dimension_1,dimension_2,date_start" });
+          if (!error) demoSynced++;
+        }
+      } catch (e) {
+        console.error(`Google demo ${dq.type} exception:`, e);
+      }
+    }
+
     return new Response(
-      JSON.stringify({ success: true, synced }),
+      JSON.stringify({ success: true, synced, demographics_synced: demoSynced }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

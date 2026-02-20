@@ -117,6 +117,14 @@ Deno.serve(async (req) => {
 
     const productType = matchedProduct.type;
 
+    // Extract buyer location and payment method from Hotmart payload
+    const buyerAddress = buyer.address || payload.data?.buyer?.address || {};
+    const hotmartPayment = purchase.payment || payload.data?.purchase?.payment || {};
+    const buyerState = buyerAddress.state || buyerAddress.UF || "";
+    const buyerCity = buyerAddress.city || buyerAddress.cidade || "";
+    const buyerCountry = buyerAddress.country || buyerAddress.pais || "BR";
+    const paymentMethod = hotmartPayment.type || hotmartPayment.method || "";
+
     // Upsert sale
     const { data: sale, error: saleError } = await supabase
       .from("sales_events")
@@ -134,6 +142,10 @@ Deno.serve(async (req) => {
           buyer_email: buyerEmail,
           buyer_name: buyerName,
           sale_date: saleDate,
+          payment_method: paymentMethod,
+          buyer_state: buyerState,
+          buyer_city: buyerCity,
+          buyer_country: buyerCountry,
           payload,
         },
         { onConflict: "platform,external_id,project_id" }

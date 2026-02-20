@@ -1,6 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+interface AdDemographic {
+  id: string;
+  project_id: string;
+  platform: string;
+  breakdown_type: string;
+  dimension_1: string;
+  dimension_2: string;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  conversions: number;
+  leads: number;
+  purchases: number;
+  date_start: string;
+  date_end: string | null;
+}
+
 interface SalesEvent {
   id: string;
   project_id: string;
@@ -15,6 +32,10 @@ interface SalesEvent {
   buyer_name: string | null;
   sale_date: string | null;
   created_at: string;
+  payment_method: string | null;
+  buyer_state: string | null;
+  buyer_city: string | null;
+  buyer_country: string | null;
 }
 
 interface DateFilter {
@@ -90,6 +111,20 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
         .eq("project_id", projectId!);
       if (error) throw error;
       return (data as any[]) || [];
+    },
+    refetchInterval: 300000,
+  });
+
+  const demographicsQuery = useQuery({
+    queryKey: ["ad_demographics", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ad_demographics")
+        .select("*")
+        .eq("project_id", projectId!);
+      if (error) throw error;
+      return (data as unknown as AdDemographic[]) || [];
     },
     refetchInterval: 300000,
   });
@@ -329,6 +364,23 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     leadsChange: pctChange(totalLeads, prevLeads),
   };
 
+  // Demographics data
+  const adDemographics = demographicsQuery.data || [];
+  const metaDemographics = adDemographics.filter(d => d.platform === "meta");
+  const googleDemographics = adDemographics.filter(d => d.platform === "google");
+
+  // Buyer location breakdown from sales
+  const buyerLocationMap = new Map<string, { count: number; revenue: number }>();
+  approvedSales.forEach((s) => {
+    const state = s.buyer_state || (s as any).payload?.estado || "";
+    if (!state) return;
+    const existing = buyerLocationMap.get(state) || { count: 0, revenue: 0 };
+    buyerLocationMap.set(state, { count: existing.count + 1, revenue: existing.revenue + Number(s.amount || 0) });
+  });
+  const buyerLocationData = Array.from(buyerLocationMap.entries())
+    .map(([state, data]) => ({ name: state, ...data, pct: salesCount > 0 ? (data.count / salesCount) * 100 : 0 }))
+    .sort((a, b) => b.count - a.count);
+
   return {
     isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || investmentsQuery.isLoading,
     totalRevenue, grossRevenue, totalFees, totalTaxes, totalCoproducerCommission, salesCount, avgTicket,
@@ -359,6 +411,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     paymentBreakdown, paymentPieData, installmentBarData, pixPct, cardPct, cardCashPct, cardInstallmentPct,
     boletoTotal, boletoPaid, boletoPending, boletoConversionRate, boletoRevenue, boletoByPlatform,
     salesByDayOfWeek, salesByHour, bestDay, bestHour,
+    metaDemographics, googleDemographics, buyerLocationData,
     ...changes,
   };
 }
