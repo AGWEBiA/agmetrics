@@ -129,6 +129,21 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     refetchInterval: 300000,
   });
 
+  const metaAdsQuery = useQuery({
+    queryKey: ["meta_ads", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("meta_ads")
+        .select("*")
+        .eq("project_id", projectId!)
+        .order("spend", { ascending: false });
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+    refetchInterval: 300000,
+  });
+
   const df = dateFilter || {};
 
   // Apply date filters
@@ -381,6 +396,8 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     .map(([state, data]) => ({ name: state, ...data, pct: salesCount > 0 ? (data.count / salesCount) * 100 : 0 }))
     .sort((a, b) => b.count - a.count);
 
+  const metaAds = metaAdsQuery.data || [];
+
   return {
     isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || investmentsQuery.isLoading,
     totalRevenue, grossRevenue, totalFees, totalTaxes, totalCoproducerCommission, salesCount, avgTicket,
@@ -412,6 +429,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     boletoTotal, boletoPaid, boletoPending, boletoConversionRate, boletoRevenue, boletoByPlatform,
     salesByDayOfWeek, salesByHour, bestDay, bestHour,
     metaDemographics, googleDemographics, buyerLocationData,
+    metaAds,
     ...changes,
   };
 }
