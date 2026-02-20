@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_demographics: {
+        Row: {
+          breakdown_type: string
+          clicks: number | null
+          conversions: number | null
+          created_at: string
+          date_end: string | null
+          date_start: string
+          dimension_1: string
+          dimension_2: string
+          id: string
+          impressions: number | null
+          last_updated: string | null
+          leads: number | null
+          platform: string
+          project_id: string
+          purchases: number | null
+          spend: number | null
+        }
+        Insert: {
+          breakdown_type: string
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string
+          date_end?: string | null
+          date_start?: string
+          dimension_1: string
+          dimension_2?: string
+          id?: string
+          impressions?: number | null
+          last_updated?: string | null
+          leads?: number | null
+          platform: string
+          project_id: string
+          purchases?: number | null
+          spend?: number | null
+        }
+        Update: {
+          breakdown_type?: string
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string
+          date_end?: string | null
+          date_start?: string
+          dimension_1?: string
+          dimension_2?: string
+          id?: string
+          impressions?: number | null
+          last_updated?: string | null
+          leads?: number | null
+          platform?: string
+          project_id?: string
+          purchases?: number | null
+          spend?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_demographics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_demographics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       google_credentials: {
         Row: {
           client_id: string
@@ -594,14 +666,18 @@ export type Database = {
       sales_events: {
         Row: {
           amount: number | null
+          buyer_city: string | null
+          buyer_country: string | null
           buyer_email: string | null
           buyer_name: string | null
+          buyer_state: string | null
           coproducer_commission: number | null
           created_at: string
           external_id: string
           gross_amount: number | null
           id: string
           payload: Json | null
+          payment_method: string | null
           platform: Database["public"]["Enums"]["sales_platform"]
           platform_fee: number | null
           product_name: string | null
@@ -613,14 +689,18 @@ export type Database = {
         }
         Insert: {
           amount?: number | null
+          buyer_city?: string | null
+          buyer_country?: string | null
           buyer_email?: string | null
           buyer_name?: string | null
+          buyer_state?: string | null
           coproducer_commission?: number | null
           created_at?: string
           external_id: string
           gross_amount?: number | null
           id?: string
           payload?: Json | null
+          payment_method?: string | null
           platform: Database["public"]["Enums"]["sales_platform"]
           platform_fee?: number | null
           product_name?: string | null
@@ -632,14 +712,18 @@ export type Database = {
         }
         Update: {
           amount?: number | null
+          buyer_city?: string | null
+          buyer_country?: string | null
           buyer_email?: string | null
           buyer_name?: string | null
+          buyer_state?: string | null
           coproducer_commission?: number | null
           created_at?: string
           external_id?: string
           gross_amount?: number | null
           id?: string
           payload?: Json | null
+          payment_method?: string | null
           platform?: Database["public"]["Enums"]["sales_platform"]
           platform_fee?: number | null
           product_name?: string | null

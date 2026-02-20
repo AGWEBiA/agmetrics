@@ -226,6 +226,11 @@ Deno.serve(async (req) => {
 
     console.log("Matched product:", matchedProduct.name, "type:", matchedProduct.type);
 
+    // Extract buyer location from payload
+    const buyerState = payload["estado"] || payload["state"] || "";
+    const buyerCity = payload["cidade"] || payload["city"] || "";
+    const buyerCountry = payload["país"] || payload["country"] || "br";
+
     const { data: saleRecord, error: saleError } = await supabase
       .from("sales_events")
       .upsert(
@@ -244,6 +249,10 @@ Deno.serve(async (req) => {
           buyer_email: sale.buyerEmail,
           buyer_name: sale.buyerName,
           sale_date: sale.createdAt,
+          payment_method: sale.paymentMethod,
+          buyer_state: buyerState,
+          buyer_city: buyerCity,
+          buyer_country: buyerCountry,
           payload,
         },
         { onConflict: "platform,external_id,project_id" }

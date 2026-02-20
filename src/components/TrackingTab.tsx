@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { formatBRL, formatPercent, formatNumber, formatDecimal } from "@/lib/formatters";
 import { AnimatedCard } from "@/components/AnimatedCard";
+import { DemographicsSection } from "@/components/DemographicsSection";
 import {
   LineChart, Line, BarChart, Bar, ComposedChart,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -333,6 +334,7 @@ export function TrackingTab({ m, project }: TrackingTabProps) {
           {hasMetaData && <TabsTrigger value="meta">Meta Ads</TabsTrigger>}
           {hasGoogleData && <TabsTrigger value="google">Google Ads</TabsTrigger>}
           {m.salesCount > 0 && <TabsTrigger value="revenue">Faturamento</TabsTrigger>}
+          <TabsTrigger value="demographics">Demográficos</TabsTrigger>
         </TabsList>
 
         {/* ========== META ADS ========== */}
@@ -936,6 +938,50 @@ export function TrackingTab({ m, project }: TrackingTabProps) {
             )}
           </TabsContent>
         )}
+
+        {/* ========== DEMOGRÁFICOS ========== */}
+        <TabsContent value="demographics" className="space-y-6 pt-4">
+          {hasMetaData && (
+            <DemographicsSection
+              platform="meta"
+              demographics={m.metaDemographics || []}
+              buyerLocationData={m.buyerLocationData || []}
+              paymentPieData={m.paymentPieData || []}
+              productData={m.productData || []}
+            />
+          )}
+          {hasGoogleData && !hasMetaData && (
+            <DemographicsSection
+              platform="google"
+              demographics={m.googleDemographics || []}
+              buyerLocationData={m.buyerLocationData || []}
+              paymentPieData={m.paymentPieData || []}
+              productData={m.productData || []}
+            />
+          )}
+          {hasMetaData && hasGoogleData && (
+            <>
+              <div className="border-t pt-6 mt-6">
+                <DemographicsSection
+                  platform="google"
+                  demographics={m.googleDemographics || []}
+                  buyerLocationData={[]}
+                  paymentPieData={[]}
+                  productData={[]}
+                />
+              </div>
+            </>
+          )}
+          {!hasMetaData && !hasGoogleData && (
+            <DemographicsSection
+              platform="meta"
+              demographics={[]}
+              buyerLocationData={m.buyerLocationData || []}
+              paymentPieData={m.paymentPieData || []}
+              productData={m.productData || []}
+            />
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   );
