@@ -2,8 +2,28 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-sync-source",
 };
+
+async function callSync(supabaseUrl: string, serviceKey: string, fn: string, project_id: string): Promise<{ ok: boolean; text: string }> {
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/${fn}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceKey}`,
+        "x-sync-source": "auto-sync-cron",
+      },
+      body: JSON.stringify({ project_id }),
+      // 55 second timeout per call
+      signal: AbortSignal.timeout(55000),
+    });
+    const text = await res.text();
+    return { ok: res.ok, text };
+  } catch (err) {
+    return { ok: false, text: String(err) };
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -11,78 +31,70 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Use service role for cron-triggered syncs (no user auth context)
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const supabaseAdmin = createClient(supabaseUrl, serviceKey);
 
     // Fetch all active projects
     const { data: projects, error: projectsError } = await supabaseAdmin
       .from("projects")
-      .select("id, name, owner_id, kiwify_webhook_token, kiwify_client_id, hotmart_webhook_token, evolution_api_url, evolution_api_key, evolution_instance_name")
+      .select("id, name, kiwify_client_id, hotmart_webhook_token, evolution_api_url, evolution_api_key, evolution_instance_name")
       .eq("is_active", true);
 
     if (projectsError) throw projectsError;
 
-    console.log(`[auto-sync] Starting sync for ${projects?.length || 0} active projects`);
+    const projectList = projects || [];
+    console.log(`[auto-sync] Starting sync for ${projectList.length} active projects`);
 
+    // For each project, check integrations and run syncs in parallel per-project
+    // but process projects sequentially to avoid overall timeout
     const results: Record<string, any> = {};
 
-    for (const project of (projects || [])) {
-      const projectId = project.id;
-      results[projectId] = { name: project.name, synced: [] };
+    // Check all credentials in parallel first
+    const credChecks = await Promise.all(
+      projectList.map(async (project) => {
+        const projectId = project.id;
+        const [metaCredsRes, googleCredsRes] = await Promise.all([
+          supabaseAdmin.from("meta_credentials").select("id").eq("project_id", projectId).limit(1),
+          supabaseAdmin.from("google_credentials").select("id").eq("project_id", projectId).maybeSingle(),
+        ]);
 
-      // Check which integrations are configured for this project
-      const { data: metaCreds } = await supabaseAdmin
-        .from("meta_credentials")
-        .select("id")
-        .eq("project_id", projectId)
-        .limit(1);
-
-      const { data: googleCreds } = await supabaseAdmin
-        .from("google_credentials")
-        .select("id")
-        .eq("project_id", projectId)
-        .maybeSingle();
-
-      const syncFunctions: { fn: string; label: string; enabled: boolean }[] = [
-        { fn: "sync-meta", label: "Meta Ads", enabled: (metaCreds || []).length > 0 },
-        { fn: "sync-google", label: "Google Ads", enabled: !!googleCreds },
-        { fn: "sync-kiwify", label: "Kiwify", enabled: !!(project.kiwify_webhook_token || project.kiwify_client_id) },
-        { fn: "sync-hotmart", label: "Hotmart", enabled: !!project.hotmart_webhook_token },
-        { fn: "sync-whatsapp", label: "WhatsApp", enabled: !!(project.evolution_api_url && project.evolution_api_key && project.evolution_instance_name) },
-      ];
-
-      for (const { fn, label, enabled } of syncFunctions) {
-        if (!enabled) continue;
-
-        try {
-          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-          const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-          
-          const res = await fetch(`${supabaseUrl}/functions/v1/${fn}`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${serviceKey}`,
-              "x-sync-source": "auto-sync-cron",
-            },
-            body: JSON.stringify({ project_id: projectId }),
-          });
-
-          const responseText = await res.text();
-          if (res.ok) {
-            console.log(`[auto-sync] ✅ ${label} synced for project ${project.name}`);
-            results[projectId].synced.push(label);
-          } else {
-            console.warn(`[auto-sync] ⚠️ ${label} failed for ${project.name}: ${responseText}`);
-            results[projectId][label] = { error: responseText };
-          }
-        } catch (err) {
-          console.error(`[auto-sync] ❌ ${label} error for ${project.name}:`, err);
-          results[projectId][label] = { error: String(err) };
+        const syncs: { fn: string; label: string }[] = [];
+        if ((metaCredsRes.data || []).length > 0) syncs.push({ fn: "sync-meta", label: "Meta Ads" });
+        if (googleCredsRes.data) syncs.push({ fn: "sync-google", label: "Google Ads" });
+        if (project.kiwify_client_id) syncs.push({ fn: "sync-kiwify", label: "Kiwify" });
+        if (project.hotmart_webhook_token) syncs.push({ fn: "sync-hotmart", label: "Hotmart" });
+        if (project.evolution_api_url && project.evolution_api_key && project.evolution_instance_name) {
+          syncs.push({ fn: "sync-whatsapp", label: "WhatsApp" });
         }
+
+        return { projectId, projectName: project.name, syncs };
+      })
+    );
+
+    // Fire all syncs in parallel across all projects
+    const allSyncPromises = credChecks.flatMap(({ projectId, projectName, syncs }) =>
+      syncs.map(async ({ fn, label }) => {
+        console.log(`[auto-sync] → ${label} for ${projectName}`);
+        const result = await callSync(supabaseUrl, serviceKey, fn, projectId);
+        if (result.ok) {
+          console.log(`[auto-sync] ✅ ${label} ok for ${projectName}`);
+        } else {
+          console.warn(`[auto-sync] ⚠️ ${label} failed for ${projectName}: ${result.text.slice(0, 200)}`);
+        }
+        return { projectId, projectName, label, ...result };
+      })
+    );
+
+    const allResults = await Promise.allSettled(allSyncPromises);
+
+    for (const r of allResults) {
+      if (r.status === "fulfilled") {
+        const { projectId, projectName, label, ok } = r.value;
+        if (!results[projectId]) results[projectId] = { name: projectName, synced: [], failed: [] };
+        if (ok) results[projectId].synced.push(label);
+        else results[projectId].failed.push(label);
       }
     }
 

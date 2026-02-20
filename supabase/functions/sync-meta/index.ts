@@ -237,41 +237,96 @@ Deno.serve(async (req) => {
         }
       }
 
-      // === Top Ads per account ===
+      // === Top Ads per account — use insights at ad level ===
       try {
-        const topAdsUrl = `https://graph.facebook.com/v21.0/${adAccountId}/ads?fields=${adFields}&time_range=${timeRange}&limit=50&access_token=${creds.access_token}`;
-        const topAdsRes = await fetch(topAdsUrl);
-        if (topAdsRes.ok) {
-          const topAdsData = await topAdsRes.json();
-          const ads = (topAdsData.data || []) as any[];
-          // Enrich each ad with spend
-          const enriched = ads.map((ad: any) => {
-            const actions = ad.actions || [];
-            const purchases = actions.find((a: any) => a.action_type === "purchase" || a.action_type === "offsite_conversion.fb_pixel_purchase");
-            const leads = actions.find((a: any) => a.action_type === "lead" || a.action_type === "offsite_conversion.fb_pixel_lead");
-            return {
-              id: ad.id,
-              name: ad.name,
-              status: ad.status,
-              spend: parseFloat(ad.spend || "0"),
-              impressions: parseInt(ad.impressions || "0"),
-              clicks: parseInt(ad.clicks || "0"),
-              cpm: parseFloat(ad.cpm || "0"),
-              ctr: parseFloat(ad.ctr || "0"),
-              cpc: parseFloat(ad.cpc || "0"),
-              purchases: purchases ? parseInt(purchases.value) : 0,
-              leads: leads ? parseInt(leads.value) : 0,
-              preview_link: ad.ad_preview_shareable_link || null,
-            };
-          }).sort((a: any, b: any) => b.spend - a.spend).slice(0, 20);
+        const insightFields = "id,name,status,ad_preview_shareable_link";
+        const insightMetrics = "spend,impressions,clicks,cpm,ctr,cpc,actions";
+        
+        // First get ads list with preview links and status
+        const adsListUrl = `https://graph.facebook.com/v21.0/${adAccountId}/ads?fields=${insightFields}&limit=100&access_token=${creds.access_token}`;
+        const adsListRes = await fetch(adsListUrl);
+        
+        if (adsListRes.ok) {
+          const adsListData = await adsListRes.json();
+          const adsList = (adsListData.data || []) as any[];
           
-          // Store top_ads aggregated in a "global" key — we'll upsert into an "all" date row
-          if (enriched.length > 0) {
-            // Save top_ads into meta_metrics for each date as a JSON blob on the most recent date
-            const latestDate = Array.from(dateMap.keys()).sort().reverse()[0];
-            if (latestDate) {
-              const existing = dateMap.get(latestDate)!;
-              existing.top_ads = enriched;
+          if (adsList.length > 0) {
+            // Build ad metadata map (id -> preview_link, name, status)
+            const adMeta = new Map<string, { name: string; status: string; preview_link: string | null }>();
+            for (const ad of adsList) {
+              adMeta.set(ad.id, {
+                name: ad.name,
+                status: ad.status,
+                preview_link: ad.ad_preview_shareable_link || null,
+              });
+            }
+
+            // Get insights for all ads in the account with date range
+            const adsInsightsUrl = `https://graph.facebook.com/v21.0/${adAccountId}/insights?fields=${insightMetrics}&time_range=${timeRange}&level=ad&limit=200&access_token=${creds.access_token}`;
+            const adsInsightsRes = await fetch(adsInsightsUrl);
+            
+            if (adsInsightsRes.ok) {
+              const insightsData = await adsInsightsRes.json();
+              const insightRows = (insightsData.data || []) as any[];
+              
+              // Aggregate by ad id
+              const adAggMap = new Map<string, any>();
+              for (const row of insightRows) {
+                const adId = row.ad_id;
+                if (!adId) continue;
+                if (!adAggMap.has(adId)) {
+                  adAggMap.set(adId, { spend: 0, impressions: 0, clicks: 0, purchases: 0, leads: 0 });
+                }
+                const agg = adAggMap.get(adId)!;
+                agg.spend += parseFloat(row.spend || "0");
+                agg.impressions += parseInt(row.impressions || "0");
+                agg.clicks += parseInt(row.clicks || "0");
+                const actions = row.actions || [];
+                for (const a of actions) {
+                  if (a.action_type === "purchase" || a.action_type === "offsite_conversion.fb_pixel_purchase") {
+                    agg.purchases += parseInt(a.value || "0");
+                  }
+                  if (a.action_type === "lead" || a.action_type === "offsite_conversion.fb_pixel_lead") {
+                    agg.leads += parseInt(a.value || "0");
+                  }
+                }
+              }
+
+              const enriched = Array.from(adAggMap.entries()).map(([adId, agg]) => {
+                const meta = adMeta.get(adId) || { name: "—", status: "UNKNOWN", preview_link: null };
+                return {
+                  id: adId,
+                  name: meta.name,
+                  status: meta.status,
+                  spend: agg.spend,
+                  impressions: agg.impressions,
+                  clicks: agg.clicks,
+                  cpm: agg.impressions > 0 ? (agg.spend / agg.impressions) * 1000 : 0,
+                  ctr: agg.impressions > 0 ? (agg.clicks / agg.impressions) * 100 : 0,
+                  cpc: agg.clicks > 0 ? agg.spend / agg.clicks : 0,
+                  purchases: agg.purchases,
+                  leads: agg.leads,
+                  preview_link: meta.preview_link,
+                };
+              }).sort((a, b) => b.spend - a.spend).slice(0, 50);
+
+              console.log(`[sync-meta] Got ${enriched.length} ads with insights for account ${creds.ad_account_id}`);
+
+              if (enriched.length > 0) {
+                const latestDate = Array.from(dateMap.keys()).sort().reverse()[0];
+                if (latestDate) {
+                  const existing = dateMap.get(latestDate)!;
+                  // Merge with existing top_ads if multiple accounts
+                  if (existing.top_ads && Array.isArray(existing.top_ads)) {
+                    existing.top_ads = [...existing.top_ads, ...enriched]
+                      .sort((a: any, b: any) => b.spend - a.spend).slice(0, 50);
+                  } else {
+                    existing.top_ads = enriched;
+                  }
+                }
+              }
+            } else {
+              console.warn(`[sync-meta] Insights fetch failed: ${await adsInsightsRes.text()}`);
             }
           }
         }
