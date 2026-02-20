@@ -40,6 +40,7 @@ const NAME_TO_CODE: Record<string, string> = {
   "tocantins": "TO", "piauí": "PI", "piaui": "PI", "paraíba": "PB", "paraiba": "PB",
   "pernambuco": "PE", "mato grosso": "MT", "bahia": "BA", "alagoas": "AL", "sergipe": "SE",
   "mato grosso do sul": "MS", "goiás": "GO", "goias": "GO", "distrito federal": "DF",
+  "federal district": "DF",
   "minas gerais": "MG", "espírito santo": "ES", "espirito santo": "ES",
   "são paulo": "SP", "sao paulo": "SP", "rio de janeiro": "RJ",
   "paraná": "PR", "parana": "PR", "santa catarina": "SC", "rio grande do sul": "RS",
@@ -49,7 +50,9 @@ function normalizeToCode(name: string): string | null {
   const trimmed = name.trim();
   const upper = trimmed.toUpperCase();
   if (STATE_POSITIONS[upper]) return upper;
-  return NAME_TO_CODE[trimmed.toLowerCase()] || null;
+  // Remove suffixes like "(state)" that Meta API adds
+  const cleaned = trimmed.replace(/\s*\(state\)\s*/gi, "").replace(/\s*\(region\)\s*/gi, "").trim().toLowerCase();
+  return NAME_TO_CODE[cleaned] || NAME_TO_CODE[trimmed.toLowerCase()] || null;
 }
 
 interface StateData {
