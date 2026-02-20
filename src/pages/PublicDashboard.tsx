@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart3, TrendingUp, TrendingDown, Target } from "lucide-react";
+import { BarChart3, TrendingUp, TrendingDown, Target, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import {
@@ -115,6 +115,8 @@ export default function PublicDashboard() {
                         <Stat label="CPR" value={formatBRL(m.metaCostPerResult)} />
                         <Stat label="Compras" value={formatNumber(m.metaPurchases)} />
                         <Stat label="Custo/Compra" value={formatBRL(m.metaCostPerPurchase)} />
+                        <Stat label="Leads" value={formatNumber(m.metaLeads)} />
+                        <Stat label="CPL" value={formatBRL(m.metaCostPerLead)} />
                         <Stat label="Cliques no Link" value={formatNumber(m.metaLinkClicks)} />
                         <Stat label="CTR Link" value={formatPercent(m.metaLinkCtr)} />
                         <Stat label="CPC Link" value={formatBRL(m.metaLinkCpc)} />
@@ -124,6 +126,50 @@ export default function PublicDashboard() {
                         <Stat label="Conv. Checkout" value={formatPercent(m.metaCheckoutConversion)} />
                         <Stat label="Impressões" value={formatNumber(m.metaImpressions)} />
                         <Stat label="CPM" value={formatBRL(m.metaCpm)} />
+                        <Stat label="CTR" value={formatPercent(m.metaCtr)} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </AnimatedCard>
+              )}
+
+              {/* Top Ads */}
+              {m.topAds && m.topAds.length > 0 && (
+                <AnimatedCard index={0}>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">Melhores Anúncios</CardTitle>
+                      <p className="text-xs text-muted-foreground">Ordenados por investimento total</p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                        {m.topAds.map((ad: any, i: number) => (
+                          <div key={ad.id} className="rounded-lg border p-3 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="text-[10px] text-muted-foreground">#{i + 1}</p>
+                                <p className="text-sm font-semibold leading-tight line-clamp-2">{ad.name || "Anúncio"}</p>
+                              </div>
+                              {ad.status && (
+                                <Badge variant={ad.status === "ACTIVE" ? "default" : "secondary"} className="text-[9px] shrink-0">
+                                  {ad.status === "ACTIVE" ? "Ativo" : ad.status}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-3 gap-1 text-center bg-muted/40 rounded p-1.5">
+                              <div><p className="text-[9px] text-muted-foreground">Gasto</p><p className="text-xs font-bold">{formatBRL(ad.spend || 0)}</p></div>
+                              <div><p className="text-[9px] text-muted-foreground">Compras</p><p className="text-xs font-bold">{ad.purchases || 0}</p></div>
+                              <div><p className="text-[9px] text-muted-foreground">Leads</p><p className="text-xs font-bold">{ad.leads || 0}</p></div>
+                            </div>
+                            {ad.preview_link && (
+                              <a href={ad.preview_link} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-xs text-primary hover:underline font-medium">
+                                <ExternalLink className="h-3 w-3" />
+                                Ver Anúncio
+                              </a>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>

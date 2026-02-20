@@ -24,7 +24,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("meta_metrics")
-        .select("date, investment, impressions, clicks, results, purchases, link_clicks, landing_page_views, checkouts_initiated")
+        .select("date, investment, impressions, clicks, results, purchases, link_clicks, landing_page_views, checkouts_initiated, leads, top_ads")
         .eq("project_id", projectId!)
         .order("date", { ascending: true });
       if (error) throw error;
@@ -91,17 +91,38 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   const metaLinkClicks = meta.reduce((s: number, m: any) => s + (m.link_clicks || 0), 0);
   const metaLpViews = meta.reduce((s: number, m: any) => s + (m.landing_page_views || 0), 0);
   const metaCheckouts = meta.reduce((s: number, m: any) => s + (m.checkouts_initiated || 0), 0);
+  const metaLeads = meta.reduce((s: number, m: any) => s + (m.leads || 0), 0);
 
   const metaCpm = metaImpressions > 0 ? (metaInvestment / metaImpressions) * 1000 : 0;
   const metaCtr = metaImpressions > 0 ? (metaClicks / metaImpressions) * 100 : 0;
   const metaCpc = metaClicks > 0 ? metaInvestment / metaClicks : 0;
   const metaCostPerResult = metaResults > 0 ? metaInvestment / metaResults : 0;
   const metaCostPerPurchase = metaPurchases > 0 ? metaInvestment / metaPurchases : 0;
+  const metaCostPerLead = metaLeads > 0 ? metaInvestment / metaLeads : 0;
   const metaLinkCtr = metaImpressions > 0 ? (metaLinkClicks / metaImpressions) * 100 : 0;
   const metaLinkCpc = metaLinkClicks > 0 ? metaInvestment / metaLinkClicks : 0;
   const metaConnectRate = metaLinkClicks > 0 ? (metaLpViews / metaLinkClicks) * 100 : 0;
   const metaPageConversion = metaLpViews > 0 ? (metaCheckouts / metaLpViews) * 100 : 0;
   const metaCheckoutConversion = metaCheckouts > 0 ? (metaPurchases / metaCheckouts) * 100 : 0;
+
+  // Top ads aggregated from meta_metrics
+  const topAdsMap = new Map<string, any>();
+  meta.forEach((m: any) => {
+    if (!Array.isArray(m.top_ads)) return;
+    m.top_ads.forEach((ad: any) => {
+      if (!ad.id) return;
+      if (!topAdsMap.has(ad.id)) {
+        topAdsMap.set(ad.id, { ...ad });
+      } else {
+        const ex = topAdsMap.get(ad.id)!;
+        ex.spend = (ex.spend || 0) + (ad.spend || 0);
+        ex.purchases = (ex.purchases || 0) + (ad.purchases || 0);
+        ex.leads = (ex.leads || 0) + (ad.leads || 0);
+        if (ad.preview_link) ex.preview_link = ad.preview_link;
+      }
+    });
+  });
+  const topAds = Array.from(topAdsMap.values()).sort((a, b) => b.spend - a.spend).slice(0, 10);
 
   // Sales by date
   const salesByDate = new Map<string, { count: number; revenue: number }>();
@@ -161,8 +182,10 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
     totalRevenue, grossRevenue, totalFees, salesCount, avgTicket,
     totalInvestment, metaInvestment, googleInvestment, netProfit, roi, roas, margin,
     metaImpressions, metaClicks, metaResults, metaPurchases, metaLinkClicks, metaLpViews, metaCheckouts,
+    metaLeads, metaCostPerLead,
     metaCpm, metaCtr, metaCpc, metaCostPerResult, metaCostPerPurchase,
     metaLinkCtr, metaLinkCpc, metaConnectRate, metaPageConversion, metaCheckoutConversion,
+    topAds,
     salesChartData, productData, platformChartData, goalsProgress,
   };
 }

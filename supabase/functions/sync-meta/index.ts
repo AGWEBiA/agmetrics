@@ -100,6 +100,11 @@ Deno.serve(async (req) => {
       "cost_per_action_type", "cpm", "cpc", "ctr",
     ].join(",");
 
+    const adFields = [
+      "id", "name", "status", "spend", "impressions", "clicks",
+      "actions", "cpm", "ctr", "cpc", "ad_preview_shareable_link",
+    ].join(",");
+
     const dateMap = new Map<string, any>();
     let totalAccountsSynced = 0;
 
@@ -211,6 +216,48 @@ Deno.serve(async (req) => {
         }
       }
 
+      // === Top Ads per account ===
+      try {
+        const topAdsUrl = `https://graph.facebook.com/v21.0/${adAccountId}/ads?fields=${adFields}&time_range=${timeRange}&limit=50&access_token=${creds.access_token}`;
+        const topAdsRes = await fetch(topAdsUrl);
+        if (topAdsRes.ok) {
+          const topAdsData = await topAdsRes.json();
+          const ads = (topAdsData.data || []) as any[];
+          // Enrich each ad with spend
+          const enriched = ads.map((ad: any) => {
+            const actions = ad.actions || [];
+            const purchases = actions.find((a: any) => a.action_type === "purchase" || a.action_type === "offsite_conversion.fb_pixel_purchase");
+            const leads = actions.find((a: any) => a.action_type === "lead" || a.action_type === "offsite_conversion.fb_pixel_lead");
+            return {
+              id: ad.id,
+              name: ad.name,
+              status: ad.status,
+              spend: parseFloat(ad.spend || "0"),
+              impressions: parseInt(ad.impressions || "0"),
+              clicks: parseInt(ad.clicks || "0"),
+              cpm: parseFloat(ad.cpm || "0"),
+              ctr: parseFloat(ad.ctr || "0"),
+              cpc: parseFloat(ad.cpc || "0"),
+              purchases: purchases ? parseInt(purchases.value) : 0,
+              leads: leads ? parseInt(leads.value) : 0,
+              preview_link: ad.ad_preview_shareable_link || null,
+            };
+          }).sort((a: any, b: any) => b.spend - a.spend).slice(0, 20);
+          
+          // Store top_ads aggregated in a "global" key — we'll upsert into an "all" date row
+          if (enriched.length > 0) {
+            // Save top_ads into meta_metrics for each date as a JSON blob on the most recent date
+            const latestDate = Array.from(dateMap.keys()).sort().reverse()[0];
+            if (latestDate) {
+              const existing = dateMap.get(latestDate)!;
+              existing.top_ads = enriched;
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Top ads fetch error:", e);
+      }
+
       totalAccountsSynced++;
     }
 
@@ -236,6 +283,8 @@ Deno.serve(async (req) => {
       const impressions = typeof row.impressions === "number" ? row.impressions : parseInt(row.impressions || "0");
       const clicks = typeof row.clicks === "number" ? row.clicks : parseInt(row.clicks || "0");
 
+      const topAds = row.top_ads || null;
+
       const { error } = await supabase
         .from("meta_metrics")
         .upsert(
@@ -256,6 +305,7 @@ Deno.serve(async (req) => {
             connect_rate: linkClicks > 0 ? (lpViews / linkClicks) * 100 : 0,
             page_conversion_rate: lpViews > 0 ? (checkouts / lpViews) * 100 : 0,
             checkout_conversion_rate: checkouts > 0 ? (purchases / checkouts) * 100 : 0,
+            top_ads: topAds,
             last_updated: new Date().toISOString(),
           },
           { onConflict: "project_id,date" }
