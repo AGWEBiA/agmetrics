@@ -174,9 +174,10 @@ Deno.serve(async (req) => {
       },
       {
         type: "location",
-        query: `SELECT geographic_view.country_criterion_id,
+        query: `SELECT campaign_criterion.location.geo_target_constant,
+                       geo_target_constant.canonical_name, geo_target_constant.target_type,
                        metrics.cost_micros, metrics.impressions, metrics.clicks, metrics.conversions
-                FROM geographic_view WHERE segments.date BETWEEN '${sinceStr}' AND '${untilStr}'`,
+                FROM location_view WHERE segments.date BETWEEN '${sinceStr}' AND '${untilStr}'`,
       },
     ];
 
@@ -204,7 +205,11 @@ Deno.serve(async (req) => {
               d1 = (row.segments?.device || "UNKNOWN").toLowerCase();
               d2 = "";
             } else if (dq.type === "location") {
-              d1 = String(row.geographicView?.countryCriterionId || "unknown");
+              const canonicalName = row.geoTargetConstant?.canonicalName || "";
+              const targetType = row.geoTargetConstant?.targetType || "";
+              // Extract region/state name from canonical name (e.g. "Sao Paulo,Sao Paulo,Brazil" -> "Sao Paulo")
+              const parts = canonicalName.split(",").map((s: string) => s.trim());
+              d1 = parts.length >= 2 ? parts[parts.length - 2] : (parts[0] || "unknown");
               d2 = "";
             }
 

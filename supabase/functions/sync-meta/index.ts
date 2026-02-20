@@ -163,7 +163,7 @@ Deno.serve(async (req) => {
         { type: "age_gender", breakdown: "age,gender" },
         { type: "device", breakdown: "device_platform" },
         { type: "placement", breakdown: "publisher_platform,platform_position" },
-        { type: "location", breakdown: "country" },
+        { type: "location", breakdown: "region" },
       ];
 
       for (const bd of breakdowns) {
@@ -184,7 +184,7 @@ Deno.serve(async (req) => {
             if (bd.type === "age_gender") { d1 = dr.age || "unknown"; d2 = dr.gender || "unknown"; }
             else if (bd.type === "device") { d1 = dr.device_platform || "unknown"; d2 = ""; }
             else if (bd.type === "placement") { d1 = dr.publisher_platform || "unknown"; d2 = dr.platform_position || ""; }
-            else if (bd.type === "location") { d1 = dr.country || "unknown"; d2 = ""; }
+            else if (bd.type === "location") { d1 = dr.region || "unknown"; d2 = ""; }
             addDemo(targetMap, d1, d2, dr);
           }
         } catch (e) {
