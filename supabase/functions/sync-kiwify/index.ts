@@ -66,8 +66,13 @@ Deno.serve(async (req) => {
 
     if (!clientId || !clientSecret || !accountId) {
       return new Response(
-        JSON.stringify({ error: "Credenciais Kiwify (Client ID, Client Secret e Account ID) não configuradas neste projeto." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ 
+          success: true, 
+          imported: 0, 
+          skipped: 0, 
+          message: "Este projeto usa apenas webhook para receber vendas da Kiwify. As vendas são registradas automaticamente quando chegam via webhook. Para sincronização manual via API, configure Client ID, Client Secret e Account ID nas configurações do projeto." 
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
