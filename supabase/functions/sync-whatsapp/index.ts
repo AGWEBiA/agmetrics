@@ -20,14 +20,15 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Verify user
+    const token = authHeader.replace("Bearer ", "");
     const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { data: { user }, error: authError } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
     if (authError || !user) throw new Error("Unauthorized");
 
     const { project_id } = await req.json();
     if (!project_id) throw new Error("project_id is required");
 
-    // Verify ownership
+    // Verify ownership OR admin
     const { data: project, error: projErr } = await supabase
       .from("projects")
       .select("id, evolution_api_url, evolution_api_key, evolution_instance_name, owner_id")
@@ -35,7 +36,15 @@ Deno.serve(async (req) => {
       .single();
 
     if (projErr || !project) throw new Error("Project not found");
-    if (project.owner_id !== user.id) throw new Error("Unauthorized");
+
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    const isAdmin = roleData?.role === "admin";
+    if (!isAdmin && project.owner_id !== user.id) throw new Error("Unauthorized");
 
     const { evolution_api_url, evolution_api_key, evolution_instance_name } = project;
     if (!evolution_api_url || !evolution_api_key || !evolution_instance_name) {
