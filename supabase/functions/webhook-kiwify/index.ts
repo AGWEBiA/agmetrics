@@ -12,7 +12,6 @@ const corsHeaders = {
  * Supports both English (API format) and Portuguese (Kiwify panel/CSV format).
  */
 function extractSaleData(payload: Record<string, any>) {
-  // Detect format: PT-BR payloads have "id da venda" or "produto"
   const isPtBr = !!(payload["id da venda"] || payload["produto"] || payload["valor líquido"]);
 
   if (isPtBr) {
@@ -39,7 +38,6 @@ function extractSaleData(payload: Record<string, any>) {
     const paymentMethod = payload["pagamento"] || "";
     const installments = parseInt(payload["parcelas"] || "1", 10);
 
-    // Parse PT-BR date "DD/MM/YYYY HH:MM:SS" to ISO
     let createdAt = new Date().toISOString();
     const rawDate = payload["data de criação"] || "";
     if (rawDate) {
@@ -54,20 +52,12 @@ function extractSaleData(payload: Record<string, any>) {
 
     let status: string;
     switch (rawStatus) {
-      case "paid":
-      case "completed":
-      case "aprovado":
-        status = "approved";
-        break;
-      case "refunded":
-      case "reembolsado":
-        status = "refunded";
-        break;
-      case "cancelled":
-      case "canceled":
-      case "cancelado":
-        status = "cancelled";
-        break;
+      case "paid": case "completed": case "aprovado":
+        status = "approved"; break;
+      case "refunded": case "reembolsado":
+        status = "refunded"; break;
+      case "cancelled": case "canceled": case "cancelado":
+        status = "cancelled"; break;
       default:
         status = "pending";
     }
@@ -94,17 +84,12 @@ function extractSaleData(payload: Record<string, any>) {
 
   let status: string;
   switch (rawStatus) {
-    case "paid":
-    case "completed":
-      status = "approved";
-      break;
+    case "paid": case "completed":
+      status = "approved"; break;
     case "refunded":
-      status = "refunded";
-      break;
-    case "cancelled":
-    case "canceled":
-      status = "cancelled";
-      break;
+      status = "refunded"; break;
+    case "cancelled": case "canceled":
+      status = "cancelled"; break;
     default:
       status = "pending";
   }
@@ -114,6 +99,56 @@ function extractSaleData(payload: Record<string, any>) {
     taxes: 0, coproducerCommission: 0, buyerEmail, buyerName, status,
     createdAt, paymentMethod, installments,
   };
+}
+
+/**
+ * Finds the best matching product for a sale using multiple strategies:
+ * 1. Exact match (ilike)
+ * 2. Partial match (product name contains or is contained in sale product name)
+ * 3. Fallback to first "main" product if only one exists
+ */
+async function findMatchingProduct(
+  supabase: any,
+  projectId: string,
+  saleProductName: string
+): Promise<{ type: string; name: string } | null> {
+  // Strategy 1: exact match
+  const { data: exact } = await supabase
+    .from("products")
+    .select("type, name")
+    .eq("project_id", projectId)
+    .ilike("name", saleProductName)
+    .maybeSingle();
+
+  if (exact) return exact;
+
+  // Strategy 2: partial match — sale product name contains registered name or vice-versa
+  const { data: allProducts } = await supabase
+    .from("products")
+    .select("type, name")
+    .eq("project_id", projectId);
+
+  if (allProducts && allProducts.length > 0) {
+    const saleLower = saleProductName.toLowerCase();
+    
+    // Check if any registered product name is contained in the sale product name
+    for (const p of allProducts) {
+      const pLower = p.name.toLowerCase();
+      if (saleLower.includes(pLower) || pLower.includes(saleLower)) {
+        console.log(`Partial match: "${saleProductName}" matched with "${p.name}"`);
+        return p;
+      }
+    }
+
+    // Strategy 3: if there's only one main product, use it as fallback
+    const mainProducts = allProducts.filter((p: any) => p.type === "main");
+    if (mainProducts.length === 1) {
+      console.log(`Fallback: using single main product "${mainProducts[0].name}" for "${saleProductName}"`);
+      return mainProducts[0];
+    }
+  }
+
+  return null;
 }
 
 Deno.serve(async (req) => {
@@ -134,14 +169,13 @@ Deno.serve(async (req) => {
     }
 
     const payload = await req.json();
-    console.log("Received webhook payload keys:", Object.keys(payload).slice(0, 10));
+    console.log("Kiwify webhook received. Keys:", Object.keys(payload).slice(0, 15));
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Check if project exists and get webhook token
     const { data: project, error: projectError } = await supabase
       .from("projects")
       .select("id, kiwify_webhook_token")
@@ -149,6 +183,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (projectError || !project) {
+      console.error("Project not found:", projectId);
       return new Response(
         JSON.stringify({ error: "Project not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -159,6 +194,7 @@ Deno.serve(async (req) => {
     if (project.kiwify_webhook_token) {
       const providedToken = req.headers.get("x-webhook-token") || url.searchParams.get("token") || payload?.webhook_token;
       if (providedToken !== project.kiwify_webhook_token) {
+        console.error("Invalid webhook token for project:", projectId);
         return new Response(
           JSON.stringify({ error: "Invalid webhook token" }),
           { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -166,36 +202,30 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Extract data supporting both EN and PT-BR formats
     const sale = extractSaleData(payload);
-    console.log("Extracted sale:", { orderId: sale.orderId, productName: sale.productName, gross: sale.grossAmount, net: sale.netValue, status: sale.status });
+    console.log("Extracted sale:", JSON.stringify({ orderId: sale.orderId, productName: sale.productName, gross: sale.grossAmount, net: sale.netValue, status: sale.status }));
 
     if (!sale.orderId) {
+      console.error("No order ID extracted from payload");
       return new Response(
         JSON.stringify({ error: "Could not extract order ID from payload" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Match product — only accept sales for registered products
-    const { data: matchedProduct } = await supabase
-      .from("products")
-      .select("type")
-      .eq("project_id", projectId)
-      .ilike("name", sale.productName)
-      .maybeSingle();
+    // Find matching product with flexible matching
+    const matchedProduct = await findMatchingProduct(supabase, projectId, sale.productName);
 
     if (!matchedProduct) {
-      console.log("Product not registered:", sale.productName);
+      console.log("Product not registered:", sale.productName, "for project:", projectId);
       return new Response(
         JSON.stringify({ skipped: true, reason: "Product not registered in project", product_name: sale.productName }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const productType = matchedProduct.type;
+    console.log("Matched product:", matchedProduct.name, "type:", matchedProduct.type);
 
-    // Upsert sale (deduplication by platform + external_id + project_id)
     const { data: saleRecord, error: saleError } = await supabase
       .from("sales_events")
       .upsert(
@@ -204,7 +234,7 @@ Deno.serve(async (req) => {
           platform: "kiwify",
           external_id: sale.orderId,
           product_name: sale.productName,
-          product_type: productType,
+          product_type: matchedProduct.type,
           amount: sale.netValue,
           gross_amount: sale.grossAmount,
           platform_fee: sale.platformFee,
@@ -229,6 +259,7 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.log("Sale upserted successfully:", saleRecord.id);
     return new Response(
       JSON.stringify({ success: true, sale_id: saleRecord.id }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
