@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-sync-source",
 };
 
 Deno.serve(async (req) => {
@@ -13,6 +13,9 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("authorization");
+    const syncSource = req.headers.get("x-sync-source");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -22,23 +25,59 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      serviceRoleKey
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const anonClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const isInternalCron = syncSource === "auto-sync-cron" && token === serviceRoleKey;
+
+    if (!isInternalCron) {
+      const anonClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { project_id } = await req.json();
+      if (!project_id) {
+        return new Response(JSON.stringify({ error: "project_id is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: project } = await supabase
+        .from("projects")
+        .select("id, owner_id")
+        .eq("id", project_id)
+        .single();
+
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      const isAdmin = roleData?.role === "admin";
+      if (!project || (!isAdmin && project.owner_id !== user.id)) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Continue with user-verified project_id
+      return await handleSync(supabase, project_id, corsHeaders);
     }
 
+    // Internal cron path - no user auth needed
     const { project_id } = await req.json();
     if (!project_id) {
       return new Response(JSON.stringify({ error: "project_id is required" }), {
@@ -46,26 +85,18 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    return await handleSync(supabase, project_id, corsHeaders);
+  } catch (err) {
+    console.error("Google sync error:", err);
+    return new Response(
+      JSON.stringify({ error: "Internal server error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
 
-    const { data: project } = await supabase
-      .from("projects")
-      .select("id, owner_id")
-      .eq("id", project_id)
-      .single();
-
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
-
-    const isAdmin = roleData?.role === "admin";
-    if (!project || (!isAdmin && project.owner_id !== user.id)) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+async function handleSync(supabase: any, project_id: string, corsHeaders: Record<string, string>) {
+  try {
 
     const { data: creds } = await supabase
       .from("google_credentials")
@@ -263,10 +294,10 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    console.error("Google sync error:", err);
+    console.error("Google sync handleSync error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-});
+}
