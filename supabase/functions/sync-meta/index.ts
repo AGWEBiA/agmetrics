@@ -237,66 +237,75 @@ Deno.serve(async (req) => {
         }
       }
 
-      // === Top Ads per account — use insights at ad level ===
+      // === Save ads to meta_ads table ===
       try {
         const insightFields = "id,name,status,ad_preview_shareable_link";
-        const insightMetrics = "spend,impressions,clicks,cpm,ctr,cpc,actions";
+        const insightMetrics = "spend,impressions,clicks,actions,ad_id,ad_name";
         
-        // First get ads list with preview links and status
-        const adsListUrl = `https://graph.facebook.com/v21.0/${adAccountId}/ads?fields=${insightFields}&limit=100&access_token=${creds.access_token}`;
+        // Get ads list with preview links
+        const adsListUrl = `https://graph.facebook.com/v21.0/${adAccountId}/ads?fields=${insightFields}&limit=200&access_token=${creds.access_token}`;
         const adsListRes = await fetch(adsListUrl);
         
         if (adsListRes.ok) {
           const adsListData = await adsListRes.json();
           const adsList = (adsListData.data || []) as any[];
           
-          if (adsList.length > 0) {
-            // Build ad metadata map (id -> preview_link, name, status)
-            const adMeta = new Map<string, { name: string; status: string; preview_link: string | null }>();
-            for (const ad of adsList) {
-              adMeta.set(ad.id, {
-                name: ad.name,
-                status: ad.status,
-                preview_link: ad.ad_preview_shareable_link || null,
-              });
-            }
+          // Build ad metadata map
+          const adMeta = new Map<string, { name: string; status: string; preview_link: string | null }>();
+          for (const ad of adsList) {
+            adMeta.set(ad.id, {
+              name: ad.name,
+              status: ad.status,
+              preview_link: ad.ad_preview_shareable_link || null,
+            });
+          }
 
-            // Get insights for all ads in the account with date range
-            const adsInsightsUrl = `https://graph.facebook.com/v21.0/${adAccountId}/insights?fields=${insightMetrics}&time_range=${timeRange}&level=ad&limit=200&access_token=${creds.access_token}`;
-            const adsInsightsRes = await fetch(adsInsightsUrl);
+          console.log(`[sync-meta] Found ${adsList.length} ads for account ${creds.ad_account_id}`);
+
+          // Get insights at ad level
+          const adsInsightsUrl = `https://graph.facebook.com/v21.0/${adAccountId}/insights?fields=${insightMetrics}&time_range=${timeRange}&level=ad&limit=500&access_token=${creds.access_token}`;
+          const adsInsightsRes = await fetch(adsInsightsUrl);
+          
+          if (adsInsightsRes.ok) {
+            const insightsData = await adsInsightsRes.json();
+            const insightRows = (insightsData.data || []) as any[];
             
-            if (adsInsightsRes.ok) {
-              const insightsData = await adsInsightsRes.json();
-              const insightRows = (insightsData.data || []) as any[];
-              
-              // Aggregate by ad id
-              const adAggMap = new Map<string, any>();
-              for (const row of insightRows) {
-                const adId = row.ad_id;
-                if (!adId) continue;
-                if (!adAggMap.has(adId)) {
-                  adAggMap.set(adId, { spend: 0, impressions: 0, clicks: 0, purchases: 0, leads: 0 });
+            console.log(`[sync-meta] Got ${insightRows.length} ad insight rows`);
+
+            // Aggregate by ad_id
+            const adAggMap = new Map<string, any>();
+            for (const row of insightRows) {
+              const adId = row.ad_id;
+              if (!adId) continue;
+              if (!adAggMap.has(adId)) {
+                adAggMap.set(adId, { spend: 0, impressions: 0, clicks: 0, purchases: 0, leads: 0, ad_name: row.ad_name });
+              }
+              const agg = adAggMap.get(adId)!;
+              agg.spend += parseFloat(row.spend || "0");
+              agg.impressions += parseInt(row.impressions || "0");
+              agg.clicks += parseInt(row.clicks || "0");
+              for (const a of (row.actions || [])) {
+                if (a.action_type === "purchase" || a.action_type === "offsite_conversion.fb_pixel_purchase") {
+                  agg.purchases += parseInt(a.value || "0");
                 }
-                const agg = adAggMap.get(adId)!;
-                agg.spend += parseFloat(row.spend || "0");
-                agg.impressions += parseInt(row.impressions || "0");
-                agg.clicks += parseInt(row.clicks || "0");
-                const actions = row.actions || [];
-                for (const a of actions) {
-                  if (a.action_type === "purchase" || a.action_type === "offsite_conversion.fb_pixel_purchase") {
-                    agg.purchases += parseInt(a.value || "0");
-                  }
-                  if (a.action_type === "lead" || a.action_type === "offsite_conversion.fb_pixel_lead") {
-                    agg.leads += parseInt(a.value || "0");
-                  }
+                if (a.action_type === "lead" || a.action_type === "offsite_conversion.fb_pixel_lead") {
+                  agg.leads += parseInt(a.value || "0");
                 }
               }
+            }
 
-              const enriched = Array.from(adAggMap.entries()).map(([adId, agg]) => {
-                const meta = adMeta.get(adId) || { name: "—", status: "UNKNOWN", preview_link: null };
-                return {
-                  id: adId,
-                  name: meta.name,
+            console.log(`[sync-meta] Aggregated ${adAggMap.size} unique ads`);
+
+            // Upsert into meta_ads table
+            let adsSynced = 0;
+            for (const [adId, agg] of adAggMap) {
+              const meta = adMeta.get(adId) || { name: agg.ad_name || "—", status: "UNKNOWN", preview_link: null };
+              const { error } = await supabase
+                .from("meta_ads")
+                .upsert({
+                  project_id,
+                  ad_id: adId,
+                  ad_name: meta.name || agg.ad_name || "—",
                   status: meta.status,
                   spend: agg.spend,
                   impressions: agg.impressions,
@@ -307,28 +316,21 @@ Deno.serve(async (req) => {
                   purchases: agg.purchases,
                   leads: agg.leads,
                   preview_link: meta.preview_link,
-                };
-              }).sort((a, b) => b.spend - a.spend).slice(0, 50);
-
-              console.log(`[sync-meta] Got ${enriched.length} ads with insights for account ${creds.ad_account_id}`);
-
-              if (enriched.length > 0) {
-                const latestDate = Array.from(dateMap.keys()).sort().reverse()[0];
-                if (latestDate) {
-                  const existing = dateMap.get(latestDate)!;
-                  // Merge with existing top_ads if multiple accounts
-                  if (existing.top_ads && Array.isArray(existing.top_ads)) {
-                    existing.top_ads = [...existing.top_ads, ...enriched]
-                      .sort((a: any, b: any) => b.spend - a.spend).slice(0, 50);
-                  } else {
-                    existing.top_ads = enriched;
-                  }
-                }
-              }
-            } else {
-              console.warn(`[sync-meta] Insights fetch failed: ${await adsInsightsRes.text()}`);
+                  date_start: sinceStr,
+                  date_end: untilStr,
+                  last_updated: new Date().toISOString(),
+                }, { onConflict: "project_id,ad_id,date_start" });
+              if (!error) adsSynced++;
+              else console.warn(`[sync-meta] Ad upsert error for ${adId}:`, error.message);
             }
+            console.log(`[sync-meta] Saved ${adsSynced} ads to meta_ads table`);
+          } else {
+            const errText = await adsInsightsRes.text();
+            console.warn(`[sync-meta] Ad insights fetch failed: ${errText}`);
           }
+        } else {
+          const errText = await adsListRes.text();
+          console.warn(`[sync-meta] Ads list fetch failed: ${errText}`);
         }
       } catch (e) {
         console.error("Top ads fetch error:", e);

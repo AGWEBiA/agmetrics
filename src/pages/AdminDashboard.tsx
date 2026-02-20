@@ -445,53 +445,33 @@ export default function AdminDashboard() {
               <Stat label="CPL" value={formatBRL(m.metaCostPerLead)} />
             </div>
             {/* Top Ads in overview */}
-            {(() => {
-              const topAds: any[] = [];
-              const adsMap = new Map<string, any>();
-              (m.metaMetrics || []).forEach((met: any) => {
-                if (!Array.isArray(met.top_ads)) return;
-                met.top_ads.forEach((ad: any) => {
-                  if (!ad.id) return;
-                  if (!adsMap.has(ad.id)) { adsMap.set(ad.id, { ...ad }); }
-                  else {
-                    const ex = adsMap.get(ad.id)!;
-                    ex.spend = (ex.spend || 0) + (ad.spend || 0);
-                    ex.purchases = (ex.purchases || 0) + (ad.purchases || 0);
-                    ex.leads = (ex.leads || 0) + (ad.leads || 0);
-                    if (ad.preview_link) ex.preview_link = ad.preview_link;
-                  }
-                });
-              });
-              topAds.push(...Array.from(adsMap.values()).sort((a, b) => b.spend - a.spend).slice(0, 6));
-              if (topAds.length === 0) return null;
-              return (
-                <div>
-                  <p className="text-sm font-medium mb-2">🏆 Melhores Anúncios</p>
-                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                    {topAds.map((ad, i) => (
-                      <div key={ad.id} className="rounded-lg border p-2.5 space-y-1.5">
-                        <div className="flex items-start justify-between gap-1">
-                          <p className="text-xs font-semibold line-clamp-1 leading-tight">{ad.name || "Anúncio"}</p>
-                          <span className="text-[10px] text-muted-foreground shrink-0">#{i+1}</span>
-                        </div>
-                        <div className="flex gap-3 text-xs">
-                          <span><span className="text-muted-foreground">Gasto:</span> <span className="font-semibold">{formatBRL(ad.spend || 0)}</span></span>
-                          {ad.purchases > 0 && <span><span className="text-muted-foreground">Compras:</span> <span className="font-semibold">{ad.purchases}</span></span>}
-                          {ad.leads > 0 && <span><span className="text-muted-foreground">Leads:</span> <span className="font-semibold">{ad.leads}</span></span>}
-                        </div>
-                        {ad.preview_link && (
-                          <a href={ad.preview_link} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-[11px] text-primary hover:underline">
-                            <ExternalLink className="h-3 w-3" />
-                            Ver anúncio
-                          </a>
-                        )}
+            {(m.metaAds || []).length > 0 && (
+              <div>
+                <p className="text-sm font-medium mb-2">🏆 Melhores Anúncios</p>
+                <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {(m.metaAds || []).slice(0, 6).map((ad: any, i: number) => (
+                    <div key={ad.ad_id} className="rounded-lg border p-2.5 space-y-1.5">
+                      <div className="flex items-start justify-between gap-1">
+                        <p className="text-xs font-semibold line-clamp-1 leading-tight">{ad.ad_name || "Anúncio"}</p>
+                        <span className="text-[10px] text-muted-foreground shrink-0">#{i+1}</span>
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex gap-3 text-xs">
+                        <span><span className="text-muted-foreground">Gasto:</span> <span className="font-semibold">{formatBRL(Number(ad.spend || 0))}</span></span>
+                        {ad.purchases > 0 && <span><span className="text-muted-foreground">Compras:</span> <span className="font-semibold">{ad.purchases}</span></span>}
+                        {ad.leads > 0 && <span><span className="text-muted-foreground">Leads:</span> <span className="font-semibold">{ad.leads}</span></span>}
+                      </div>
+                      {ad.preview_link && (
+                        <a href={ad.preview_link} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-[11px] text-primary hover:underline">
+                          <ExternalLink className="h-3 w-3" />
+                          Ver anúncio
+                        </a>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              );
-            })()}
+              </div>
+            )}
           </CardContent>
         </Card>
       </AnimatedCard>

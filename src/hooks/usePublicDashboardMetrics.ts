@@ -24,7 +24,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("meta_metrics")
-        .select("date, investment, impressions, clicks, results, purchases, link_clicks, landing_page_views, checkouts_initiated, leads, top_ads")
+        .select("date, investment, impressions, clicks, results, purchases, link_clicks, landing_page_views, checkouts_initiated, leads")
         .eq("project_id", projectId!)
         .order("date", { ascending: true });
       if (error) throw error;
@@ -57,6 +57,21 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
         .select("type, target_value, period, is_active")
         .eq("project_id", projectId!)
         .eq("is_active", true);
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+    refetchInterval: 300000,
+  });
+
+  const metaAdsQuery = useQuery({
+    queryKey: ["public_meta_ads", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("meta_ads")
+        .select("*")
+        .eq("project_id", projectId!)
+        .order("spend", { ascending: false });
       if (error) throw error;
       return (data as any[]) || [];
     },
@@ -105,24 +120,19 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   const metaPageConversion = metaLpViews > 0 ? (metaCheckouts / metaLpViews) * 100 : 0;
   const metaCheckoutConversion = metaCheckouts > 0 ? (metaPurchases / metaCheckouts) * 100 : 0;
 
-  // Top ads aggregated from meta_metrics
-  const topAdsMap = new Map<string, any>();
-  meta.forEach((m: any) => {
-    if (!Array.isArray(m.top_ads)) return;
-    m.top_ads.forEach((ad: any) => {
-      if (!ad.id) return;
-      if (!topAdsMap.has(ad.id)) {
-        topAdsMap.set(ad.id, { ...ad });
-      } else {
-        const ex = topAdsMap.get(ad.id)!;
-        ex.spend = (ex.spend || 0) + (ad.spend || 0);
-        ex.purchases = (ex.purchases || 0) + (ad.purchases || 0);
-        ex.leads = (ex.leads || 0) + (ad.leads || 0);
-        if (ad.preview_link) ex.preview_link = ad.preview_link;
-      }
-    });
-  });
-  const topAds = Array.from(topAdsMap.values()).sort((a, b) => b.spend - a.spend).slice(0, 10);
+  // Top ads from meta_ads table
+  const metaAds = (metaAdsQuery.data || []).map((ad: any) => ({
+    id: ad.ad_id,
+    name: ad.ad_name,
+    status: ad.status,
+    spend: Number(ad.spend || 0),
+    impressions: Number(ad.impressions || 0),
+    clicks: Number(ad.clicks || 0),
+    purchases: Number(ad.purchases || 0),
+    leads: Number(ad.leads || 0),
+    preview_link: ad.preview_link,
+  }));
+  const topAds = metaAds.slice(0, 10);
 
   // Sales by date
   const salesByDate = new Map<string, { count: number; revenue: number }>();

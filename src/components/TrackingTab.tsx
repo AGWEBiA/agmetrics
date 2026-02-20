@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -88,39 +88,31 @@ const tooltipStyle = {
   fontSize: "12px",
 };
 
-function TopAdsSection({ metaMetrics }: { metaMetrics: any[] }) {
+function TopAdsSection({ metaAds }: { metaAds: any[] }) {
+  const [page, setPage] = useState(0);
+  const pageSize = 12;
+
   const topAds = useMemo(() => {
-    // Collect all top_ads from meta_metrics rows and merge by ad id
-    const adsMap = new Map<string, any>();
-    for (const met of metaMetrics) {
-      const ads = met.top_ads;
-      if (!Array.isArray(ads)) continue;
-      for (const ad of ads) {
-        if (!ad.id) continue;
-        if (!adsMap.has(ad.id)) {
-          adsMap.set(ad.id, { ...ad });
-        } else {
-          const existing = adsMap.get(ad.id)!;
-          existing.spend += ad.spend || 0;
-          existing.impressions += ad.impressions || 0;
-          existing.clicks += ad.clicks || 0;
-          existing.purchases += ad.purchases || 0;
-          existing.leads += ad.leads || 0;
-          if (ad.preview_link) existing.preview_link = ad.preview_link;
-        }
-      }
-    }
-    return Array.from(adsMap.values())
-      .map((ad) => ({
-        ...ad,
-        cpm: ad.impressions > 0 ? (ad.spend / ad.impressions) * 1000 : 0,
-        ctr: ad.impressions > 0 ? (ad.clicks / ad.impressions) * 100 : 0,
-        cpc: ad.clicks > 0 ? ad.spend / ad.clicks : 0,
-        cpa: ad.purchases > 0 ? ad.spend / ad.purchases : 0,
-        cpl: ad.leads > 0 ? ad.spend / ad.leads : 0,
-      }))
-      .sort((a, b) => b.spend - a.spend);
-  }, [metaMetrics]);
+    return metaAds.map((ad: any) => ({
+      id: ad.ad_id,
+      name: ad.ad_name,
+      status: ad.status,
+      spend: Number(ad.spend || 0),
+      impressions: Number(ad.impressions || 0),
+      clicks: Number(ad.clicks || 0),
+      cpm: Number(ad.cpm || 0),
+      ctr: Number(ad.ctr || 0),
+      cpc: Number(ad.cpc || 0),
+      purchases: Number(ad.purchases || 0),
+      leads: Number(ad.leads || 0),
+      preview_link: ad.preview_link,
+      cpa: ad.purchases > 0 ? Number(ad.spend || 0) / Number(ad.purchases) : 0,
+      cpl: ad.leads > 0 ? Number(ad.spend || 0) / Number(ad.leads) : 0,
+    })).sort((a: any, b: any) => b.spend - a.spend);
+  }, [metaAds]);
+
+  const totalPages = Math.ceil(topAds.length / pageSize);
+  const paginatedAds = topAds.slice(page * pageSize, (page + 1) * pageSize);
 
   if (topAds.length === 0) {
     return (
@@ -139,7 +131,7 @@ function TopAdsSection({ metaMetrics }: { metaMetrics: any[] }) {
         <p className="text-xs text-muted-foreground">Ordenados por investimento. Clique em "Ver Anúncio" para abrir o preview na Meta.</p>
       </div>
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-        {topAds.slice(0, 12).map((ad, i) => (
+        {paginatedAds.map((ad, i) => (
           <Card key={ad.id} className="relative overflow-hidden">
             <div className="absolute top-3 right-3">
               <Badge variant={ad.status === "ACTIVE" ? "default" : "secondary"} className="text-[10px]">
@@ -174,7 +166,7 @@ function TopAdsSection({ metaMetrics }: { metaMetrics: any[] }) {
                 {ad.leads > 0 && <div><span className="text-muted-foreground">CPL:</span> <span className="font-medium">{formatBRL(ad.cpl)}</span></div>}
                 <div><span className="text-muted-foreground">Cliques:</span> <span className="font-medium">{formatNumber(ad.clicks)}</span></div>
               </div>
-              {ad.preview_link && (
+              {ad.preview_link ? (
                 <a
                   href={ad.preview_link}
                   target="_blank"
@@ -183,6 +175,16 @@ function TopAdsSection({ metaMetrics }: { metaMetrics: any[] }) {
                 >
                   <ExternalLink className="h-3 w-3" />
                   Ver Anúncio
+                </a>
+              ) : (
+                <a
+                  href={`https://www.facebook.com/ads/manager/creative/?act=&selected_ad_ids=${ad.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Ver no Gerenciador
                 </a>
               )}
             </CardContent>
@@ -242,6 +244,29 @@ function TopAdsSection({ metaMetrics }: { metaMetrics: any[] }) {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage(Math.max(0, page - 1))}
+            disabled={page === 0}
+            className="px-3 py-1.5 text-xs rounded border bg-background hover:bg-muted disabled:opacity-40"
+          >
+            ← Anterior
+          </button>
+          <span className="text-xs text-muted-foreground">
+            Página {page + 1} de {totalPages} ({topAds.length} anúncios)
+          </span>
+          <button
+            onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+            disabled={page >= totalPages - 1}
+            className="px-3 py-1.5 text-xs rounded border bg-background hover:bg-muted disabled:opacity-40"
+          >
+            Próxima →
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -724,7 +749,7 @@ export function TrackingTab({ m, project }: TrackingTabProps) {
         {/* ========== MELHORES ANÚNCIOS ========== */}
         {hasMetaData && (
           <TabsContent value="top_ads" className="space-y-6 pt-4">
-            <TopAdsSection metaMetrics={m.metaMetrics || []} />
+            <TopAdsSection metaAds={m.metaAds || []} />
           </TabsContent>
         )}
 

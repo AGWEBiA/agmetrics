@@ -242,6 +242,84 @@ export type Database = {
           },
         ]
       }
+      meta_ads: {
+        Row: {
+          ad_id: string
+          ad_name: string | null
+          clicks: number | null
+          cpc: number | null
+          cpm: number | null
+          created_at: string | null
+          ctr: number | null
+          date_end: string | null
+          date_start: string | null
+          id: string
+          impressions: number | null
+          last_updated: string | null
+          leads: number | null
+          preview_link: string | null
+          project_id: string
+          purchases: number | null
+          spend: number | null
+          status: string | null
+        }
+        Insert: {
+          ad_id: string
+          ad_name?: string | null
+          clicks?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          date_end?: string | null
+          date_start?: string | null
+          id?: string
+          impressions?: number | null
+          last_updated?: string | null
+          leads?: number | null
+          preview_link?: string | null
+          project_id: string
+          purchases?: number | null
+          spend?: number | null
+          status?: string | null
+        }
+        Update: {
+          ad_id?: string
+          ad_name?: string | null
+          clicks?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          date_end?: string | null
+          date_start?: string | null
+          id?: string
+          impressions?: number | null
+          last_updated?: string | null
+          leads?: number | null
+          preview_link?: string | null
+          project_id?: string
+          purchases?: number | null
+          spend?: number | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_ads_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meta_ads_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meta_campaigns: {
         Row: {
           campaign_id: string
