@@ -427,20 +427,24 @@ export default function AdminDashboard() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
-              <Stat label="Resultados" value={formatNumber(m.metaResults)} />
-              <Stat label="CPR" value={formatBRL(m.metaCostPerResult)} />
-              <Stat label="Compras" value={formatNumber(m.metaPurchases)} />
-              <Stat label="Custo/Compra" value={formatBRL(m.metaCostPerPurchase)} />
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
+              <Stat label="Impressões" value={formatNumber(m.metaImpressions)} />
+              <Stat label="CPM" value={formatBRL(m.metaCpm)} />
+              <Stat label="Cliques" value={formatNumber(m.metaClicks)} />
+              <Stat label="CTR" value={formatPercent(m.metaCtr)} />
+              <Stat label="CPC" value={formatBRL(m.metaCpc)} />
               <Stat label="Cliques no Link" value={formatNumber(m.metaLinkClicks)} />
               <Stat label="CTR Link" value={formatPercent(m.metaLinkCtr)} />
               <Stat label="CPC Link" value={formatBRL(m.metaLinkCpc)} />
               <Stat label="Views LP" value={formatNumber(m.metaLpViews)} />
               <Stat label="Connect Rate" value={formatPercent(m.metaConnectRate)} />
+              <Stat label="Checkouts" value={formatNumber(m.metaCheckouts)} />
               <Stat label="Conv. Página" value={formatPercent(m.metaPageConversion)} />
               <Stat label="Conv. Checkout" value={formatPercent(m.metaCheckoutConversion)} />
-              <Stat label="Impressões" value={formatNumber(m.metaImpressions)} />
-              <Stat label="CPM" value={formatBRL(m.metaCpm)} />
+              <Stat label="Resultados" value={formatNumber(m.metaResults)} />
+              <Stat label="CPR" value={formatBRL(m.metaCostPerResult)} />
+              <Stat label="Compras" value={formatNumber(m.metaPurchases)} />
+              <Stat label="Custo/Compra" value={formatBRL(m.metaCostPerPurchase)} />
               <Stat label="Leads" value={formatNumber(m.metaLeads)} />
               <Stat label="CPL" value={formatBRL(m.metaCostPerLead)} />
             </div>
@@ -486,8 +490,9 @@ export default function AdminDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
               <Stat label="Impressões" value={formatNumber(m.gImpressions)} />
+              <Stat label="CPM" value={formatBRL(m.gImpressions > 0 ? (m.googleInvestment / m.gImpressions) * 1000 : 0)} />
               <Stat label="Cliques" value={formatNumber(m.gClicks)} />
               <Stat label="CTR" value={formatPercent(m.gCtr)} />
               <Stat label="CPC" value={formatBRL(m.gCpc)} />

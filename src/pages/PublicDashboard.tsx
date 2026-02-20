@@ -110,23 +110,52 @@ export default function PublicDashboard() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
+                        <Stat label="Impressões" value={formatNumber(m.metaImpressions)} />
+                        <Stat label="CPM" value={formatBRL(m.metaCpm)} />
+                        <Stat label="Cliques" value={formatNumber(m.metaClicks)} />
+                        <Stat label="CTR" value={formatPercent(m.metaCtr)} />
+                        <Stat label="CPC" value={formatBRL(m.metaCpc)} />
+                        <Stat label="Cliques no Link" value={formatNumber(m.metaLinkClicks)} />
+                        <Stat label="CTR Link" value={formatPercent(m.metaLinkCtr)} />
+                        <Stat label="CPC Link" value={formatBRL(m.metaLinkCpc)} />
+                        <Stat label="Views LP" value={formatNumber(m.metaLpViews)} />
+                        <Stat label="Connect Rate" value={formatPercent(m.metaConnectRate)} />
+                        <Stat label="Checkouts" value={formatNumber(m.metaCheckouts)} />
+                        <Stat label="Conv. Página" value={formatPercent(m.metaPageConversion)} />
+                        <Stat label="Conv. Checkout" value={formatPercent(m.metaCheckoutConversion)} />
                         <Stat label="Resultados" value={formatNumber(m.metaResults)} />
                         <Stat label="CPR" value={formatBRL(m.metaCostPerResult)} />
                         <Stat label="Compras" value={formatNumber(m.metaPurchases)} />
                         <Stat label="Custo/Compra" value={formatBRL(m.metaCostPerPurchase)} />
                         <Stat label="Leads" value={formatNumber(m.metaLeads)} />
                         <Stat label="CPL" value={formatBRL(m.metaCostPerLead)} />
-                        <Stat label="Cliques no Link" value={formatNumber(m.metaLinkClicks)} />
-                        <Stat label="CTR Link" value={formatPercent(m.metaLinkCtr)} />
-                        <Stat label="CPC Link" value={formatBRL(m.metaLinkCpc)} />
-                        <Stat label="Views LP" value={formatNumber(m.metaLpViews)} />
-                        <Stat label="Connect Rate" value={formatPercent(m.metaConnectRate)} />
-                        <Stat label="Conv. Página" value={formatPercent(m.metaPageConversion)} />
-                        <Stat label="Conv. Checkout" value={formatPercent(m.metaCheckoutConversion)} />
-                        <Stat label="Impressões" value={formatNumber(m.metaImpressions)} />
-                        <Stat label="CPM" value={formatBRL(m.metaCpm)} />
-                        <Stat label="CTR" value={formatPercent(m.metaCtr)} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </AnimatedCard>
+              )}
+
+              {/* Google Ads */}
+              {(m.googleInvestment > 0 || m.gImpressions > 0) && (
+                <AnimatedCard index={0}>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">Google Ads</CardTitle>
+                        <Badge variant="outline">{formatBRL(m.googleInvestment)}</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
+                        <Stat label="Impressões" value={formatNumber(m.gImpressions)} />
+                        <Stat label="CPM" value={formatBRL(m.gCpm)} />
+                        <Stat label="Cliques" value={formatNumber(m.gClicks)} />
+                        <Stat label="CTR" value={formatPercent(m.gCtr)} />
+                        <Stat label="CPC" value={formatBRL(m.gCpc)} />
+                        <Stat label="Conversões" value={formatNumber(m.gConversions)} />
+                        <Stat label="Taxa de Conv." value={formatPercent(m.gConversionRate)} />
+                        <Stat label="Custo/Conv." value={formatBRL(m.gCostPerConversion)} />
                       </div>
                     </CardContent>
                   </Card>

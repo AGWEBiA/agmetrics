@@ -187,6 +187,16 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
     return { type: g.type, target: g.target_value, current, period: g.period, pct: g.target_value > 0 ? (current / g.target_value) * 100 : 0 };
   });
 
+  // Google Ads aggregate metrics
+  const gImpressions = google.reduce((s: number, m: any) => s + (m.impressions || 0), 0);
+  const gClicks = google.reduce((s: number, m: any) => s + (m.clicks || 0), 0);
+  const gConversions = google.reduce((s: number, m: any) => s + (m.conversions || 0), 0);
+  const gCpm = gImpressions > 0 ? (googleInvestment / gImpressions) * 1000 : 0;
+  const gCtr = gImpressions > 0 ? (gClicks / gImpressions) * 100 : 0;
+  const gCpc = gClicks > 0 ? googleInvestment / gClicks : 0;
+  const gConversionRate = gClicks > 0 ? (gConversions / gClicks) * 100 : 0;
+  const gCostPerConversion = gConversions > 0 ? googleInvestment / gConversions : 0;
+
   return {
     isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || goalsQuery.isLoading,
     totalRevenue, grossRevenue, totalFees, salesCount, avgTicket,
@@ -195,6 +205,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
     metaLeads, metaCostPerLead,
     metaCpm, metaCtr, metaCpc, metaCostPerResult, metaCostPerPurchase,
     metaLinkCtr, metaLinkCpc, metaConnectRate, metaPageConversion, metaCheckoutConversion,
+    gImpressions, gClicks, gConversions, gCpm, gCtr, gCpc, gConversionRate, gCostPerConversion,
     topAds,
     salesChartData, productData, platformChartData, goalsProgress,
   };
