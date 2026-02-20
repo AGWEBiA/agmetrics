@@ -282,7 +282,7 @@ function LocationSection({ data, title }: { data: DemographicItem[]; title: stri
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-[10px]">Local</TableHead>
+                <TableHead className="text-[10px]">Estado/Região</TableHead>
                 <TableHead className="text-[10px] text-right">Gasto</TableHead>
                 <TableHead className="text-[10px] text-right">Impressões</TableHead>
                 <TableHead className="text-[10px] text-right">Cliques</TableHead>
@@ -460,7 +460,7 @@ export function DemographicsSection({ platform, demographics, buyerLocationData,
           </div>
 
           {locationData.length > 0 && (
-            <LocationSection data={locationData} title={`Localização do Público — ${platform === "meta" ? "Meta" : "Google"}`} />
+            <LocationSection data={locationData} title={`Localização por Estado — ${platform === "meta" ? "Meta" : "Google"}`} />
           )}
         </>
       )}
