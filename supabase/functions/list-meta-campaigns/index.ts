@@ -31,12 +31,21 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
-    const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+    // Use getClaims for Lovable Cloud (verify_jwt = false pattern)
+    let userId: string;
+    const claimsResult = await anonClient.auth.getClaims(token);
+    if (claimsResult.data?.claims) {
+      userId = claimsResult.data.claims.sub;
+    } else {
+      const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      userId = user.id;
     }
 
     const { project_id, credential_id } = await req.json();
@@ -57,11 +66,11 @@ Deno.serve(async (req) => {
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
 
     const isAdmin = roleData?.role === "admin";
-    if (!project || (!isAdmin && project.owner_id !== user.id)) {
+    if (!project || (!isAdmin && project.owner_id !== userId)) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
