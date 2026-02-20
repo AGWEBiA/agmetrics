@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-sync-source",
 };
 
 Deno.serve(async (req) => {
@@ -13,22 +13,51 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
+    const syncSource = req.headers.get("x-sync-source");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
     if (!authHeader) throw new Error("Missing authorization header");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Verify user
     const token = authHeader.replace("Bearer ", "");
-    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
-    if (authError || !user) throw new Error("Unauthorized");
+    const isInternalCron = syncSource === "auto-sync-cron" && token === serviceRoleKey;
 
+    if (!isInternalCron) {
+      // Normal user auth flow
+      const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+      const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
+      if (authError || !user) throw new Error("Unauthorized");
+
+      const { project_id } = await req.json();
+      if (!project_id) throw new Error("project_id is required");
+
+      // Verify ownership OR admin
+      const { data: project, error: projErr } = await supabase
+        .from("projects")
+        .select("id, evolution_api_url, evolution_api_key, evolution_instance_name, owner_id")
+        .eq("id", project_id)
+        .single();
+
+      if (projErr || !project) throw new Error("Project not found");
+
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      const isAdmin = roleData?.role === "admin";
+      if (!isAdmin && project.owner_id !== user.id) throw new Error("Unauthorized");
+
+      return await syncWhatsapp(supabase, project_id, project, corsHeaders);
+    }
+
+    // Internal cron path
     const { project_id } = await req.json();
     if (!project_id) throw new Error("project_id is required");
 
-    // Verify ownership OR admin
     const { data: project, error: projErr } = await supabase
       .from("projects")
       .select("id, evolution_api_url, evolution_api_key, evolution_instance_name, owner_id")
@@ -37,15 +66,17 @@ Deno.serve(async (req) => {
 
     if (projErr || !project) throw new Error("Project not found");
 
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
+    return await syncWhatsapp(supabase, project_id, project, corsHeaders);
+  } catch (error: any) {
+    console.error("sync-whatsapp error:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
 
-    const isAdmin = roleData?.role === "admin";
-    if (!isAdmin && project.owner_id !== user.id) throw new Error("Unauthorized");
-
+async function syncWhatsapp(supabase: any, project_id: string, project: any, corsHeaders: Record<string, string>) {
     const { evolution_api_url, evolution_api_key, evolution_instance_name } = project;
     if (!evolution_api_url || !evolution_api_key || !evolution_instance_name) {
       throw new Error("Evolution API credentials not configured for this project");
@@ -53,7 +84,6 @@ Deno.serve(async (req) => {
 
     const baseUrl = evolution_api_url.replace(/\/$/, "");
 
-    // 1. Fetch groups from Evolution API
     const groupsRes = await fetch(`${baseUrl}/group/fetchAllGroups/${evolution_instance_name}?getParticipants=false`, {
       headers: { apikey: evolution_api_key },
     });
@@ -75,7 +105,6 @@ Deno.serve(async (req) => {
 
       if (!jid) continue;
 
-      // Check if group already exists by jid
       const { data: existing } = await supabase
         .from("whatsapp_groups")
         .select("id, member_count, peak_members")
@@ -91,7 +120,6 @@ Deno.serve(async (req) => {
       let groupId: string;
 
       if (existing) {
-        // Update existing group
         await supabase
           .from("whatsapp_groups")
           .update({
@@ -104,7 +132,6 @@ Deno.serve(async (req) => {
           .eq("id", existing.id);
         groupId = existing.id;
       } else {
-        // Create new group
         const { data: newGroup } = await supabase
           .from("whatsapp_groups")
           .insert({
@@ -121,7 +148,6 @@ Deno.serve(async (req) => {
         groupId = newGroup!.id;
       }
 
-      // Record history snapshot
       await supabase.from("whatsapp_member_history").insert({
         project_id,
         group_id: groupId,
@@ -138,11 +164,4 @@ Deno.serve(async (req) => {
       JSON.stringify({ success: true, synced, total_groups: groups.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error: any) {
-    console.error("sync-whatsapp error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-});
+}
