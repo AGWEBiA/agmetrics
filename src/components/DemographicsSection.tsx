@@ -6,6 +6,8 @@ import {
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
+import { BrazilStateMap } from "./BrazilStateMap";
+import { WorldMap } from "./WorldMap";
 
 const COLORS = [
   "hsl(265, 80%, 60%)", "hsl(220, 90%, 56%)", "hsl(152, 60%, 42%)",
@@ -263,10 +265,40 @@ function LocationSection({ data, title }: { data: DemographicItem[]; title: stri
 
   if (chartData.length === 0) return null;
 
+  // Detect if data is Brazilian states (long names like "São Paulo") or country codes (2-letter like "BR")
+  const BR_STATES = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
+  const brStateNames = ["roraima","amapá","amapa","amazonas","pará","para","maranhão","maranhao","ceará","ceara","rio grande do norte","acre","rondônia","rondonia","tocantins","piauí","piaui","paraíba","paraiba","pernambuco","mato grosso","bahia","alagoas","sergipe","mato grosso do sul","goiás","goias","distrito federal","minas gerais","espírito santo","espirito santo","são paulo","sao paulo","rio de janeiro","paraná","parana","santa catarina","rio grande do sul"];
+  
+  const isBrazilianStates = chartData.some(d => {
+    const upper = d.name.trim().toUpperCase();
+    const lower = d.name.trim().toLowerCase();
+    return BR_STATES.includes(upper) || brStateNames.includes(lower);
+  });
+
+  const isCountryCodes = !isBrazilianStates && chartData.some(d => d.name.trim().length === 2);
+
+  const mapData = chartData.map(d => ({
+    name: d.name,
+    value: d.gasto,
+    pct: d.pct,
+  }));
+
   return (
     <Card>
       <CardHeader className="pb-2"><CardTitle className="text-base">{title}</CardTitle></CardHeader>
       <CardContent>
+        {/* Map visualization */}
+        {isBrazilianStates && (
+          <div className="mb-4">
+            <BrazilStateMap data={mapData} valueLabel="Gasto" colorScheme="blue" />
+          </div>
+        )}
+        {isCountryCodes && (
+          <div className="mb-4">
+            <WorldMap data={mapData} valueLabel="Gasto" />
+          </div>
+        )}
+
         <div className="h-64 mb-4">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData.slice(0, 10)} layout="vertical">
@@ -282,7 +314,7 @@ function LocationSection({ data, title }: { data: DemographicItem[]; title: stri
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-[10px]">Estado/Região</TableHead>
+                <TableHead className="text-[10px]">{isBrazilianStates ? "Estado" : "País"}</TableHead>
                 <TableHead className="text-[10px] text-right">Gasto</TableHead>
                 <TableHead className="text-[10px] text-right">Impressões</TableHead>
                 <TableHead className="text-[10px] text-right">Cliques</TableHead>
@@ -312,10 +344,29 @@ function BuyerLocationSection({ data }: { data: BuyerLocation[] }) {
 
   const chartData = data.slice(0, 10);
 
+  const mapData = data.map(d => ({
+    name: d.name,
+    value: d.count,
+    secondaryValue: d.revenue,
+    pct: d.pct,
+  }));
+
   return (
     <Card>
       <CardHeader className="pb-2"><CardTitle className="text-base">Localização dos Compradores</CardTitle></CardHeader>
       <CardContent>
+        {/* Brazil state map for buyer locations */}
+        <div className="mb-4">
+          <BrazilStateMap
+            data={mapData}
+            valueLabel="Compras"
+            secondaryLabel="Faturamento"
+            formatValue={(v) => String(Math.round(v))}
+            formatSecondary={formatBRL}
+            colorScheme="green"
+          />
+        </div>
+
         <div className="h-64 mb-4">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} layout="vertical">
