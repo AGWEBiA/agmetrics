@@ -244,7 +244,7 @@ export default function AdminDashboard() {
               </div>
               <Progress value={Math.min(budgetData.usePct, 100)} className="h-3" />
             </div>
-            <div className="grid grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Provisionado</p>
                 <p className="text-lg font-bold">{formatBRL(budgetData.budget)}</p>
@@ -266,7 +266,7 @@ export default function AdminDashboard() {
             <p className="text-xs text-muted-foreground">Tendência de gasto e previsão de esgotamento</p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="rounded-lg border p-3">
                 <p className="text-xs text-muted-foreground">📊 Média Diária</p>
                 <p className="text-lg font-bold">{formatBRL(budgetData.dailyAvg)}</p>
@@ -348,7 +348,7 @@ export default function AdminDashboard() {
               <p className="text-xs text-muted-foreground">Acompanhamento de boletos gerados e taxa de conversão por plataforma</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div className="rounded-lg border p-3">
                   <p className="text-xs text-muted-foreground">Boletos Gerados</p>
                   <p className="text-xl font-bold mt-1">{formatNumber(m.boletoTotal)}</p>
@@ -885,19 +885,19 @@ export default function AdminDashboard() {
       )}
 
       <Tabs defaultValue="overview">
-        <TabsList className="w-full sm:w-auto overflow-x-auto">
-          <TabsTrigger value="overview" className="text-xs sm:text-sm">Visão Geral</TabsTrigger>
+        <TabsList className="w-full sm:w-auto flex overflow-x-auto no-scrollbar">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm whitespace-nowrap">Visão Geral</TabsTrigger>
           {(m.totalLeads > 0 || m.totalInvestment > 0) && (
-            <TabsTrigger value="acquisition" className="text-xs sm:text-sm">Captação</TabsTrigger>
+            <TabsTrigger value="acquisition" className="text-xs sm:text-sm whitespace-nowrap">Captação</TabsTrigger>
           )}
           {m.totalSalesCount > 0 && (
-            <TabsTrigger value="sales" className="text-xs sm:text-sm">Vendas</TabsTrigger>
+            <TabsTrigger value="sales" className="text-xs sm:text-sm whitespace-nowrap">Vendas</TabsTrigger>
           )}
           {m.salesCount > 0 && (
-            <TabsTrigger value="timeline" className="text-xs sm:text-sm">Temporal</TabsTrigger>
+            <TabsTrigger value="timeline" className="text-xs sm:text-sm whitespace-nowrap">Temporal</TabsTrigger>
           )}
           {(m.metaInvestment > 0 || m.metaImpressions > 0 || m.googleInvestment > 0 || m.gImpressions > 0) && (
-            <TabsTrigger value="tracking" className="text-xs sm:text-sm">Rastreamento</TabsTrigger>
+            <TabsTrigger value="tracking" className="text-xs sm:text-sm whitespace-nowrap">Rastreamento</TabsTrigger>
           )}
         </TabsList>
 
@@ -914,7 +914,7 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="acquisition" className="space-y-6 pt-4">
-          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <AnimatedCard index={0}><MetricCard title="Investimento Total" value={formatBRL(m.totalInvestment)} subtitle="Meta + Google + Manual" /></AnimatedCard>
             <AnimatedCard index={1}><MetricCard title="ROI" value={formatPercent(m.roi)} color={m.roi >= 0 ? "text-success" : "text-destructive"} /></AnimatedCard>
             <AnimatedCard index={2}><MetricCard title="ROAS" value={`${formatDecimal(m.roas)}x`} subtitle="Retorno sobre ads" /></AnimatedCard>
@@ -970,7 +970,7 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="sales" className="space-y-6 pt-4">
-          <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             <AnimatedCard index={0}><MetricCard title="Receita Bruta" value={formatBRL(m.grossRevenue)} subtitle="Total cobrado" /></AnimatedCard>
             <AnimatedCard index={1}><MetricCard title="Receita Líquida (Produtor)" value={formatBRL(m.totalRevenue)} subtitle="Valor recebido" /></AnimatedCard>
             <AnimatedCard index={2}><MetricCard title="Comissão Coprodutor" value={formatBRL(m.totalCoproducerCommission)} subtitle="Valor dos coprodutores" /></AnimatedCard>
