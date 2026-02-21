@@ -1,13 +1,11 @@
 /**
- * Opens a Facebook ad preview link safely, bypassing iframe/referrer restrictions.
- * Facebook's fb.me links block requests from iframes and certain referrers.
- * Using window.open with noopener,noreferrer clears the opener context.
+ * Opens a Facebook Ad Library link for the given ad ID.
+ * Uses the public Ad Library instead of preview_shareable_link which leads to Ads Manager.
  */
-export function openAdPreview(url: string) {
-  // Use window.open to avoid iframe context and referrer leaking
+export function openAdPreview(adId: string) {
+  const url = `https://www.facebook.com/ads/library/?id=${adId}`;
   const win = window.open(url, "_blank", "noopener,noreferrer");
   if (!win) {
-    // Fallback: create a temporary link element
     const a = document.createElement("a");
     a.href = url;
     a.target = "_blank";

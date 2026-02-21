@@ -167,15 +167,15 @@ function TopAdsSection({ metaAds }: { metaAds: any[] }) {
                 {ad.leads > 0 && <div><span className="text-muted-foreground">CPL:</span> <span className="font-medium">{formatBRL(ad.cpl)}</span></div>}
                 <div><span className="text-muted-foreground">Cliques:</span> <span className="font-medium">{formatNumber(ad.clicks)}</span></div>
               </div>
-              {ad.preview_link && ad.status === "ACTIVE" ? (
+              {ad.id && ad.status === "ACTIVE" ? (
                 <button
-                  onClick={() => openAdPreview(ad.preview_link)}
+                  onClick={() => openAdPreview(ad.id)}
                   className="flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
                 >
                   <ExternalLink className="h-3 w-3" />
                   Ver Anúncio
                 </button>
-              ) : ad.preview_link ? (
+              ) : ad.id ? (
                 <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                   Anúncio inativo
                 </span>
@@ -228,12 +228,12 @@ function TopAdsSection({ metaAds }: { metaAds: any[] }) {
                   <TableCell className="text-[10px] text-right">{formatNumber(ad.leads)}</TableCell>
                   <TableCell className="text-[10px] text-right">{ad.leads > 0 ? formatBRL(ad.cpl) : "—"}</TableCell>
                   <TableCell className="text-[10px] text-right">
-                    {ad.preview_link && ad.status === "ACTIVE" ? (
-                      <button onClick={() => openAdPreview(ad.preview_link)} className="text-primary hover:underline inline-flex items-center gap-0.5">
+                    {ad.id && ad.status === "ACTIVE" ? (
+                      <button onClick={() => openAdPreview(ad.id)} className="text-primary hover:underline inline-flex items-center gap-0.5">
                         <ExternalLink className="h-3 w-3" />
                         Ver
                       </button>
-                    ) : ad.preview_link ? (
+                    ) : ad.id ? (
                       <span className="text-muted-foreground text-[10px]">Inativo</span>
                     ) : "—"}
                   </TableCell>
