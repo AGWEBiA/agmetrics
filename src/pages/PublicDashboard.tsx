@@ -5,6 +5,7 @@ import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL, formatPercent, formatDecimal, formatNumber } from "@/lib/formatters";
+import { openAdPreview } from "@/lib/openAdPreview";
 import { AnimatedCard, AnimatedPage } from "@/components/AnimatedCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -487,9 +488,9 @@ export default function PublicDashboard() {
                                     </div>
                                   )}
                                   {ad.preview_link && (
-                                    <a href={ad.preview_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-primary hover:underline">
+                                    <button onClick={() => openAdPreview(ad.preview_link)} className="flex items-center gap-1 text-[11px] text-primary hover:underline">
                                       <ExternalLink className="h-3 w-3" /> Ver anúncio
-                                    </a>
+                                    </button>
                                   )}
                                 </div>
                               ))}

@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, TrendingDown, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatBRL, formatPercent, formatNumber, formatDecimal } from "@/lib/formatters";
+import { openAdPreview } from "@/lib/openAdPreview";
 import { AnimatedCard } from "@/components/AnimatedCard";
 import { DemographicsSection } from "@/components/DemographicsSection";
 import {
@@ -167,15 +168,13 @@ function TopAdsSection({ metaAds }: { metaAds: any[] }) {
                 <div><span className="text-muted-foreground">Cliques:</span> <span className="font-medium">{formatNumber(ad.clicks)}</span></div>
               </div>
               {ad.preview_link && ad.status === "ACTIVE" ? (
-                <a
-                  href={ad.preview_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => openAdPreview(ad.preview_link)}
                   className="flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
                 >
                   <ExternalLink className="h-3 w-3" />
                   Ver Anúncio
-                </a>
+                </button>
               ) : ad.preview_link ? (
                 <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                   Anúncio inativo
@@ -230,10 +229,10 @@ function TopAdsSection({ metaAds }: { metaAds: any[] }) {
                   <TableCell className="text-[10px] text-right">{ad.leads > 0 ? formatBRL(ad.cpl) : "—"}</TableCell>
                   <TableCell className="text-[10px] text-right">
                     {ad.preview_link && ad.status === "ACTIVE" ? (
-                      <a href={ad.preview_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
+                      <button onClick={() => openAdPreview(ad.preview_link)} className="text-primary hover:underline inline-flex items-center gap-0.5">
                         <ExternalLink className="h-3 w-3" />
                         Ver
-                      </a>
+                      </button>
                     ) : ad.preview_link ? (
                       <span className="text-muted-foreground text-[10px]">Inativo</span>
                     ) : "—"}

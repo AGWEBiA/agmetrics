@@ -12,6 +12,7 @@ import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { exportDashboardPDF } from "@/lib/exportPDF";
 import { exportCSV } from "@/lib/exportCSV";
 import { formatBRL, formatPercent, formatNumber, formatDecimal } from "@/lib/formatters";
+import { openAdPreview } from "@/lib/openAdPreview";
 import { DateRangeFilter, type DateRange } from "@/components/DateRangeFilter";
 import { AnimatedCard, AnimatedPage } from "@/components/AnimatedCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -518,11 +519,11 @@ export default function AdminDashboard() {
                         </div>
                       )}
                       {ad.preview_link && (
-                        <a href={ad.preview_link} target="_blank" rel="noopener noreferrer"
+                        <button onClick={() => openAdPreview(ad.preview_link)}
                           className="flex items-center gap-1 text-[11px] text-primary hover:underline">
                           <ExternalLink className="h-3 w-3" />
                           Ver anúncio
-                        </a>
+                        </button>
                       )}
                     </div>
                   ))}
