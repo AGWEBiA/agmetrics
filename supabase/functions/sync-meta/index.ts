@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
       // === Save ads to meta_ads table ===
       try {
         const insightFields = "id,name,status,ad_preview_shareable_link";
-        const insightMetrics = "spend,impressions,clicks,actions,ad_id,ad_name";
+        const insightMetrics = "spend,impressions,clicks,actions,video_play_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,ad_id,ad_name";
         
         // Get ads list with preview links
         const adsListUrl = `https://graph.facebook.com/v21.0/${adAccountId}/ads?fields=${insightFields}&limit=200&access_token=${creds.access_token}`;
@@ -278,7 +278,7 @@ Deno.serve(async (req) => {
               const adId = row.ad_id;
               if (!adId) continue;
               if (!adAggMap.has(adId)) {
-                adAggMap.set(adId, { spend: 0, impressions: 0, clicks: 0, purchases: 0, leads: 0, ad_name: row.ad_name });
+                adAggMap.set(adId, { spend: 0, impressions: 0, clicks: 0, purchases: 0, leads: 0, ad_name: row.ad_name, video_plays: 0, video_p25: 0, video_p50: 0, video_p75: 0, video_p100: 0 });
               }
               const agg = adAggMap.get(adId)!;
               agg.spend += parseFloat(row.spend || "0");
@@ -291,6 +291,22 @@ Deno.serve(async (req) => {
                 if (a.action_type === "lead" || a.action_type === "offsite_conversion.fb_pixel_lead") {
                   agg.leads += parseInt(a.value || "0");
                 }
+              }
+              // Video metrics for hook/hold rate
+              for (const v of (row.video_play_actions || [])) {
+                if (v.action_type === "video_view") agg.video_plays += parseInt(v.value || "0");
+              }
+              for (const v of (row.video_p25_watched_actions || [])) {
+                agg.video_p25 += parseInt(v.value || "0");
+              }
+              for (const v of (row.video_p50_watched_actions || [])) {
+                agg.video_p50 += parseInt(v.value || "0");
+              }
+              for (const v of (row.video_p75_watched_actions || [])) {
+                agg.video_p75 += parseInt(v.value || "0");
+              }
+              for (const v of (row.video_p100_watched_actions || [])) {
+                agg.video_p100 += parseInt(v.value || "0");
               }
             }
 
@@ -316,6 +332,8 @@ Deno.serve(async (req) => {
                   purchases: agg.purchases,
                   leads: agg.leads,
                   preview_link: meta.preview_link,
+                  hook_rate: agg.impressions > 0 ? (agg.video_plays / agg.impressions) * 100 : 0,
+                  hold_rate: agg.video_plays > 0 ? (agg.video_p50 / agg.video_plays) * 100 : 0,
                   date_start: sinceStr,
                   date_end: untilStr,
                   last_updated: new Date().toISOString(),

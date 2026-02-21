@@ -253,6 +253,8 @@ export type Database = {
           ctr: number | null
           date_end: string | null
           date_start: string | null
+          hold_rate: number | null
+          hook_rate: number | null
           id: string
           impressions: number | null
           last_updated: string | null
@@ -273,6 +275,8 @@ export type Database = {
           ctr?: number | null
           date_end?: string | null
           date_start?: string | null
+          hold_rate?: number | null
+          hook_rate?: number | null
           id?: string
           impressions?: number | null
           last_updated?: string | null
@@ -293,6 +297,8 @@ export type Database = {
           ctr?: number | null
           date_end?: string | null
           date_start?: string | null
+          hold_rate?: number | null
+          hook_rate?: number | null
           id?: string
           impressions?: number | null
           last_updated?: string | null

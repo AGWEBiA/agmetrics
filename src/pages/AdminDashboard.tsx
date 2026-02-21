@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ExternalLink, TrendingUp, TrendingDown, GripVertical, Download, FileSpreadsheet, MessageCircle, Users } from "lucide-react";
+import { ExternalLink, TrendingUp, TrendingDown, GripVertical, Download, FileSpreadsheet, MessageCircle, Users, Video } from "lucide-react";
 import { useWhatsAppGroups } from "@/hooks/useProjectData";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, Legend,
@@ -464,6 +464,18 @@ export default function AdminDashboard() {
                         {ad.purchases > 0 && <span><span className="text-muted-foreground">Compras:</span> <span className="font-semibold">{ad.purchases}</span></span>}
                         {ad.leads > 0 && <span><span className="text-muted-foreground">Leads:</span> <span className="font-semibold">{ad.leads}</span></span>}
                       </div>
+                      {/* Hook & Hold Rate for video ads */}
+                      {(Number(ad.hook_rate || 0) > 0 || Number(ad.hold_rate || 0) > 0) && (
+                        <div className="flex items-center gap-3 text-xs bg-primary/5 rounded p-1.5">
+                          <Video className="h-3 w-3 text-primary shrink-0" />
+                          {Number(ad.hook_rate || 0) > 0 && (
+                            <span><span className="text-muted-foreground">Hook:</span> <span className="font-semibold">{formatPercent(Number(ad.hook_rate))}</span></span>
+                          )}
+                          {Number(ad.hold_rate || 0) > 0 && (
+                            <span><span className="text-muted-foreground">Hold:</span> <span className="font-semibold">{formatPercent(Number(ad.hold_rate))}</span></span>
+                          )}
+                        </div>
+                      )}
                       {ad.preview_link && (
                         <a href={ad.preview_link} target="_blank" rel="noopener noreferrer"
                           className="flex items-center gap-1 text-[11px] text-primary hover:underline">
