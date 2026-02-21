@@ -487,8 +487,8 @@ export default function PublicDashboard() {
                                       {Number(ad.hold_rate || 0) > 0 && <span><span className="text-muted-foreground">Hold:</span> <span className="font-semibold">{formatPercent(Number(ad.hold_rate))}</span></span>}
                                     </div>
                                   )}
-                                  {ad.preview_link && (
-                                    <button onClick={() => openAdPreview(ad.preview_link)} className="flex items-center gap-1 text-[11px] text-primary hover:underline">
+                                  {ad.ad_id && (
+                                    <button onClick={() => openAdPreview(ad.ad_id)} className="flex items-center gap-1 text-[11px] text-primary hover:underline">
                                       <ExternalLink className="h-3 w-3" /> Ver anúncio
                                     </button>
                                   )}

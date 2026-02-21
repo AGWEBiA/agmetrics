@@ -518,8 +518,8 @@ export default function AdminDashboard() {
                           )}
                         </div>
                       )}
-                      {ad.preview_link && (
-                        <button onClick={() => openAdPreview(ad.preview_link)}
+                      {ad.ad_id && (
+                        <button onClick={() => openAdPreview(ad.ad_id)}
                           className="flex items-center gap-1 text-[11px] text-primary hover:underline">
                           <ExternalLink className="h-3 w-3" />
                           Ver anúncio
