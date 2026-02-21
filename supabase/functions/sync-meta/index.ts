@@ -239,7 +239,7 @@ Deno.serve(async (req) => {
 
       // === Save ads to meta_ads table ===
       try {
-        const insightFields = "id,name,status,ad_preview_shareable_link";
+        const insightFields = "id,name,status,preview_shareable_link";
         const insightMetrics = "spend,impressions,clicks,actions,video_play_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,ad_id,ad_name";
         
         // Get ads list with preview links
@@ -253,14 +253,23 @@ Deno.serve(async (req) => {
           // Build ad metadata map
           const adMeta = new Map<string, { name: string; status: string; preview_link: string | null }>();
           for (const ad of adsList) {
+            // ad_preview_shareable_link can be a string, an array of strings, or an array of {body: string}
+            let previewLink: string | null = null;
+            const rawLink = ad.preview_shareable_link || ad.ad_preview_shareable_link;
+            if (typeof rawLink === "string") {
+              previewLink = rawLink;
+            } else if (Array.isArray(rawLink) && rawLink.length > 0) {
+              const first = rawLink[0];
+              previewLink = typeof first === "string" ? first : (first?.body || first?.share_link || null);
+            }
             adMeta.set(ad.id, {
               name: ad.name,
               status: ad.status,
-              preview_link: ad.ad_preview_shareable_link || null,
+              preview_link: previewLink,
             });
           }
 
-          console.log(`[sync-meta] Found ${adsList.length} ads for account ${creds.ad_account_id}`);
+          console.log(`[sync-meta] Found ${adsList.length} ads for account ${creds.ad_account_id}, sample preview:`, adsList[0]?.preview_shareable_link);
 
           // Get insights at ad level
           const adsInsightsUrl = `https://graph.facebook.com/v21.0/${adAccountId}/insights?fields=${insightMetrics}&time_range=${timeRange}&level=ad&limit=500&access_token=${creds.access_token}`;
