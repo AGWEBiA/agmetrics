@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useProjectBySlug } from "@/hooks/useProjects";
+import { useProjectBySlug, useProjectByToken } from "@/hooks/useProjects";
 import { usePublicDashboardMetrics } from "@/hooks/usePublicDashboardMetrics";
 import { formatBRL, formatPercent, formatDecimal, formatNumber } from "@/lib/formatters";
 import { AnimatedCard, AnimatedPage } from "@/components/AnimatedCard";
@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart3, TrendingUp, TrendingDown, Target, ExternalLink } from "lucide-react";
+import { BarChart3, TrendingUp, TrendingDown, Target, ExternalLink, Video } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import {
@@ -23,7 +23,15 @@ const GOAL_LABELS: Record<string, string> = {
 
 export default function PublicDashboard() {
   const { slug } = useParams();
-  const { data: project, isLoading: projectLoading, error } = useProjectBySlug(slug);
+  
+  // Try by slug first, fallback to view_token
+  const slugQuery = useProjectBySlug(slug);
+  const tokenQuery = useProjectByToken(!slugQuery.data && !slugQuery.isLoading && slug ? slug : undefined);
+  
+  const project = slugQuery.data || tokenQuery.data;
+  const projectLoading = slugQuery.isLoading || (!slugQuery.data && tokenQuery.isLoading);
+  const error = slugQuery.error && tokenQuery.error;
+  
   const m = usePublicDashboardMetrics(project?.id);
 
   if (projectLoading) {
@@ -52,6 +60,17 @@ export default function PublicDashboard() {
     );
   }
 
+  const hasROI = m.totalInvestment > 0 || m.salesCount > 0;
+  const hasSales = m.salesCount > 0;
+  const hasMeta = m.metaInvestment > 0 || m.metaImpressions > 0;
+  const hasGoogle = m.googleInvestment > 0 || m.gImpressions > 0;
+  const hasTopAds = m.topAds && m.topAds.length > 0;
+  const hasVideoAds = m.topAds?.some((ad: any) => ad.hook_rate > 0 || ad.hold_rate > 0);
+  const hasGoals = m.goalsProgress.length > 0;
+  const hasProducts = m.productData.length > 0;
+  const hasPlatformChart = m.platformChartData.length > 0;
+  const hasSalesChart = m.salesChartData.length > 0;
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -68,291 +87,323 @@ export default function PublicDashboard() {
             </div>
           ) : (
             <>
-              {/* ROI Hero */}
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-                <AnimatedCard index={0}>
-                  <Card className="border-2 border-primary/20 bg-gradient-to-br from-card to-primary/5">
-                    <CardContent className="p-5">
-                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">ROI Total</p>
-                      <div className="mt-1 flex items-center gap-2">
-                        {m.roi >= 0 ? <TrendingUp className="h-5 w-5 text-success" /> : <TrendingDown className="h-5 w-5 text-destructive" />}
-                        <p className={`text-3xl sm:text-4xl font-bold tracking-tight ${m.roi >= 0 ? "text-success" : "text-destructive"}`}>
-                          {formatPercent(m.roi)}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </AnimatedCard>
-                <AnimatedCard index={1}>
-                  <MetricCard title="ROAS" value={`${formatDecimal(m.roas)}x`} subtitle="Retorno sobre ads" />
-                </AnimatedCard>
-                <AnimatedCard index={2}>
-                  <MetricCard title="Margem Líquida" value={formatPercent(m.margin)} color={m.margin >= 0 ? "text-success" : "text-destructive"} />
-                </AnimatedCard>
-              </div>
-
-              {/* Sales overview */}
-              <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-                <AnimatedCard index={0}><MetricCard title="Receita Líquida" value={formatBRL(m.totalRevenue)} /></AnimatedCard>
-                <AnimatedCard index={1}><MetricCard title="Nº de Vendas" value={formatNumber(m.salesCount)} /></AnimatedCard>
-                <AnimatedCard index={2}><MetricCard title="Ticket Médio" value={formatBRL(m.avgTicket)} /></AnimatedCard>
-                <AnimatedCard index={3}><MetricCard title="Investimento" value={formatBRL(m.totalInvestment)} /></AnimatedCard>
-              </div>
-
-              {/* Meta Ads */}
-              {(m.metaInvestment > 0 || m.metaImpressions > 0) && (
-                <AnimatedCard index={0}>
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">Meta Ads</CardTitle>
-                        <Badge variant="outline">{formatBRL(m.metaInvestment)}</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
-                        <Stat label="Impressões" value={formatNumber(m.metaImpressions)} />
-                        <Stat label="CPM" value={formatBRL(m.metaCpm)} />
-                        <Stat label="Cliques" value={formatNumber(m.metaClicks)} />
-                        <Stat label="CTR" value={formatPercent(m.metaCtr)} />
-                        <Stat label="CPC" value={formatBRL(m.metaCpc)} />
-                        <Stat label="Cliques no Link" value={formatNumber(m.metaLinkClicks)} />
-                        <Stat label="CTR Link" value={formatPercent(m.metaLinkCtr)} />
-                        <Stat label="CPC Link" value={formatBRL(m.metaLinkCpc)} />
-                        <Stat label="Views LP" value={formatNumber(m.metaLpViews)} />
-                        <Stat label="Connect Rate" value={formatPercent(m.metaConnectRate)} />
-                        <Stat label="Checkouts" value={formatNumber(m.metaCheckouts)} />
-                        <Stat label="Conv. Página" value={formatPercent(m.metaPageConversion)} />
-                        <Stat label="Conv. Checkout" value={formatPercent(m.metaCheckoutConversion)} />
-                        <Stat label="Resultados" value={formatNumber(m.metaResults)} />
-                        <Stat label="CPR" value={formatBRL(m.metaCostPerResult)} />
-                        <Stat label="Compras" value={formatNumber(m.metaPurchases)} />
-                        <Stat label="Custo/Compra" value={formatBRL(m.metaCostPerPurchase)} />
-                        <Stat label="Leads" value={formatNumber(m.metaLeads)} />
-                        <Stat label="CPL" value={formatBRL(m.metaCostPerLead)} />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </AnimatedCard>
+              {/* === Seção: ROI e Retorno === */}
+              {hasROI && (
+                <section className="space-y-4">
+                  <SectionTitle title="📊 ROI e Retorno" />
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+                    <AnimatedCard index={0}>
+                      <Card className="border-2 border-primary/20 bg-gradient-to-br from-card to-primary/5">
+                        <CardContent className="p-5">
+                          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">ROI Total</p>
+                          <div className="mt-1 flex items-center gap-2">
+                            {m.roi >= 0 ? <TrendingUp className="h-5 w-5 text-success" /> : <TrendingDown className="h-5 w-5 text-destructive" />}
+                            <p className={`text-3xl sm:text-4xl font-bold tracking-tight ${m.roi >= 0 ? "text-success" : "text-destructive"}`}>
+                              {formatPercent(m.roi)}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </AnimatedCard>
+                    <AnimatedCard index={1}>
+                      <MetricCard title="ROAS" value={`${formatDecimal(m.roas)}x`} subtitle="Retorno sobre ads" />
+                    </AnimatedCard>
+                    <AnimatedCard index={2}>
+                      <MetricCard title="Margem Líquida" value={formatPercent(m.margin)} color={m.margin >= 0 ? "text-success" : "text-destructive"} />
+                    </AnimatedCard>
+                  </div>
+                </section>
               )}
 
-              {/* Google Ads */}
-              {(m.googleInvestment > 0 || m.gImpressions > 0) && (
-                <AnimatedCard index={0}>
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">Google Ads</CardTitle>
-                        <Badge variant="outline">{formatBRL(m.googleInvestment)}</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
-                        <Stat label="Impressões" value={formatNumber(m.gImpressions)} />
-                        <Stat label="CPM" value={formatBRL(m.gCpm)} />
-                        <Stat label="Cliques" value={formatNumber(m.gClicks)} />
-                        <Stat label="CTR" value={formatPercent(m.gCtr)} />
-                        <Stat label="CPC" value={formatBRL(m.gCpc)} />
-                        <Stat label="Conversões" value={formatNumber(m.gConversions)} />
-                        <Stat label="Taxa de Conv." value={formatPercent(m.gConversionRate)} />
-                        <Stat label="Custo/Conv." value={formatBRL(m.gCostPerConversion)} />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </AnimatedCard>
+              {/* === Seção: Resumo de Vendas === */}
+              {hasSales && (
+                <section className="space-y-4">
+                  <SectionTitle title="💰 Resumo de Vendas" />
+                  <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                    <AnimatedCard index={0}><MetricCard title="Receita Líquida" value={formatBRL(m.totalRevenue)} /></AnimatedCard>
+                    <AnimatedCard index={1}><MetricCard title="Nº de Vendas" value={formatNumber(m.salesCount)} /></AnimatedCard>
+                    <AnimatedCard index={2}><MetricCard title="Ticket Médio" value={formatBRL(m.avgTicket)} /></AnimatedCard>
+                    <AnimatedCard index={3}><MetricCard title="Investimento" value={formatBRL(m.totalInvestment)} /></AnimatedCard>
+                  </div>
+                </section>
               )}
 
-              {/* Top Ads */}
-              {m.topAds && m.topAds.length > 0 && (
-                <AnimatedCard index={0}>
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg">Melhores Anúncios</CardTitle>
-                      <p className="text-xs text-muted-foreground">Ordenados por investimento total</p>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                        {m.topAds.map((ad: any, i: number) => (
-                          <div key={ad.id} className="rounded-lg border p-3 space-y-2">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <p className="text-[10px] text-muted-foreground">#{i + 1}</p>
-                                <p className="text-sm font-semibold leading-tight line-clamp-2">{ad.name || "Anúncio"}</p>
+              {/* === Seção: Meta Ads === */}
+              {hasMeta && (
+                <section className="space-y-4">
+                  <SectionTitle title="📱 Meta Ads" />
+                  <AnimatedCard index={0}>
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">Métricas Meta Ads</CardTitle>
+                          <Badge variant="outline">{formatBRL(m.metaInvestment)}</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
+                          <Stat label="Impressões" value={formatNumber(m.metaImpressions)} />
+                          <Stat label="CPM" value={formatBRL(m.metaCpm)} />
+                          <Stat label="Cliques" value={formatNumber(m.metaClicks)} />
+                          <Stat label="CTR" value={formatPercent(m.metaCtr)} />
+                          <Stat label="CPC" value={formatBRL(m.metaCpc)} />
+                          <Stat label="Cliques no Link" value={formatNumber(m.metaLinkClicks)} />
+                          <Stat label="CTR Link" value={formatPercent(m.metaLinkCtr)} />
+                          <Stat label="CPC Link" value={formatBRL(m.metaLinkCpc)} />
+                          <Stat label="Views LP" value={formatNumber(m.metaLpViews)} />
+                          <Stat label="Connect Rate" value={formatPercent(m.metaConnectRate)} />
+                          <Stat label="Checkouts" value={formatNumber(m.metaCheckouts)} />
+                          <Stat label="Conv. Página" value={formatPercent(m.metaPageConversion)} />
+                          <Stat label="Conv. Checkout" value={formatPercent(m.metaCheckoutConversion)} />
+                          <Stat label="Resultados" value={formatNumber(m.metaResults)} />
+                          <Stat label="CPR" value={formatBRL(m.metaCostPerResult)} />
+                          <Stat label="Compras" value={formatNumber(m.metaPurchases)} />
+                          <Stat label="Custo/Compra" value={formatBRL(m.metaCostPerPurchase)} />
+                          <Stat label="Leads" value={formatNumber(m.metaLeads)} />
+                          <Stat label="CPL" value={formatBRL(m.metaCostPerLead)} />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </AnimatedCard>
+                </section>
+              )}
+
+              {/* === Seção: Google Ads === */}
+              {hasGoogle && (
+                <section className="space-y-4">
+                  <SectionTitle title="🔍 Google Ads" />
+                  <AnimatedCard index={0}>
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">Métricas Google Ads</CardTitle>
+                          <Badge variant="outline">{formatBRL(m.googleInvestment)}</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
+                          <Stat label="Impressões" value={formatNumber(m.gImpressions)} />
+                          <Stat label="CPM" value={formatBRL(m.gCpm)} />
+                          <Stat label="Cliques" value={formatNumber(m.gClicks)} />
+                          <Stat label="CTR" value={formatPercent(m.gCtr)} />
+                          <Stat label="CPC" value={formatBRL(m.gCpc)} />
+                          <Stat label="Conversões" value={formatNumber(m.gConversions)} />
+                          <Stat label="Taxa de Conv." value={formatPercent(m.gConversionRate)} />
+                          <Stat label="Custo/Conv." value={formatBRL(m.gCostPerConversion)} />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </AnimatedCard>
+                </section>
+              )}
+
+              {/* === Seção: Melhores Anúncios === */}
+              {hasTopAds && (
+                <section className="space-y-4">
+                  <SectionTitle title="🏆 Melhores Anúncios" />
+                  <AnimatedCard index={0}>
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg">Top Anúncios</CardTitle>
+                        <p className="text-xs text-muted-foreground">Ordenados por investimento total</p>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                          {m.topAds.map((ad: any, i: number) => (
+                            <div key={ad.id} className="rounded-lg border p-3 space-y-2">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-[10px] text-muted-foreground">#{i + 1}</p>
+                                  <p className="text-sm font-semibold leading-tight line-clamp-2">{ad.name || "Anúncio"}</p>
+                                </div>
+                                {ad.status && (
+                                  <Badge variant={ad.status === "ACTIVE" ? "default" : "secondary"} className="text-[9px] shrink-0">
+                                    {ad.status === "ACTIVE" ? "Ativo" : ad.status}
+                                  </Badge>
+                                )}
                               </div>
-                              {ad.status && (
-                                <Badge variant={ad.status === "ACTIVE" ? "default" : "secondary"} className="text-[9px] shrink-0">
-                                  {ad.status === "ACTIVE" ? "Ativo" : ad.status}
-                                </Badge>
+                              <div className="grid grid-cols-3 gap-1 text-center bg-muted/40 rounded p-1.5">
+                                <div><p className="text-[9px] text-muted-foreground">Gasto</p><p className="text-xs font-bold">{formatBRL(ad.spend || 0)}</p></div>
+                                <div><p className="text-[9px] text-muted-foreground">Compras</p><p className="text-xs font-bold">{ad.purchases || 0}</p></div>
+                                <div><p className="text-[9px] text-muted-foreground">Leads</p><p className="text-xs font-bold">{ad.leads || 0}</p></div>
+                              </div>
+                              {/* Hook & Hold Rate for video ads */}
+                              {(ad.hook_rate > 0 || ad.hold_rate > 0) && (
+                                <div className="flex items-center gap-3 text-xs bg-primary/5 rounded p-1.5">
+                                  <Video className="h-3 w-3 text-primary shrink-0" />
+                                  {ad.hook_rate > 0 && (
+                                    <span><span className="text-muted-foreground">Hook:</span> <span className="font-semibold">{formatPercent(ad.hook_rate)}</span></span>
+                                  )}
+                                  {ad.hold_rate > 0 && (
+                                    <span><span className="text-muted-foreground">Hold:</span> <span className="font-semibold">{formatPercent(ad.hold_rate)}</span></span>
+                                  )}
+                                </div>
+                              )}
+                              {ad.preview_link && (
+                                <a href={ad.preview_link} target="_blank" rel="noopener noreferrer"
+                                  className="flex items-center gap-1 text-xs text-primary hover:underline font-medium">
+                                  <ExternalLink className="h-3 w-3" />
+                                  Ver Anúncio
+                                </a>
                               )}
                             </div>
-                            <div className="grid grid-cols-3 gap-1 text-center bg-muted/40 rounded p-1.5">
-                              <div><p className="text-[9px] text-muted-foreground">Gasto</p><p className="text-xs font-bold">{formatBRL(ad.spend || 0)}</p></div>
-                              <div><p className="text-[9px] text-muted-foreground">Compras</p><p className="text-xs font-bold">{ad.purchases || 0}</p></div>
-                              <div><p className="text-[9px] text-muted-foreground">Leads</p><p className="text-xs font-bold">{ad.leads || 0}</p></div>
-                            </div>
-                            {ad.preview_link && (
-                              <a href={ad.preview_link} target="_blank" rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-xs text-primary hover:underline font-medium">
-                                <ExternalLink className="h-3 w-3" />
-                                Ver Anúncio
-                              </a>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </AnimatedCard>
-              )}
-
-              {/* Goals */}
-              {m.goalsProgress.length > 0 && (
-                <AnimatedCard index={0}>
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center gap-2">
-                        <Target className="h-5 w-5 text-primary" />
-                        <CardTitle className="text-lg">Metas do Projeto</CardTitle>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-5">
-                      {m.goalsProgress.map((g, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.1 }}
-                        >
-                          <div className="mb-2 flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{GOAL_LABELS[g.type] || g.type}</span>
-                              {g.pct >= 100 && <Badge className="bg-success text-success-foreground text-[10px]">Meta atingida!</Badge>}
-                            </div>
-                            <span className="text-muted-foreground text-xs sm:text-sm">
-                              {g.type === "revenue" ? formatBRL(g.current) : g.type === "roi" || g.type === "margin" ? formatPercent(g.current) : formatNumber(g.current)}
-                              {" / "}
-                              {g.type === "revenue" ? formatBRL(g.target) : g.type === "roi" || g.type === "margin" ? formatPercent(g.target) : formatNumber(g.target)}
-                            </span>
-                          </div>
-                          <div className="relative">
-                            <Progress value={Math.min(g.pct, 100)} className="h-3" />
-                            <span className="absolute right-1 top-0 text-[10px] font-bold leading-3 text-primary-foreground mix-blend-difference">
-                              {g.pct.toFixed(0)}%
-                            </span>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                </AnimatedCard>
-              )}
-
-              {/* Products table */}
-              {m.productData.length > 0 && (
-                <AnimatedCard index={1}>
-                  <Card>
-                    <CardHeader><CardTitle className="text-lg">Vendas por Produto</CardTitle></CardHeader>
-                    <CardContent className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Produto</TableHead>
-                            <TableHead className="hidden sm:table-cell">Tipo</TableHead>
-                            <TableHead className="text-right">Qty</TableHead>
-                            <TableHead className="text-right">Receita</TableHead>
-                            <TableHead className="text-right">%</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {m.productData.map((p) => (
-                            <TableRow key={p.name}>
-                              <TableCell className="font-medium text-sm">{p.name}</TableCell>
-                              <TableCell className="hidden sm:table-cell"><Badge variant="outline">{p.type === "main" ? "Principal" : p.type === "order_bump" ? "Order Bump" : "—"}</Badge></TableCell>
-                              <TableCell className="text-right">{p.count}</TableCell>
-                              <TableCell className="text-right">{formatBRL(p.revenue)}</TableCell>
-                              <TableCell className="text-right">{formatPercent(p.pct)}</TableCell>
-                            </TableRow>
                           ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
-                </AnimatedCard>
-              )}
-
-              {/* Charts side by side on desktop */}
-              <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-                {/* Platform pie */}
-                {m.platformChartData.length > 0 && (
-                  <AnimatedCard index={2}>
-                    <Card>
-                      <CardHeader><CardTitle className="text-lg">Receita por Plataforma</CardTitle></CardHeader>
-                      <CardContent className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie data={m.platformChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                              {m.platformChartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                            </Pie>
-                            <Tooltip cursor={false} formatter={(v: number) => formatBRL(v)} />
-                            <Legend />
-                          </PieChart>
-                        </ResponsiveContainer>
+                        </div>
                       </CardContent>
                     </Card>
                   </AnimatedCard>
-                )}
+                </section>
+              )}
 
-                {/* Sales bar chart */}
-                {m.salesChartData.length > 0 && (
-                  <AnimatedCard index={3}>
+              {/* === Seção: Metas === */}
+              {hasGoals && (
+                <section className="space-y-4">
+                  <SectionTitle title="🎯 Metas do Projeto" />
+                  <AnimatedCard index={0}>
                     <Card>
-                      <CardHeader><CardTitle className="text-lg">Evolução de Vendas</CardTitle></CardHeader>
-                      <CardContent className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={m.salesChartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                            <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
-                            <Bar dataKey="vendas" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
+                      <CardContent className="pt-6 space-y-5">
+                        {m.goalsProgress.map((g, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.1 }}
+                          >
+                            <div className="mb-2 flex items-center justify-between text-sm">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{GOAL_LABELS[g.type] || g.type}</span>
+                                {g.pct >= 100 && <Badge className="bg-success text-success-foreground text-[10px]">Meta atingida!</Badge>}
+                              </div>
+                              <span className="text-muted-foreground text-xs sm:text-sm">
+                                {g.type === "revenue" ? formatBRL(g.current) : g.type === "roi" || g.type === "margin" ? formatPercent(g.current) : formatNumber(g.current)}
+                                {" / "}
+                                {g.type === "revenue" ? formatBRL(g.target) : g.type === "roi" || g.type === "margin" ? formatPercent(g.target) : formatNumber(g.target)}
+                              </span>
+                            </div>
+                            <div className="relative">
+                              <Progress value={Math.min(g.pct, 100)} className="h-3" />
+                              <span className="absolute right-1 top-0 text-[10px] font-bold leading-3 text-primary-foreground mix-blend-difference">
+                                {g.pct.toFixed(0)}%
+                              </span>
+                            </div>
+                          </motion.div>
+                        ))}
                       </CardContent>
                     </Card>
                   </AnimatedCard>
-                )}
-              </div>
-
-              {/* Revenue area chart */}
-              {m.salesChartData.length > 0 && (
-                <AnimatedCard index={4}>
-                  <Card>
-                    <CardHeader><CardTitle className="text-lg">Evolução de Receita</CardTitle></CardHeader>
-                    <CardContent className="h-56 sm:h-72">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={m.salesChartData}>
-                          <defs>
-                            <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={COLORS[0]} stopOpacity={0.3} />
-                              <stop offset="95%" stopColor={COLORS[0]} stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                          <Tooltip cursor={false} formatter={(v: number) => formatBRL(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
-                          <Area type="monotone" dataKey="receita" stroke={COLORS[0]} strokeWidth={2} fill="url(#revenueGradient)" />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-                </AnimatedCard>
+                </section>
               )}
 
-              {m.salesCount === 0 && (
+              {/* === Seção: Produtos === */}
+              {hasProducts && (
+                <section className="space-y-4">
+                  <SectionTitle title="📦 Vendas por Produto" />
+                  <AnimatedCard index={0}>
+                    <Card>
+                      <CardContent className="pt-6 overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Produto</TableHead>
+                              <TableHead className="hidden sm:table-cell">Tipo</TableHead>
+                              <TableHead className="text-right">Qty</TableHead>
+                              <TableHead className="text-right">Receita</TableHead>
+                              <TableHead className="text-right">%</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {m.productData.map((p) => (
+                              <TableRow key={p.name}>
+                                <TableCell className="font-medium text-sm">{p.name}</TableCell>
+                                <TableCell className="hidden sm:table-cell"><Badge variant="outline">{p.type === "main" ? "Principal" : p.type === "order_bump" ? "Order Bump" : "—"}</Badge></TableCell>
+                                <TableCell className="text-right">{p.count}</TableCell>
+                                <TableCell className="text-right">{formatBRL(p.revenue)}</TableCell>
+                                <TableCell className="text-right">{formatPercent(p.pct)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  </AnimatedCard>
+                </section>
+              )}
+
+              {/* === Seção: Gráficos === */}
+              {(hasPlatformChart || hasSalesChart) && (
+                <section className="space-y-4">
+                  <SectionTitle title="📈 Gráficos" />
+                  <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+                    {hasPlatformChart && (
+                      <AnimatedCard index={0}>
+                        <Card>
+                          <CardHeader><CardTitle className="text-lg">Receita por Plataforma</CardTitle></CardHeader>
+                          <CardContent className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie data={m.platformChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                                  {m.platformChartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                                </Pie>
+                                <Tooltip cursor={false} formatter={(v: number) => formatBRL(v)} />
+                                <Legend />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </CardContent>
+                        </Card>
+                      </AnimatedCard>
+                    )}
+
+                    {hasSalesChart && (
+                      <AnimatedCard index={1}>
+                        <Card>
+                          <CardHeader><CardTitle className="text-lg">Evolução de Vendas</CardTitle></CardHeader>
+                          <CardContent className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={m.salesChartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                                <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
+                                <Bar dataKey="vendas" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </CardContent>
+                        </Card>
+                      </AnimatedCard>
+                    )}
+                  </div>
+
+                  {hasSalesChart && (
+                    <AnimatedCard index={2}>
+                      <Card>
+                        <CardHeader><CardTitle className="text-lg">Evolução de Receita</CardTitle></CardHeader>
+                        <CardContent className="h-56 sm:h-72">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={m.salesChartData}>
+                              <defs>
+                                <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor={COLORS[0]} stopOpacity={0.3} />
+                                  <stop offset="95%" stopColor={COLORS[0]} stopOpacity={0} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                              <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                              <Tooltip cursor={false} formatter={(v: number) => formatBRL(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
+                              <Area type="monotone" dataKey="receita" stroke={COLORS[0]} strokeWidth={2} fill="url(#revenueGradient)" />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </CardContent>
+                      </Card>
+                    </AnimatedCard>
+                  )}
+                </section>
+              )}
+
+              {m.salesCount === 0 && m.totalInvestment === 0 && (
                 <Card>
                   <CardContent className="flex h-40 items-center justify-center text-muted-foreground">
-                    Nenhuma venda registrada ainda. Os dados aparecerão quando houver vendas aprovadas.
+                    Nenhum dado registrado ainda. Os dados aparecerão quando houver vendas ou investimentos.
                   </CardContent>
                 </Card>
               )}
@@ -380,6 +431,10 @@ function Header() {
       </div>
     </header>
   );
+}
+
+function SectionTitle({ title }: { title: string }) {
+  return <h2 className="text-lg font-semibold tracking-tight">{title}</h2>;
 }
 
 function MetricCard({ title, value, subtitle, color, icon }: { title: string; value: string; subtitle?: string; color?: string; icon?: React.ReactNode }) {

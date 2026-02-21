@@ -131,6 +131,8 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
     purchases: Number(ad.purchases || 0),
     leads: Number(ad.leads || 0),
     preview_link: ad.preview_link,
+    hook_rate: Number(ad.hook_rate || 0),
+    hold_rate: Number(ad.hold_rate || 0),
   }));
   const topAds = metaAds.slice(0, 10);
 
