@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useProjectBySlug, useProjectByToken } from "@/hooks/useProjects";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
@@ -27,6 +27,32 @@ const GOAL_LABELS: Record<string, string> = {
 
 export default function PublicDashboard() {
   const { slug } = useParams();
+
+  // Prevent indexing by search engines and AI crawlers
+  useEffect(() => {
+    // Add noindex meta tag
+    let metaRobots = document.querySelector('meta[name="robots"]') as HTMLMetaElement;
+    if (!metaRobots) {
+      metaRobots = document.createElement('meta');
+      metaRobots.name = 'robots';
+      document.head.appendChild(metaRobots);
+    }
+    metaRobots.content = 'noindex, nofollow, noarchive, nosnippet, noimageindex';
+
+    // Block AI crawlers specifically
+    let metaAI = document.querySelector('meta[name="ai-robots"]') as HTMLMetaElement;
+    if (!metaAI) {
+      metaAI = document.createElement('meta');
+      metaAI.name = 'ai-robots';
+      document.head.appendChild(metaAI);
+    }
+    metaAI.content = 'noindex, nofollow';
+
+    return () => {
+      metaRobots?.remove();
+      metaAI?.remove();
+    };
+  }, []);
 
   const slugQuery = useProjectBySlug(slug);
   const tokenQuery = useProjectByToken(!slugQuery.data && !slugQuery.isLoading && slug ? slug : undefined);
