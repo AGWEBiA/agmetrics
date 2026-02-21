@@ -1,17 +1,21 @@
+import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useProjectBySlug, useProjectByToken } from "@/hooks/useProjects";
-import { usePublicDashboardMetrics } from "@/hooks/usePublicDashboardMetrics";
+import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { formatBRL, formatPercent, formatDecimal, formatNumber } from "@/lib/formatters";
 import { AnimatedCard, AnimatedPage } from "@/components/AnimatedCard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart3, TrendingUp, TrendingDown, Target, ExternalLink, Video } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { BarChart3, TrendingUp, TrendingDown, ExternalLink, Video, MessageCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { motion } from "framer-motion";
+import { TrackingTab } from "@/components/TrackingTab";
 import {
-  BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
+  LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 
@@ -23,16 +27,124 @@ const GOAL_LABELS: Record<string, string> = {
 
 export default function PublicDashboard() {
   const { slug } = useParams();
-  
-  // Try by slug first, fallback to view_token
+
   const slugQuery = useProjectBySlug(slug);
   const tokenQuery = useProjectByToken(!slugQuery.data && !slugQuery.isLoading && slug ? slug : undefined);
-  
+
   const project = slugQuery.data || tokenQuery.data;
   const projectLoading = slugQuery.isLoading || (!slugQuery.data && tokenQuery.isLoading);
   const error = slugQuery.error && tokenQuery.error;
-  
-  const m = usePublicDashboardMetrics(project?.id);
+
+  const m = useDashboardMetrics(project?.id, undefined, project?.strategy);
+
+  const { data: whatsappGroups } = useQuery({
+    queryKey: ["public_whatsapp_groups", project?.id],
+    enabled: !!project?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("whatsapp_groups")
+        .select("*")
+        .eq("project_id", project!.id);
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+
+  const { data: whatsappHistory } = useQuery({
+    queryKey: ["public_whatsapp_history", project?.id],
+    enabled: !!project?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("whatsapp_member_history" as any)
+        .select("*")
+        .eq("project_id", project!.id)
+        .order("recorded_at", { ascending: true });
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+
+  // Budget provisioning
+  const budgetData = useMemo(() => {
+    const budget = Number(project?.budget || 0);
+    if (budget <= 0) return null;
+    const spent = m.totalInvestment;
+    const available = Math.max(0, budget - spent);
+    const usePct = budget > 0 ? (spent / budget) * 100 : 0;
+    const strategy = project?.strategy;
+    const isLaunch = strategy === "lancamento" || strategy === "lancamento_pago";
+    let periodDays = 30;
+    if (isLaunch && project?.start_date && project?.end_date) {
+      const start = new Date(project.start_date);
+      const end = new Date(project.end_date);
+      periodDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1);
+    }
+    const dailySpending = new Map<string, number>();
+    (m.metaMetrics || []).forEach((met: any) => {
+      dailySpending.set(met.date, (dailySpending.get(met.date) || 0) + Number(met.investment || 0));
+    });
+    (m.googleMetrics || []).forEach((met: any) => {
+      dailySpending.set(met.date, (dailySpending.get(met.date) || 0) + Number(met.investment || 0));
+    });
+    const sortedDays = Array.from(dailySpending.entries()).sort(([a], [b]) => a.localeCompare(b));
+    const daysWithSpending = sortedDays.filter(([, v]) => v > 0).length;
+    const dailyAvg = daysWithSpending > 0 ? spent / daysWithSpending : 0;
+    let daysRemaining: number | null = null;
+    let exhaustionDate: Date | null = null;
+    if (isLaunch && project?.end_date) {
+      const end = new Date(project.end_date);
+      daysRemaining = Math.max(0, Math.ceil((end.getTime() - Date.now()) / 86400000));
+      exhaustionDate = end;
+    } else {
+      daysRemaining = dailyAvg > 0 ? Math.ceil(available / dailyAvg) : null;
+      exhaustionDate = daysRemaining ? new Date(Date.now() + daysRemaining * 86400000) : null;
+    }
+    let cumulative = 0;
+    const chartData: { date: string; real: number; projecao?: number }[] = [];
+    sortedDays.forEach(([date, val]) => {
+      cumulative += val;
+      chartData.push({ date: new Date(date).toLocaleDateString("pt-BR", { day: "2-digit", month: "numeric" }), real: cumulative });
+    });
+    const maxProjectionDays = isLaunch ? (daysRemaining ?? 0) : Math.min(daysRemaining || 60, 60);
+    if (dailyAvg > 0 && chartData.length > 0 && maxProjectionDays > 0) {
+      let projCum = cumulative;
+      const lastDate = new Date(sortedDays[sortedDays.length - 1][0]);
+      for (let i = 1; i <= maxProjectionDays; i++) {
+        const d = new Date(lastDate.getTime() + i * 86400000);
+        projCum += dailyAvg;
+        if (projCum > budget * 1.1) break;
+        chartData.push({ date: d.toLocaleDateString("pt-BR", { day: "2-digit", month: "numeric" }), real: undefined as any, projecao: projCum });
+      }
+    }
+    return { budget, spent, available, usePct, dailyAvg, daysRemaining, exhaustionDate, chartData };
+  }, [project, m.totalInvestment, m.metaMetrics, m.googleMetrics]);
+
+  // Goals
+  const { data: goals } = useQuery({
+    queryKey: ["public_goals", project?.id],
+    enabled: !!project?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_goals")
+        .select("type, target_value, period, is_active")
+        .eq("project_id", project!.id)
+        .eq("is_active", true);
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+  });
+
+  const goalsProgress = (goals || []).map((g: any) => {
+    let current = 0;
+    switch (g.type) {
+      case "revenue": current = m.totalRevenue; break;
+      case "sales": current = m.salesCount; break;
+      case "roi": current = m.roi; break;
+      case "margin": current = m.margin; break;
+      case "leads": current = m.totalLeads; break;
+    }
+    return { type: g.type, target: g.target_value, current, period: g.period, pct: g.target_value > 0 ? (current / g.target_value) * 100 : 0 };
+  });
 
   if (projectLoading) {
     return (
@@ -64,12 +176,13 @@ export default function PublicDashboard() {
   const hasSales = m.salesCount > 0;
   const hasMeta = m.metaInvestment > 0 || m.metaImpressions > 0;
   const hasGoogle = m.googleInvestment > 0 || m.gImpressions > 0;
-  const hasTopAds = m.topAds && m.topAds.length > 0;
-  const hasVideoAds = m.topAds?.some((ad: any) => ad.hook_rate > 0 || ad.hold_rate > 0);
-  const hasGoals = m.goalsProgress.length > 0;
+  const hasTopAds = (m.metaAds || []).length > 0;
+  const hasGoals = goalsProgress.length > 0;
   const hasProducts = m.productData.length > 0;
   const hasPlatformChart = m.platformChartData.length > 0;
   const hasSalesChart = m.salesChartData.length > 0;
+  const hasWhatsApp = whatsappGroups && whatsappGroups.length > 0;
+  const hasPayment = m.paymentPieData.length > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -86,61 +199,223 @@ export default function PublicDashboard() {
               {[1, 2, 3].map((i) => <Skeleton key={i} className="h-24" />)}
             </div>
           ) : (
-            <>
-              {/* === Seção: ROI e Retorno === */}
-              {hasROI && (
-                <section className="space-y-4">
-                  <SectionTitle title="📊 ROI e Retorno" />
-                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-                    <AnimatedCard index={0}>
-                      <Card className="border-2 border-primary/20 bg-gradient-to-br from-card to-primary/5">
-                        <CardContent className="p-5">
-                          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">ROI Total</p>
-                          <div className="mt-1 flex items-center gap-2">
-                            {m.roi >= 0 ? <TrendingUp className="h-5 w-5 text-success" /> : <TrendingDown className="h-5 w-5 text-destructive" />}
-                            <p className={`text-3xl sm:text-4xl font-bold tracking-tight ${m.roi >= 0 ? "text-success" : "text-destructive"}`}>
-                              {formatPercent(m.roi)}
-                            </p>
+            <Tabs defaultValue="overview">
+              <TabsList className="w-full sm:w-auto overflow-x-auto">
+                <TabsTrigger value="overview" className="text-xs sm:text-sm">Visão Geral</TabsTrigger>
+                {(m.totalLeads > 0 || m.totalInvestment > 0) && (
+                  <TabsTrigger value="acquisition" className="text-xs sm:text-sm">Captação</TabsTrigger>
+                )}
+                {m.totalSalesCount > 0 && (
+                  <TabsTrigger value="sales" className="text-xs sm:text-sm">Vendas</TabsTrigger>
+                )}
+                {m.salesCount > 0 && (
+                  <TabsTrigger value="timeline" className="text-xs sm:text-sm">Temporal</TabsTrigger>
+                )}
+                {(hasMeta || hasGoogle) && (
+                  <TabsTrigger value="tracking" className="text-xs sm:text-sm">Rastreamento</TabsTrigger>
+                )}
+              </TabsList>
+
+              {/* ==================== VISÃO GERAL ==================== */}
+              <TabsContent value="overview" className="space-y-6 pt-4">
+                {/* Budget */}
+                {budgetData && (
+                  <AnimatedCard index={0}>
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg">💲 Orçamento Provisionado</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>Uso do Orçamento</span>
+                            <span className={budgetData.usePct > 90 ? "text-destructive font-semibold" : budgetData.usePct > 70 ? "text-warning font-semibold" : "text-success font-semibold"}>
+                              {formatPercent(budgetData.usePct)}
+                            </span>
                           </div>
+                          <Progress value={Math.min(budgetData.usePct, 100)} className="h-3" />
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div><p className="text-muted-foreground">Provisionado</p><p className="text-lg font-bold">{formatBRL(budgetData.budget)}</p></div>
+                          <div><p className="text-muted-foreground">Gasto</p><p className="text-lg font-bold text-destructive">{formatBRL(budgetData.spent)}</p></div>
+                          <div><p className="text-muted-foreground">Disponível</p><p className="text-lg font-bold text-success">{formatBRL(budgetData.available)}</p></div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">📊 Média Diária</p><p className="text-lg font-bold">{formatBRL(budgetData.dailyAvg)}</p></div>
+                          <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">📅 Dias Restantes</p><p className="text-lg font-bold text-warning">~{budgetData.daysRemaining ?? "∞"} dias</p></div>
+                          <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">📅 Esgotamento</p><p className="text-lg font-bold">{budgetData.exhaustionDate ? budgetData.exhaustionDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</p></div>
+                        </div>
+                        {budgetData.chartData.length > 0 && (
+                          <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={budgetData.chartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} interval="preserveStartEnd" />
+                                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                                <Tooltip cursor={false} formatter={(v: number) => formatBRL(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                                <Legend />
+                                <Line type="monotone" dataKey="real" name="Gasto Real" stroke={COLORS[0]} strokeWidth={2} dot={{ r: 2 }} connectNulls={false} />
+                                <Line type="monotone" dataKey="projecao" name="Projeção" stroke="hsl(38, 92%, 50%)" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 2 }} connectNulls={false} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </AnimatedCard>
+                )}
+
+                {/* Financial */}
+                {hasSales && (
+                  <AnimatedCard index={0}>
+                    <Card>
+                      <CardHeader className="pb-3"><CardTitle className="text-lg">Resumo Financeiro</CardTitle></CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-3 lg:grid-cols-6">
+                          <Stat label="Receita Bruta" value={formatBRL(m.grossRevenue)} />
+                          <Stat label="Receita Líquida (Produtor)" value={formatBRL(m.totalRevenue)} />
+                          <Stat label="Comissão Coprodutor" value={formatBRL(m.totalCoproducerCommission)} />
+                          <Stat label="Taxas Plataforma" value={formatBRL(m.totalTaxes)} />
+                          <Stat label="Lucro Líquido" value={formatBRL(m.netProfit)} />
+                          <Stat label="Ticket Médio" value={formatBRL(m.avgTicket)} />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </AnimatedCard>
+                )}
+
+                {/* ROI */}
+                {hasROI && (
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+                    <AnimatedCard index={0}><MetricCard title="ROI Total" value={formatPercent(m.roi)} color={m.roi >= 0 ? "text-success" : "text-destructive"} icon={m.roi >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />} /></AnimatedCard>
+                    <AnimatedCard index={1}><MetricCard title="ROAS" value={`${formatDecimal(m.roas)}x`} subtitle="Retorno sobre gasto em ads" /></AnimatedCard>
+                    <AnimatedCard index={2}><MetricCard title="Margem Líquida" value={formatPercent(m.margin)} color={m.margin >= 0 ? "text-success" : "text-destructive"} /></AnimatedCard>
+                  </div>
+                )}
+
+                {/* Sales overview */}
+                {m.totalSalesCount > 0 && (
+                  <div className="space-y-4">
+                    <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+                      <AnimatedCard index={0}><MetricCard title="Total de Vendas" value={formatNumber(m.totalSalesCount)} subtitle="Todas" /></AnimatedCard>
+                      <AnimatedCard index={1}><MetricCard title="Aprovadas" value={formatNumber(m.salesCount)} color="text-success" /></AnimatedCard>
+                      <AnimatedCard index={2}><MetricCard title="Pendentes" value={formatNumber(m.pendingSalesCount)} color="text-warning" /></AnimatedCard>
+                      <AnimatedCard index={3}><MetricCard title="Canceladas" value={formatNumber(m.cancelledSalesCount)} color="text-destructive" /></AnimatedCard>
+                      <AnimatedCard index={4}><MetricCard title="Reembolsadas" value={formatNumber(m.refundedSalesCount)} /></AnimatedCard>
+                      <AnimatedCard index={5}><MetricCard title="Taxa de Conversão" value={formatPercent(m.conversionRate)} subtitle={m.conversionLabel} /></AnimatedCard>
+                    </div>
+                    {/* Boletos */}
+                    <AnimatedCard index={6}>
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg">📄 Boletos</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                            <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Boletos Gerados</p><p className="text-xl font-bold mt-1">{formatNumber(m.boletoTotal)}</p></div>
+                            <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Boletos Pagos</p><p className="text-xl font-bold mt-1 text-success">{formatNumber(m.boletoPaid)}</p></div>
+                            <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Boletos em Aberto</p><p className="text-xl font-bold mt-1 text-warning">{formatNumber(m.boletoPending)}</p></div>
+                            <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Taxa de Conversão</p><p className="text-xl font-bold mt-1">{formatPercent(m.boletoConversionRate)}</p></div>
+                            <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Receita Boletos</p><p className="text-xl font-bold mt-1">{formatBRL(m.boletoRevenue)}</p></div>
+                          </div>
+                          {(m.boletoByPlatform.kiwify.total > 0 || m.boletoByPlatform.hotmart.total > 0) && (
+                            <div>
+                              <p className="text-sm font-medium mb-2">Por Plataforma</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {m.boletoByPlatform.kiwify.total > 0 && (
+                                  <div className="rounded-lg border p-3">
+                                    <p className="text-xs font-medium text-muted-foreground mb-2">Kiwify</p>
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                      <div><span className="text-muted-foreground">Gerados:</span> <span className="font-semibold">{m.boletoByPlatform.kiwify.total}</span></div>
+                                      <div><span className="text-muted-foreground">Pagos:</span> <span className="font-semibold text-success">{m.boletoByPlatform.kiwify.paid}</span></div>
+                                      <div><span className="text-muted-foreground">Abertos:</span> <span className="font-semibold text-warning">{m.boletoByPlatform.kiwify.pending}</span></div>
+                                      <div><span className="text-muted-foreground">Conversão:</span> <span className="font-semibold">{formatPercent(m.boletoByPlatform.kiwify.total > 0 ? (m.boletoByPlatform.kiwify.paid / m.boletoByPlatform.kiwify.total) * 100 : 0)}</span></div>
+                                    </div>
+                                  </div>
+                                )}
+                                {m.boletoByPlatform.hotmart.total > 0 && (
+                                  <div className="rounded-lg border p-3">
+                                    <p className="text-xs font-medium text-muted-foreground mb-2">Hotmart</p>
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                      <div><span className="text-muted-foreground">Gerados:</span> <span className="font-semibold">{m.boletoByPlatform.hotmart.total}</span></div>
+                                      <div><span className="text-muted-foreground">Pagos:</span> <span className="font-semibold text-success">{m.boletoByPlatform.hotmart.paid}</span></div>
+                                      <div><span className="text-muted-foreground">Abertos:</span> <span className="font-semibold text-warning">{m.boletoByPlatform.hotmart.pending}</span></div>
+                                      <div><span className="text-muted-foreground">Conversão:</span> <span className="font-semibold">{formatPercent(m.boletoByPlatform.hotmart.total > 0 ? (m.boletoByPlatform.hotmart.paid / m.boletoByPlatform.hotmart.total) * 100 : 0)}</span></div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     </AnimatedCard>
-                    <AnimatedCard index={1}>
-                      <MetricCard title="ROAS" value={`${formatDecimal(m.roas)}x`} subtitle="Retorno sobre ads" />
-                    </AnimatedCard>
-                    <AnimatedCard index={2}>
-                      <MetricCard title="Margem Líquida" value={formatPercent(m.margin)} color={m.margin >= 0 ? "text-success" : "text-destructive"} />
-                    </AnimatedCard>
                   </div>
-                </section>
-              )}
+                )}
 
-              {/* === Seção: Resumo de Vendas === */}
-              {hasSales && (
-                <section className="space-y-4">
-                  <SectionTitle title="💰 Resumo de Vendas" />
-                  <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-                    <AnimatedCard index={0}><MetricCard title="Receita Líquida" value={formatBRL(m.totalRevenue)} /></AnimatedCard>
-                    <AnimatedCard index={1}><MetricCard title="Nº de Vendas" value={formatNumber(m.salesCount)} /></AnimatedCard>
-                    <AnimatedCard index={2}><MetricCard title="Ticket Médio" value={formatBRL(m.avgTicket)} /></AnimatedCard>
-                    <AnimatedCard index={3}><MetricCard title="Investimento" value={formatBRL(m.totalInvestment)} /></AnimatedCard>
+                {/* Sales chart */}
+                {hasSalesChart && (
+                  <AnimatedCard index={0}>
+                    <Card>
+                      <CardHeader className="pb-3"><CardTitle className="text-lg">📈 Evolução de Vendas e Receita</CardTitle></CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm font-medium mb-2">Vendas por Dia</p>
+                            <div className="h-48">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={m.salesChartData}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} interval="preserveStartEnd" />
+                                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                                  <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                                  <Bar dataKey="vendas" name="Vendas" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium mb-2">Receita por Dia</p>
+                            <div className="h-48">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={m.salesChartData}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} interval="preserveStartEnd" />
+                                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                                  <Tooltip cursor={false} formatter={(v: number) => formatBRL(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                                  <Line type="monotone" dataKey="receita" name="Receita" stroke={COLORS[0]} strokeWidth={2} dot={{ r: 2 }} />
+                                </LineChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </AnimatedCard>
+                )}
+
+                {/* Funnel */}
+                {(m.totalLeads > 0 || m.totalInvestment > 0) && (
+                  <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+                    <AnimatedCard index={0}><MetricCard title="Total de Leads" value={formatNumber(m.totalLeads)} subtitle="Meta + Google" /></AnimatedCard>
+                    <AnimatedCard index={1}><MetricCard title="CPL Médio" value={formatBRL(m.avgCpl)} subtitle="Custo por lead" /></AnimatedCard>
+                    <AnimatedCard index={2}><MetricCard title="Investimento Total" value={formatBRL(m.totalInvestment)} /></AnimatedCard>
+                    <AnimatedCard index={3}><MetricCard title="Receita Líquida" value={formatBRL(m.totalRevenue)} /></AnimatedCard>
+                    <AnimatedCard index={4}><MetricCard title="Nº Vendas Aprovadas" value={formatNumber(m.salesCount)} /></AnimatedCard>
                   </div>
-                </section>
-              )}
+                )}
 
-              {/* === Seção: Meta Ads === */}
-              {hasMeta && (
-                <section className="space-y-4">
-                  <SectionTitle title="📱 Meta Ads" />
+                {/* Meta Ads */}
+                {hasMeta && (
                   <AnimatedCard index={0}>
                     <Card>
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">Métricas Meta Ads</CardTitle>
+                          <CardTitle className="text-lg">Meta Ads</CardTitle>
                           <Badge variant="outline">{formatBRL(m.metaInvestment)}</Badge>
                         </div>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="space-y-4">
                         <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
                           <Stat label="Impressões" value={formatNumber(m.metaImpressions)} />
                           <Stat label="CPM" value={formatBRL(m.metaCpm)} />
@@ -162,28 +437,58 @@ export default function PublicDashboard() {
                           <Stat label="Leads" value={formatNumber(m.metaLeads)} />
                           <Stat label="CPL" value={formatBRL(m.metaCostPerLead)} />
                         </div>
+                        {/* Top Ads in overview */}
+                        {hasTopAds && (
+                          <div>
+                            <p className="text-sm font-medium mb-2">🏆 Melhores Anúncios</p>
+                            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                              {(m.metaAds || []).slice(0, 6).map((ad: any, i: number) => (
+                                <div key={ad.ad_id} className="rounded-lg border p-2.5 space-y-1.5">
+                                  <div className="flex items-start justify-between gap-1">
+                                    <p className="text-xs font-semibold line-clamp-1 leading-tight">{ad.ad_name || "Anúncio"}</p>
+                                    <span className="text-[10px] text-muted-foreground shrink-0">#{i + 1}</span>
+                                  </div>
+                                  <div className="flex gap-3 text-xs">
+                                    <span><span className="text-muted-foreground">Gasto:</span> <span className="font-semibold">{formatBRL(Number(ad.spend || 0))}</span></span>
+                                    {ad.purchases > 0 && <span><span className="text-muted-foreground">Compras:</span> <span className="font-semibold">{ad.purchases}</span></span>}
+                                    {ad.leads > 0 && <span><span className="text-muted-foreground">Leads:</span> <span className="font-semibold">{ad.leads}</span></span>}
+                                  </div>
+                                  {(Number(ad.hook_rate || 0) > 0 || Number(ad.hold_rate || 0) > 0) && (
+                                    <div className="flex items-center gap-3 text-xs bg-primary/5 rounded p-1.5">
+                                      <Video className="h-3 w-3 text-primary shrink-0" />
+                                      {Number(ad.hook_rate || 0) > 0 && <span><span className="text-muted-foreground">Hook:</span> <span className="font-semibold">{formatPercent(Number(ad.hook_rate))}</span></span>}
+                                      {Number(ad.hold_rate || 0) > 0 && <span><span className="text-muted-foreground">Hold:</span> <span className="font-semibold">{formatPercent(Number(ad.hold_rate))}</span></span>}
+                                    </div>
+                                  )}
+                                  {ad.preview_link && (
+                                    <a href={ad.preview_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-primary hover:underline">
+                                      <ExternalLink className="h-3 w-3" /> Ver anúncio
+                                    </a>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   </AnimatedCard>
-                </section>
-              )}
+                )}
 
-              {/* === Seção: Google Ads === */}
-              {hasGoogle && (
-                <section className="space-y-4">
-                  <SectionTitle title="🔍 Google Ads" />
-                  <AnimatedCard index={0}>
+                {/* Google Ads */}
+                {hasGoogle && (
+                  <AnimatedCard index={1}>
                     <Card>
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">Métricas Google Ads</CardTitle>
+                          <CardTitle className="text-lg">Google Ads</CardTitle>
                           <Badge variant="outline">{formatBRL(m.googleInvestment)}</Badge>
                         </div>
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
                           <Stat label="Impressões" value={formatNumber(m.gImpressions)} />
-                          <Stat label="CPM" value={formatBRL(m.gCpm)} />
+                          <Stat label="CPM" value={formatBRL(m.gImpressions > 0 ? (m.googleInvestment / m.gImpressions) * 1000 : 0)} />
                           <Stat label="Cliques" value={formatNumber(m.gClicks)} />
                           <Stat label="CTR" value={formatPercent(m.gCtr)} />
                           <Stat label="CPC" value={formatBRL(m.gCpc)} />
@@ -194,128 +499,219 @@ export default function PublicDashboard() {
                       </CardContent>
                     </Card>
                   </AnimatedCard>
-                </section>
-              )}
+                )}
 
-              {/* === Seção: Melhores Anúncios === */}
-              {hasTopAds && (
-                <section className="space-y-4">
-                  <SectionTitle title="🏆 Melhores Anúncios" />
-                  <AnimatedCard index={0}>
+                {/* Payment methods */}
+                {hasPayment && (
+                  <AnimatedCard index={4}>
                     <Card>
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">Top Anúncios</CardTitle>
-                        <p className="text-xs text-muted-foreground">Ordenados por investimento total</p>
+                        <CardTitle className="text-lg">💲 Métricas de Pagamento</CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                          {m.topAds.map((ad: any, i: number) => (
-                            <div key={ad.id} className="rounded-lg border p-3 space-y-2">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                  <p className="text-[10px] text-muted-foreground">#{i + 1}</p>
-                                  <p className="text-sm font-semibold leading-tight line-clamp-2">{ad.name || "Anúncio"}</p>
-                                </div>
-                                {ad.status && (
-                                  <Badge variant={ad.status === "ACTIVE" ? "default" : "secondary"} className="text-[9px] shrink-0">
-                                    {ad.status === "ACTIVE" ? "Ativo" : ad.status}
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="grid grid-cols-3 gap-1 text-center bg-muted/40 rounded p-1.5">
-                                <div><p className="text-[9px] text-muted-foreground">Gasto</p><p className="text-xs font-bold">{formatBRL(ad.spend || 0)}</p></div>
-                                <div><p className="text-[9px] text-muted-foreground">Compras</p><p className="text-xs font-bold">{ad.purchases || 0}</p></div>
-                                <div><p className="text-[9px] text-muted-foreground">Leads</p><p className="text-xs font-bold">{ad.leads || 0}</p></div>
-                              </div>
-                              {/* Hook & Hold Rate for video ads */}
-                              {(ad.hook_rate > 0 || ad.hold_rate > 0) && (
-                                <div className="flex items-center gap-3 text-xs bg-primary/5 rounded p-1.5">
-                                  <Video className="h-3 w-3 text-primary shrink-0" />
-                                  {ad.hook_rate > 0 && (
-                                    <span><span className="text-muted-foreground">Hook:</span> <span className="font-semibold">{formatPercent(ad.hook_rate)}</span></span>
-                                  )}
-                                  {ad.hold_rate > 0 && (
-                                    <span><span className="text-muted-foreground">Hold:</span> <span className="font-semibold">{formatPercent(ad.hold_rate)}</span></span>
-                                  )}
-                                </div>
-                              )}
-                              {ad.preview_link && (
-                                <a href={ad.preview_link} target="_blank" rel="noopener noreferrer"
-                                  className="flex items-center gap-1 text-xs text-primary hover:underline font-medium">
-                                  <ExternalLink className="h-3 w-3" />
-                                  Ver Anúncio
-                                </a>
-                              )}
+                      <CardContent className="space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                          <div>
+                            <p className="text-sm font-medium mb-1">Distribuição por Tipo de Pagamento</p>
+                            <div className="h-52">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie data={m.paymentPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
+                                    <Cell fill={COLORS[0]} />
+                                    <Cell fill="hsl(152, 60%, 42%)" />
+                                  </Pie>
+                                  <Tooltip cursor={false} />
+                                </PieChart>
+                              </ResponsiveContainer>
                             </div>
-                          ))}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium mb-1">Parcelamento por Método</p>
+                            <div className="h-52">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={m.installmentBarData}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                                  <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                                  <Bar dataKey="avista" name="À vista" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} />
+                                  <Bar dataKey="parcelado" name="Parcelado" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                          <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Cartão de Crédito</p><p className="text-xl font-bold mt-1">{m.paymentBreakdown.card.count}</p><p className="text-xs text-muted-foreground">{formatBRL(m.paymentBreakdown.card.revenue)}</p></div>
+                          <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">PIX</p><p className="text-xl font-bold mt-1">{m.paymentBreakdown.pix.count}</p><p className="text-xs text-muted-foreground">{formatBRL(m.paymentBreakdown.pix.revenue)}</p></div>
+                          <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Cartão - À Vista</p><p className="text-xl font-bold mt-1">{formatPercent(m.cardCashPct)}</p><p className="text-xs text-muted-foreground">{m.paymentBreakdown.cardCash.count} vendas</p></div>
+                          <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Cartão - Parcelado</p><p className="text-xl font-bold mt-1">{formatPercent(m.cardInstallmentPct)}</p><p className="text-xs text-muted-foreground">{m.paymentBreakdown.cardInstallment.count} vendas</p></div>
                         </div>
                       </CardContent>
                     </Card>
                   </AnimatedCard>
-                </section>
-              )}
+                )}
 
-              {/* === Seção: Metas === */}
-              {hasGoals && (
-                <section className="space-y-4">
-                  <SectionTitle title="🎯 Metas do Projeto" />
-                  <AnimatedCard index={0}>
+                {/* Temporal analysis */}
+                {m.salesCount > 0 && (
+                  <AnimatedCard index={5}>
                     <Card>
-                      <CardContent className="pt-6 space-y-5">
-                        {m.goalsProgress.map((g, i) => (
-                          <motion.div
-                            key={i}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.1 }}
-                          >
-                            <div className="mb-2 flex items-center justify-between text-sm">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{GOAL_LABELS[g.type] || g.type}</span>
-                                {g.pct >= 100 && <Badge className="bg-success text-success-foreground text-[10px]">Meta atingida!</Badge>}
-                              </div>
-                              <span className="text-muted-foreground text-xs sm:text-sm">
-                                {g.type === "revenue" ? formatBRL(g.current) : g.type === "roi" || g.type === "margin" ? formatPercent(g.current) : formatNumber(g.current)}
-                                {" / "}
-                                {g.type === "revenue" ? formatBRL(g.target) : g.type === "roi" || g.type === "margin" ? formatPercent(g.target) : formatNumber(g.target)}
-                              </span>
+                      <CardHeader className="pb-3"><CardTitle className="text-lg">Análise Temporal de Vendas</CardTitle></CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="rounded-lg border p-4">
+                            <p className="text-xs text-muted-foreground">📅 Melhor Dia da Semana</p>
+                            <p className="text-2xl font-bold mt-1">{m.bestDay.name}</p>
+                            <div className="flex justify-between mt-3 text-sm"><span className="text-muted-foreground">Vendas:</span><span className="font-semibold">{m.bestDay.vendas}</span></div>
+                            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Receita:</span><span className="font-semibold">{formatBRL(m.bestDay.revenue)}</span></div>
+                          </div>
+                          <div className="rounded-lg border p-4">
+                            <p className="text-xs text-muted-foreground">🕐 Melhor Horário</p>
+                            <p className="text-2xl font-bold mt-1">{m.bestHour.name}</p>
+                            <div className="flex justify-between mt-3 text-sm"><span className="text-muted-foreground">Vendas:</span><span className="font-semibold">{m.bestHour.vendas}</span></div>
+                            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Receita:</span><span className="font-semibold">{formatBRL(m.bestHour.revenue)}</span></div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                          <div>
+                            <p className="text-sm font-medium mb-3">📊 Vendas por Dia da Semana</p>
+                            <div className="h-56">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={m.salesByDayOfWeek}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                                  <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                                  <Bar dataKey="vendas" name="Vendas" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                              </ResponsiveContainer>
                             </div>
-                            <div className="relative">
-                              <Progress value={Math.min(g.pct, 100)} className="h-3" />
-                              <span className="absolute right-1 top-0 text-[10px] font-bold leading-3 text-primary-foreground mix-blend-difference">
-                                {g.pct.toFixed(0)}%
-                              </span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium mb-3">🕐 Vendas por Horário</p>
+                            <div className="h-56">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={m.salesByHour}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={9} interval={1} />
+                                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                                  <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                                  <Bar dataKey="vendas" name="Vendas" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                              </ResponsiveContainer>
                             </div>
-                          </motion.div>
-                        ))}
+                          </div>
+                        </div>
                       </CardContent>
                     </Card>
                   </AnimatedCard>
-                </section>
-              )}
+                )}
 
-              {/* === Seção: Produtos === */}
-              {hasProducts && (
-                <section className="space-y-4">
-                  <SectionTitle title="📦 Vendas por Produto" />
-                  <AnimatedCard index={0}>
+                {/* WhatsApp */}
+                {hasWhatsApp && (
+                  <AnimatedCard index={2}>
                     <Card>
-                      <CardContent className="pt-6 overflow-x-auto">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center gap-2">
+                          <MessageCircle className="h-4 w-4 text-success" />
+                          <CardTitle className="text-lg">Grupos WhatsApp</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
+                          <Stat label="Total de Grupos" value={formatNumber(whatsappGroups!.length)} />
+                          <Stat label="Total Membros" value={formatNumber(whatsappGroups!.reduce((s: number, g: any) => s + (g.member_count || 0), 0))} />
+                          <Stat label="Pico Total" value={formatNumber(whatsappGroups!.reduce((s: number, g: any) => s + (g.peak_members || g.member_count || 0), 0))} />
+                          <Stat label="Saíram (Total)" value={formatNumber(whatsappGroups!.reduce((s: number, g: any) => s + (g.members_left || 0), 0))} />
+                          <Stat label="Engajamento Médio" value={formatPercent(whatsappGroups!.reduce((s: number, g: any) => s + (g.engagement_rate || 0), 0) / whatsappGroups!.length)} />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {whatsappGroups!.slice(0, 6).map((g: any) => (
+                            <div key={g.id} className="rounded-lg border p-3 space-y-1">
+                              <p className="text-sm font-medium truncate">{g.name}</p>
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>Membros: {formatNumber(g.member_count || 0)}</span>
+                                <span>Pico: {formatNumber(g.peak_members || g.member_count || 0)}</span>
+                              </div>
+                              {(g.peak_members || 0) > 0 && <Progress value={((g.member_count || 0) / (g.peak_members || 1)) * 100} className="h-1.5" />}
+                              <div className="flex justify-between text-xs">
+                                <span className="text-destructive">Saíram: {g.members_left || 0}</span>
+                                <span className="text-muted-foreground">Engaj: {g.engagement_rate || 0}%</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {whatsappHistory && whatsappHistory.length > 1 && (() => {
+                          const byDate = new Map<string, { members: number; joined: number; left: number }>();
+                          whatsappHistory.forEach((h: any) => {
+                            const d = new Date(h.recorded_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "numeric" });
+                            const existing = byDate.get(d) || { members: 0, joined: 0, left: 0 };
+                            byDate.set(d, { members: existing.members + (h.member_count || 0), joined: existing.joined + (h.members_joined || 0), left: existing.left + (h.members_left || 0) });
+                          });
+                          const chartData = Array.from(byDate.entries()).map(([date, v]) => ({ date, ...v }));
+                          return (
+                            <div className="space-y-4">
+                              <div>
+                                <p className="text-sm font-medium mb-2">📈 Evolução de Membros</p>
+                                <div className="h-56">
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={chartData}>
+                                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                      <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                                      <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                                      <Legend />
+                                      <Line type="monotone" dataKey="members" name="Membros" stroke={COLORS[0]} strokeWidth={2} dot={{ r: 2 }} />
+                                    </LineChart>
+                                  </ResponsiveContainer>
+                                </div>
+                              </div>
+                              {chartData.some(d => d.joined > 0 || d.left > 0) && (
+                                <div>
+                                  <p className="text-sm font-medium mb-2">🔄 Entradas vs Saídas</p>
+                                  <div className="h-56">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <BarChart data={chartData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                        <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                                        <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                                        <Legend />
+                                        <Bar dataKey="joined" name="Entradas" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="left" name="Saídas" fill="hsl(0, 72%, 51%)" radius={[4, 4, 0, 0]} />
+                                      </BarChart>
+                                    </ResponsiveContainer>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </CardContent>
+                    </Card>
+                  </AnimatedCard>
+                )}
+
+                {/* Products */}
+                {hasProducts && (
+                  <AnimatedCard index={2}>
+                    <Card>
+                      <CardHeader><CardTitle className="text-lg">Vendas por Produto</CardTitle></CardHeader>
+                      <CardContent className="overflow-x-auto">
                         <Table>
                           <TableHeader>
                             <TableRow>
                               <TableHead>Produto</TableHead>
-                              <TableHead className="hidden sm:table-cell">Tipo</TableHead>
+                              <TableHead>Tipo</TableHead>
                               <TableHead className="text-right">Qty</TableHead>
                               <TableHead className="text-right">Receita</TableHead>
                               <TableHead className="text-right">%</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {m.productData.map((p) => (
+                            {m.productData.map((p: any) => (
                               <TableRow key={p.name}>
-                                <TableCell className="font-medium text-sm">{p.name}</TableCell>
-                                <TableCell className="hidden sm:table-cell"><Badge variant="outline">{p.type === "main" ? "Principal" : p.type === "order_bump" ? "Order Bump" : "—"}</Badge></TableCell>
+                                <TableCell className="font-medium">{p.name}</TableCell>
+                                <TableCell><Badge variant="outline">{p.type === "main" ? "Principal" : p.type === "order_bump" ? "Order Bump" : "—"}</Badge></TableCell>
                                 <TableCell className="text-right">{p.count}</TableCell>
                                 <TableCell className="text-right">{formatBRL(p.revenue)}</TableCell>
                                 <TableCell className="text-right">{formatPercent(p.pct)}</TableCell>
@@ -326,88 +722,208 @@ export default function PublicDashboard() {
                       </CardContent>
                     </Card>
                   </AnimatedCard>
-                </section>
-              )}
+                )}
 
-              {/* === Seção: Gráficos === */}
-              {(hasPlatformChart || hasSalesChart) && (
-                <section className="space-y-4">
-                  <SectionTitle title="📈 Gráficos" />
-                  <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-                    {hasPlatformChart && (
-                      <AnimatedCard index={0}>
-                        <Card>
-                          <CardHeader><CardTitle className="text-lg">Receita por Plataforma</CardTitle></CardHeader>
-                          <CardContent className="h-64">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <PieChart>
-                                <Pie data={m.platformChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                                  {m.platformChartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                                </Pie>
-                                <Tooltip cursor={false} formatter={(v: number) => formatBRL(v)} />
-                                <Legend />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          </CardContent>
-                        </Card>
-                      </AnimatedCard>
-                    )}
+                {/* Platform pie */}
+                {hasPlatformChart && (
+                  <AnimatedCard index={3}>
+                    <Card>
+                      <CardHeader><CardTitle className="text-lg">Composição de Receita</CardTitle></CardHeader>
+                      <CardContent className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie data={m.platformChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                              {m.platformChartData.map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                            </Pie>
+                            <Tooltip cursor={false} formatter={(v: number) => formatBRL(v)} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  </AnimatedCard>
+                )}
 
-                    {hasSalesChart && (
-                      <AnimatedCard index={1}>
-                        <Card>
-                          <CardHeader><CardTitle className="text-lg">Evolução de Vendas</CardTitle></CardHeader>
-                          <CardContent className="h-64">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={m.salesChartData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                                <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
-                                <Bar dataKey="vendas" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </CardContent>
-                        </Card>
-                      </AnimatedCard>
-                    )}
-                  </div>
+                {/* Goals */}
+                {hasGoals && (
+                  <AnimatedCard index={0}>
+                    <Card>
+                      <CardHeader className="pb-3"><CardTitle className="text-lg">🎯 Metas do Projeto</CardTitle></CardHeader>
+                      <CardContent className="space-y-5">
+                        {goalsProgress.map((g, i) => (
+                          <div key={i}>
+                            <div className="mb-2 flex items-center justify-between text-sm">
+                              <span className="font-medium">{GOAL_LABELS[g.type] || g.type}</span>
+                              <span className="text-muted-foreground text-xs">
+                                {g.type === "revenue" ? formatBRL(g.current) : g.type === "roi" || g.type === "margin" ? formatPercent(g.current) : formatNumber(g.current)}
+                                {" / "}
+                                {g.type === "revenue" ? formatBRL(g.target) : g.type === "roi" || g.type === "margin" ? formatPercent(g.target) : formatNumber(g.target)}
+                              </span>
+                            </div>
+                            <Progress value={Math.min(g.pct, 100)} className="h-3" />
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  </AnimatedCard>
+                )}
 
-                  {hasSalesChart && (
-                    <AnimatedCard index={2}>
+                {m.salesCount === 0 && m.totalInvestment === 0 && (
+                  <Card>
+                    <CardContent className="flex h-40 items-center justify-center text-muted-foreground">
+                      Nenhum dado registrado ainda.
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              {/* ==================== CAPTAÇÃO ==================== */}
+              <TabsContent value="acquisition" className="space-y-6 pt-4">
+                <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                  <AnimatedCard index={0}><MetricCard title="Investimento Total" value={formatBRL(m.totalInvestment)} subtitle="Meta + Google + Manual" /></AnimatedCard>
+                  <AnimatedCard index={1}><MetricCard title="ROI" value={formatPercent(m.roi)} color={m.roi >= 0 ? "text-success" : "text-destructive"} /></AnimatedCard>
+                  <AnimatedCard index={2}><MetricCard title="ROAS" value={`${formatDecimal(m.roas)}x`} subtitle="Retorno sobre ads" /></AnimatedCard>
+                  <AnimatedCard index={3}><MetricCard title="Taxa de Conversão" value={formatPercent(m.conversionRate)} subtitle={m.conversionLabel} /></AnimatedCard>
+                </div>
+                {(m.metaInvestment > 0 || m.metaLeads > 0) && (
+                  <AnimatedCard index={4}>
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">Meta Ads — Captação</CardTitle>
+                          <Badge variant="outline">{formatBRL(m.metaInvestment)}</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
+                          <Stat label="Leads" value={formatNumber(m.metaLeads)} />
+                          <Stat label="CPL" value={formatBRL(m.metaCostPerLead)} />
+                          <Stat label="Resultados" value={formatNumber(m.metaResults)} />
+                          <Stat label="CPR" value={formatBRL(m.metaCostPerResult)} />
+                          <Stat label="Cliques no Link" value={formatNumber(m.metaLinkClicks)} />
+                          <Stat label="Views LP" value={formatNumber(m.metaLpViews)} />
+                          <Stat label="Connect Rate" value={formatPercent(m.metaConnectRate)} />
+                          <Stat label="Conv. Checkout" value={formatPercent(m.metaCheckoutConversion)} />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </AnimatedCard>
+                )}
+                {(m.googleInvestment > 0 || m.googleLeads > 0) && (
+                  <AnimatedCard index={5}>
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">Google Ads — Captação</CardTitle>
+                          <Badge variant="outline">{formatBRL(m.googleInvestment)}</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
+                          <Stat label="Conversões" value={formatNumber(m.gConversions)} />
+                          <Stat label="Custo/Conv." value={formatBRL(m.gCostPerConversion)} />
+                          <Stat label="Cliques" value={formatNumber(m.gClicks)} />
+                          <Stat label="CTR" value={formatPercent(m.gCtr)} />
+                          <Stat label="CPC" value={formatBRL(m.gCpc)} />
+                          <Stat label="Impressões" value={formatNumber(m.gImpressions)} />
+                          <Stat label="Taxa de Conv." value={formatPercent(m.gConversionRate)} />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </AnimatedCard>
+                )}
+              </TabsContent>
+
+              {/* ==================== VENDAS ==================== */}
+              <TabsContent value="sales" className="space-y-6 pt-4">
+                <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
+                  <AnimatedCard index={0}><MetricCard title="Receita Bruta" value={formatBRL(m.grossRevenue)} subtitle="Total cobrado" /></AnimatedCard>
+                  <AnimatedCard index={1}><MetricCard title="Receita Líquida (Produtor)" value={formatBRL(m.totalRevenue)} subtitle="Valor recebido" /></AnimatedCard>
+                  <AnimatedCard index={2}><MetricCard title="Comissão Coprodutor" value={formatBRL(m.totalCoproducerCommission)} subtitle="Valor dos coprodutores" /></AnimatedCard>
+                  <AnimatedCard index={3}><MetricCard title="Taxas da Plataforma" value={formatBRL(m.totalTaxes)} subtitle="Kiwify + Hotmart" /></AnimatedCard>
+                  <AnimatedCard index={4}><MetricCard title="Lucro Líquido" value={formatBRL(m.netProfit)} color={m.netProfit >= 0 ? "text-success" : "text-destructive"} subtitle="Receita - Investimento" /></AnimatedCard>
+                  <AnimatedCard index={5}><MetricCard title="Margem" value={formatPercent(m.margin)} color={m.margin >= 0 ? "text-success" : "text-destructive"} /></AnimatedCard>
+                </div>
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                  <AnimatedCard index={4}>
+                    <Card>
+                      <CardHeader><CardTitle className="text-lg">Kiwify</CardTitle></CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <Stat label="Vendas" value={formatNumber(m.kiwifySales.length)} />
+                          <Stat label="Receita" value={formatBRL(m.kiwifySales.reduce((s: number, e: any) => s + Number(e.amount), 0))} />
+                          <Stat label="Ticket Médio" value={m.kiwifySales.length > 0 ? formatBRL(m.kiwifySales.reduce((s: number, e: any) => s + Number(e.amount), 0) / m.kiwifySales.length) : "—"} />
+                          <Stat label="% do Total" value={m.salesCount > 0 ? formatPercent((m.kiwifySales.length / m.salesCount) * 100) : "—"} />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </AnimatedCard>
+                  <AnimatedCard index={5}>
+                    <Card>
+                      <CardHeader><CardTitle className="text-lg">Hotmart</CardTitle></CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <Stat label="Vendas" value={formatNumber(m.hotmartSales.length)} />
+                          <Stat label="Receita" value={formatBRL(m.hotmartSales.reduce((s: number, e: any) => s + Number(e.amount), 0))} />
+                          <Stat label="Ticket Médio" value={m.hotmartSales.length > 0 ? formatBRL(m.hotmartSales.reduce((s: number, e: any) => s + Number(e.amount), 0) / m.hotmartSales.length) : "—"} />
+                          <Stat label="% do Total" value={m.salesCount > 0 ? formatPercent((m.hotmartSales.length / m.salesCount) * 100) : "—"} />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </AnimatedCard>
+                </div>
+              </TabsContent>
+
+              {/* ==================== TEMPORAL ==================== */}
+              <TabsContent value="timeline" className="space-y-6 pt-4">
+                {m.salesChartData.length > 0 ? (
+                  <>
+                    <AnimatedCard index={0}>
                       <Card>
-                        <CardHeader><CardTitle className="text-lg">Evolução de Receita</CardTitle></CardHeader>
+                        <CardHeader><CardTitle className="text-lg">Evolução de Vendas</CardTitle></CardHeader>
                         <CardContent className="h-56 sm:h-72">
                           <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={m.salesChartData}>
-                              <defs>
-                                <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="5%" stopColor={COLORS[0]} stopOpacity={0.3} />
-                                  <stop offset="95%" stopColor={COLORS[0]} stopOpacity={0} />
-                                </linearGradient>
-                              </defs>
+                            <BarChart data={m.salesChartData}>
                               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                               <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                              <Tooltip cursor={false} formatter={(v: number) => formatBRL(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
-                              <Area type="monotone" dataKey="receita" stroke={COLORS[0]} strokeWidth={2} fill="url(#revenueGradient)" />
-                            </AreaChart>
+                              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                              <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                              <Bar dataKey="vendas" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
+                            </BarChart>
                           </ResponsiveContainer>
                         </CardContent>
                       </Card>
                     </AnimatedCard>
-                  )}
-                </section>
-              )}
+                    <AnimatedCard index={1}>
+                      <Card>
+                        <CardHeader><CardTitle className="text-lg">Evolução de Receita</CardTitle></CardHeader>
+                        <CardContent className="h-56 sm:h-72">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={m.salesChartData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                              <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                              <Tooltip cursor={false} formatter={(v: number) => formatBRL(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "13px" }} />
+                              <Line type="monotone" dataKey="receita" stroke={COLORS[0]} strokeWidth={2} dot={{ r: 3 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </CardContent>
+                      </Card>
+                    </AnimatedCard>
+                  </>
+                ) : (
+                  <Card>
+                    <CardContent className="flex h-64 items-center justify-center text-muted-foreground">
+                      Nenhuma venda registrada ainda.
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
 
-              {m.salesCount === 0 && m.totalInvestment === 0 && (
-                <Card>
-                  <CardContent className="flex h-40 items-center justify-center text-muted-foreground">
-                    Nenhum dado registrado ainda. Os dados aparecerão quando houver vendas ou investimentos.
-                  </CardContent>
-                </Card>
-              )}
-            </>
+              {/* ==================== RASTREAMENTO ==================== */}
+              <TabsContent value="tracking" className="space-y-6 pt-4">
+                <TrackingTab m={m} project={project} />
+              </TabsContent>
+            </Tabs>
           )}
         </main>
       </AnimatedPage>
@@ -415,7 +931,7 @@ export default function PublicDashboard() {
       <footer className="border-t py-6 text-center text-xs text-muted-foreground">
         <div className="flex items-center justify-center gap-1.5">
           <BarChart3 className="h-3.5 w-3.5" />
-          <span>LaunchMetrics</span>
+          <span>AGMetrics</span>
         </div>
       </footer>
     </div>
@@ -427,14 +943,10 @@ function Header() {
     <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 sm:px-6 py-3 sm:py-4">
         <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-        <span className="text-base sm:text-lg font-semibold">LaunchMetrics</span>
+        <span className="text-base sm:text-lg font-semibold">AGMetrics</span>
       </div>
     </header>
   );
-}
-
-function SectionTitle({ title }: { title: string }) {
-  return <h2 className="text-lg font-semibold tracking-tight">{title}</h2>;
 }
 
 function MetricCard({ title, value, subtitle, color, icon }: { title: string; value: string; subtitle?: string; color?: string; icon?: React.ReactNode }) {
