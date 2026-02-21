@@ -227,19 +227,19 @@ export default function PublicDashboard() {
             </div>
           ) : (
             <Tabs defaultValue="overview">
-              <TabsList className="w-full sm:w-auto overflow-x-auto">
-                <TabsTrigger value="overview" className="text-xs sm:text-sm">Visão Geral</TabsTrigger>
+              <TabsList className="w-full sm:w-auto flex overflow-x-auto no-scrollbar">
+                <TabsTrigger value="overview" className="text-xs sm:text-sm whitespace-nowrap">Visão Geral</TabsTrigger>
                 {(m.totalLeads > 0 || m.totalInvestment > 0) && (
-                  <TabsTrigger value="acquisition" className="text-xs sm:text-sm">Captação</TabsTrigger>
+                  <TabsTrigger value="acquisition" className="text-xs sm:text-sm whitespace-nowrap">Captação</TabsTrigger>
                 )}
                 {m.totalSalesCount > 0 && (
-                  <TabsTrigger value="sales" className="text-xs sm:text-sm">Vendas</TabsTrigger>
+                  <TabsTrigger value="sales" className="text-xs sm:text-sm whitespace-nowrap">Vendas</TabsTrigger>
                 )}
                 {m.salesCount > 0 && (
-                  <TabsTrigger value="timeline" className="text-xs sm:text-sm">Temporal</TabsTrigger>
+                  <TabsTrigger value="timeline" className="text-xs sm:text-sm whitespace-nowrap">Temporal</TabsTrigger>
                 )}
                 {(hasMeta || hasGoogle) && (
-                  <TabsTrigger value="tracking" className="text-xs sm:text-sm">Rastreamento</TabsTrigger>
+                  <TabsTrigger value="tracking" className="text-xs sm:text-sm whitespace-nowrap">Rastreamento</TabsTrigger>
                 )}
               </TabsList>
 
@@ -262,12 +262,12 @@ export default function PublicDashboard() {
                           </div>
                           <Progress value={Math.min(budgetData.usePct, 100)} className="h-3" />
                         </div>
-                        <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                           <div><p className="text-muted-foreground">Provisionado</p><p className="text-lg font-bold">{formatBRL(budgetData.budget)}</p></div>
                           <div><p className="text-muted-foreground">Gasto</p><p className="text-lg font-bold text-destructive">{formatBRL(budgetData.spent)}</p></div>
                           <div><p className="text-muted-foreground">Disponível</p><p className="text-lg font-bold text-success">{formatBRL(budgetData.available)}</p></div>
                         </div>
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">📊 Média Diária</p><p className="text-lg font-bold">{formatBRL(budgetData.dailyAvg)}</p></div>
                           <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">📅 Dias Restantes</p><p className="text-lg font-bold text-warning">~{budgetData.daysRemaining ?? "∞"} dias</p></div>
                           <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">📅 Esgotamento</p><p className="text-lg font-bold">{budgetData.exhaustionDate ? budgetData.exhaustionDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</p></div>
@@ -338,7 +338,7 @@ export default function PublicDashboard() {
                           <CardTitle className="text-lg">📄 Boletos</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                             <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Boletos Gerados</p><p className="text-xl font-bold mt-1">{formatNumber(m.boletoTotal)}</p></div>
                             <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Boletos Pagos</p><p className="text-xl font-bold mt-1 text-success">{formatNumber(m.boletoPaid)}</p></div>
                             <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Boletos em Aberto</p><p className="text-xl font-bold mt-1 text-warning">{formatNumber(m.boletoPending)}</p></div>
@@ -443,7 +443,7 @@ export default function PublicDashboard() {
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
                           <Stat label="Impressões" value={formatNumber(m.metaImpressions)} />
                           <Stat label="CPM" value={formatBRL(m.metaCpm)} />
                           <Stat label="Cliques" value={formatNumber(m.metaClicks)} />
@@ -805,7 +805,7 @@ export default function PublicDashboard() {
 
               {/* ==================== CAPTAÇÃO ==================== */}
               <TabsContent value="acquisition" className="space-y-6 pt-4">
-                <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                   <AnimatedCard index={0}><MetricCard title="Investimento Total" value={formatBRL(m.totalInvestment)} subtitle="Meta + Google + Manual" /></AnimatedCard>
                   <AnimatedCard index={1}><MetricCard title="ROI" value={formatPercent(m.roi)} color={m.roi >= 0 ? "text-success" : "text-destructive"} /></AnimatedCard>
                   <AnimatedCard index={2}><MetricCard title="ROAS" value={`${formatDecimal(m.roas)}x`} subtitle="Retorno sobre ads" /></AnimatedCard>
@@ -862,7 +862,7 @@ export default function PublicDashboard() {
 
               {/* ==================== VENDAS ==================== */}
               <TabsContent value="sales" className="space-y-6 pt-4">
-                <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                   <AnimatedCard index={0}><MetricCard title="Receita Bruta" value={formatBRL(m.grossRevenue)} subtitle="Total cobrado" /></AnimatedCard>
                   <AnimatedCard index={1}><MetricCard title="Receita Líquida (Produtor)" value={formatBRL(m.totalRevenue)} subtitle="Valor recebido" /></AnimatedCard>
                   <AnimatedCard index={2}><MetricCard title="Comissão Coprodutor" value={formatBRL(m.totalCoproducerCommission)} subtitle="Valor dos coprodutores" /></AnimatedCard>

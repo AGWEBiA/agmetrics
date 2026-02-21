@@ -514,12 +514,12 @@ export function TrackingTab({ m, project }: TrackingTabProps) {
   return (
     <div className="space-y-6">
       <Tabs defaultValue={hasMetaData ? "meta" : "google"}>
-        <TabsList>
-          {hasMetaData && <TabsTrigger value="meta">Meta Ads</TabsTrigger>}
-          {hasGoogleData && <TabsTrigger value="google">Google Ads</TabsTrigger>}
-          {m.salesCount > 0 && <TabsTrigger value="revenue">Faturamento</TabsTrigger>}
-          {hasMetaData && <TabsTrigger value="top_ads">Melhores Anúncios</TabsTrigger>}
-          <TabsTrigger value="demographics">Demográficos</TabsTrigger>
+        <TabsList className="w-full sm:w-auto flex overflow-x-auto no-scrollbar">
+          {hasMetaData && <TabsTrigger value="meta" className="whitespace-nowrap text-xs sm:text-sm">Meta Ads</TabsTrigger>}
+          {hasGoogleData && <TabsTrigger value="google" className="whitespace-nowrap text-xs sm:text-sm">Google Ads</TabsTrigger>}
+          {m.salesCount > 0 && <TabsTrigger value="revenue" className="whitespace-nowrap text-xs sm:text-sm">Faturamento</TabsTrigger>}
+          {hasMetaData && <TabsTrigger value="top_ads" className="whitespace-nowrap text-xs sm:text-sm">Melhores Anúncios</TabsTrigger>}
+          <TabsTrigger value="demographics" className="whitespace-nowrap text-xs sm:text-sm">Demográficos</TabsTrigger>
         </TabsList>
 
         {/* ========== META ADS ========== */}
