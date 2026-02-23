@@ -174,13 +174,17 @@ Deno.serve(async (req) => {
     const now = Date.now();
     const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
 
-    let page = 0;
+    let pageToken: string | null = null;
     let imported = 0;
     let skipped = 0;
     let hasMore = true;
 
     while (hasMore) {
-      const url = `https://developers.hotmart.com/payments/api/v1/sales/history?start_date=${thirtyDaysAgo}&end_date=${now}&max_results=50&page=${page}`;
+      let url = `https://developers.hotmart.com/payments/api/v1/sales/history?start_date=${thirtyDaysAgo}&end_date=${now}&max_results=50`;
+      if (pageToken) {
+        url += `&page_token=${encodeURIComponent(pageToken)}`;
+      }
+
       const res = await fetch(url, {
         headers: {
           "Authorization": `Bearer ${accessToken}`,
@@ -312,10 +316,11 @@ Deno.serve(async (req) => {
         }
       }
 
-      if (items.length < 50) {
-        hasMore = false;
+      // Use page_token pagination
+      if (data.page_info?.next_page_token) {
+        pageToken = data.page_info.next_page_token;
       } else {
-        page++;
+        hasMore = false;
       }
     }
 
