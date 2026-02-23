@@ -450,8 +450,8 @@ function MetaAccountCard({ cred, projectId, onDelete }: { cred: any; projectId: 
             <Badge variant="default" className="text-xs">Conectado</Badge>
           </div>
           <div className="flex gap-1">
-            <Button variant="ghost" size="sm" onClick={() => setEditing(!editing)}>
-              <Save className="h-4 w-4" />
+            <Button variant="ghost" size="sm" onClick={() => setEditing(!editing)} title="Editar conta">
+              <Pencil className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="sm" onClick={onDelete}>
               <Trash2 className="h-4 w-4 text-destructive" />
