@@ -30,6 +30,7 @@ import { Progress } from "@/components/ui/progress";
 import { RecentSalesCard } from "@/components/RecentSalesCard";
 import { TrackingTab } from "@/components/TrackingTab";
 import { AdsVendasCrossTab } from "@/components/AdsVendasCrossTab";
+import { SalesTrackingAnalysis } from "@/components/SalesTrackingAnalysis";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -904,6 +905,9 @@ export default function AdminDashboard() {
           {(m.totalInvestment > 0 && m.salesCount > 0) && (
             <TabsTrigger value="ads-vendas" className="text-xs sm:text-sm whitespace-nowrap">Ads × Vendas</TabsTrigger>
           )}
+          {m.salesCount > 0 && (
+            <TabsTrigger value="sales-tracking" className="text-xs sm:text-sm whitespace-nowrap">Vendas × Tracking</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6 pt-4">
@@ -1065,6 +1069,13 @@ export default function AdminDashboard() {
 
         <TabsContent value="ads-vendas" className="space-y-6 pt-4">
           <AdsVendasCrossTab m={m} strategy={project?.strategy} />
+        </TabsContent>
+
+        <TabsContent value="sales-tracking" className="space-y-6 pt-4">
+          <SalesTrackingAnalysis
+            sales={[...(m.kiwifySales || []), ...(m.hotmartSales || [])]}
+            totalInvestment={m.totalInvestment}
+          />
         </TabsContent>
       </Tabs>
     </AnimatedPage>

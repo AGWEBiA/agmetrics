@@ -127,6 +127,16 @@ Deno.serve(async (req) => {
     const buyerCountry = buyerAddress.country || buyerAddress.pais || "BR";
     const paymentMethod = hotmartPayment.type || hotmartPayment.method || "";
 
+    // Extract UTM tracking data from Hotmart payload
+    const tracking = payload.data?.purchase?.tracking || purchase.tracking || {};
+    const utmSource = tracking.source || tracking.utm_source || "";
+    const utmMedium = tracking.medium || tracking.utm_medium || "";
+    const utmCampaign = tracking.utm_campaign || "";
+    const utmTerm = tracking.utm_term || "";
+    const utmContent = tracking.utm_content || "";
+    const trackingSrc = tracking.src || tracking.source_sck || "";
+    const trackingSck = tracking.sck || "";
+
     // Upsert sale
     const { data: sale, error: saleError } = await supabase
       .from("sales_events")
@@ -148,6 +158,13 @@ Deno.serve(async (req) => {
           buyer_state: buyerState,
           buyer_city: buyerCity,
           buyer_country: buyerCountry,
+          utm_source: utmSource,
+          utm_medium: utmMedium,
+          utm_campaign: utmCampaign,
+          utm_term: utmTerm,
+          utm_content: utmContent,
+          tracking_src: trackingSrc,
+          tracking_sck: trackingSck,
           payload,
         },
         { onConflict: "platform,external_id,project_id" }
