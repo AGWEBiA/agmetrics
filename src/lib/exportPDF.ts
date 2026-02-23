@@ -6,12 +6,15 @@ interface ExportData {
   projectName: string;
   totalRevenue: number;
   grossRevenue: number;
+  producerRevenue?: number;
   salesCount: number;
   avgTicket: number;
   roi: number;
   roas: number;
   margin: number;
   netProfit: number;
+  netProfitProject?: number;
+  netProfitProducer?: number;
   totalInvestment: number;
   totalLeads: number;
   conversionRate: number;
@@ -38,14 +41,15 @@ export function exportDashboardPDF(data: ExportData) {
     startY: 48,
     head: [["Métrica", "Valor"]],
     body: [
-      ["Receita Líquida", formatBRL(data.totalRevenue)],
+      ["Receita Líquida (Produtor)", formatBRL(data.producerRevenue || data.totalRevenue)],
       ["Receita Bruta", formatBRL(data.grossRevenue)],
       ["Nº de Vendas", String(data.salesCount)],
       ["Ticket Médio", formatBRL(data.avgTicket)],
       ["ROI", formatPercent(data.roi)],
       ["ROAS", `${formatDecimal(data.roas)}x`],
       ["Margem Líquida", formatPercent(data.margin)],
-      ["Lucro Líquido", formatBRL(data.netProfit)],
+      ["Lucro Líquido Projeto", formatBRL(data.netProfitProject || data.netProfit)],
+      ["Lucro Líquido Produtor", formatBRL(data.netProfitProducer || 0)],
       ["Investimento Total", formatBRL(data.totalInvestment)],
       ["Total de Leads", String(data.totalLeads)],
       ["Conversão", formatPercent(data.conversionRate)],

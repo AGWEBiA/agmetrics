@@ -302,12 +302,13 @@ export default function PublicDashboard() {
                     <Card>
                       <CardHeader className="pb-3"><CardTitle className="text-lg">Resumo Financeiro</CardTitle></CardHeader>
                       <CardContent>
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-3 lg:grid-cols-6">
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-3 lg:grid-cols-4">
                           <Stat label="Receita Bruta" value={formatBRL(m.grossRevenue)} />
-                          <Stat label="Receita Líquida (Produtor)" value={formatBRL(m.totalRevenue)} />
+                          <Stat label="Receita Líquida (Produtor)" value={formatBRL(m.producerRevenue)} />
                           <Stat label="Comissão Coprodutor" value={formatBRL(m.totalCoproducerCommission)} />
                           <Stat label="Taxas Plataforma" value={formatBRL(m.totalTaxes)} />
-                          <Stat label="Lucro Líquido" value={formatBRL(m.netProfit)} />
+                          <Stat label="Lucro Líquido Projeto" value={formatBRL(m.netProfitProject)} />
+                          <Stat label="Lucro Líquido Produtor" value={formatBRL(m.netProfitProducer)} />
                           <Stat label="Ticket Médio" value={formatBRL(m.avgTicket)} />
                         </div>
                       </CardContent>
@@ -866,13 +867,14 @@ export default function PublicDashboard() {
 
               {/* ==================== VENDAS ==================== */}
               <TabsContent value="sales" className="space-y-6 pt-4">
-                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                   <AnimatedCard index={0}><MetricCard title="Receita Bruta" value={formatBRL(m.grossRevenue)} subtitle="Total cobrado" /></AnimatedCard>
-                  <AnimatedCard index={1}><MetricCard title="Receita Líquida (Produtor)" value={formatBRL(m.totalRevenue)} subtitle="Valor recebido" /></AnimatedCard>
+                  <AnimatedCard index={1}><MetricCard title="Receita Líquida (Produtor)" value={formatBRL(m.producerRevenue)} subtitle="Valor do produtor" /></AnimatedCard>
                   <AnimatedCard index={2}><MetricCard title="Comissão Coprodutor" value={formatBRL(m.totalCoproducerCommission)} subtitle="Valor dos coprodutores" /></AnimatedCard>
                   <AnimatedCard index={3}><MetricCard title="Taxas da Plataforma" value={formatBRL(m.totalTaxes)} subtitle="Kiwify + Hotmart" /></AnimatedCard>
-                  <AnimatedCard index={4}><MetricCard title="Lucro Líquido" value={formatBRL(m.netProfit)} color={m.netProfit >= 0 ? "text-success" : "text-destructive"} subtitle="Receita - Investimento" /></AnimatedCard>
-                  <AnimatedCard index={5}><MetricCard title="Margem" value={formatPercent(m.margin)} color={m.margin >= 0 ? "text-success" : "text-destructive"} /></AnimatedCard>
+                  <AnimatedCard index={4}><MetricCard title="Lucro Líquido Projeto" value={formatBRL(m.netProfitProject)} color={m.netProfitProject >= 0 ? "text-success" : "text-destructive"} subtitle="Receita total - Investimento" /></AnimatedCard>
+                  <AnimatedCard index={5}><MetricCard title="Lucro Líquido Produtor" value={formatBRL(m.netProfitProducer)} color={m.netProfitProducer >= 0 ? "text-success" : "text-destructive"} subtitle="Receita produtor - Investimento" /></AnimatedCard>
+                  <AnimatedCard index={6}><MetricCard title="Margem" value={formatPercent(m.margin)} color={m.margin >= 0 ? "text-success" : "text-destructive"} /></AnimatedCard>
                 </div>
                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                   <AnimatedCard index={4}>
