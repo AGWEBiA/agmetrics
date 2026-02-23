@@ -15,12 +15,7 @@ const COLORS = [
   "hsl(290, 70%, 50%)", "hsl(30, 80%, 55%)", "hsl(200, 70%, 50%)",
 ];
 
-const tooltipStyle = {
-  background: "hsl(var(--card))",
-  border: "1px solid hsl(var(--border))",
-  borderRadius: "8px",
-  fontSize: "12px",
-};
+const tooltipStyle = {};
 
 interface DemographicItem {
   platform: string;
