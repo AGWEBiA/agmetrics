@@ -202,8 +202,8 @@ export function BuyerDemographicProfile({ sales, adDemographics }: BuyerDemograp
   const adDeviceData = useMemo(() => {
     const demos = adDemographics.filter(d => d.breakdown_type === "device");
     if (demos.length === 0) return [];
-    const totalSpend = demos.reduce((s, d) => s + Number(d.spend), 0);
-    if (totalSpend === 0) return [];
+    const totalPurchases = demos.reduce((s, d) => s + (d.purchases || 0), 0);
+    if (totalPurchases === 0) return [];
 
     const merged = new Map<string, { spend: number; purchases: number }>();
     demos.forEach(d => {
@@ -212,15 +212,17 @@ export function BuyerDemographicProfile({ sales, adDemographics }: BuyerDemograp
         : d.dimension_1 === "tablet" ? "Tablet"
         : d.dimension_1;
       const existing = merged.get(name) || { spend: 0, purchases: 0 };
-      merged.set(name, { spend: existing.spend + Number(d.spend), purchases: existing.purchases + d.purchases });
+      merged.set(name, { spend: existing.spend + Number(d.spend), purchases: existing.purchases + (d.purchases || 0) });
     });
 
-    return Array.from(merged.entries()).map(([name, v]) => ({
-      name,
-      value: v.spend,
-      comprasAds: v.purchases,
-      pct: totalSpend > 0 ? (v.spend / totalSpend) * 100 : 0,
-    }));
+    return Array.from(merged.entries())
+      .filter(([, v]) => v.purchases > 0)
+      .map(([name, v]) => ({
+        name,
+        value: v.purchases,
+        gasto: v.spend,
+        pct: totalPurchases > 0 ? (v.purchases / totalPurchases) * 100 : 0,
+      }));
   }, [adDemographics]);
 
   const hasAdDemos = adAgeData.length > 0 || adDeviceData.length > 0;
@@ -610,38 +612,38 @@ export function BuyerDemographicProfile({ sales, adDemographics }: BuyerDemograp
             </AnimatedCard>
           )}
 
-          {/* Device */}
-          {adDeviceData.length > 0 && (
-            <AnimatedCard index={10}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Dispositivo do Público</CardTitle>
-                  <p className="text-xs text-muted-foreground">De qual dispositivo vêm os cliques nos anúncios</p>
-                </CardHeader>
-                <CardContent className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={adDeviceData}
-                        cx="50%" cy="50%"
-                        innerRadius={55} outerRadius={85}
-                        paddingAngle={2}
-                        dataKey="value" nameKey="name"
-                        label={({ name, pct }) => `${name} ${pct.toFixed(1)}%`}
-                      >
-                        {adDeviceData.map((_, i) => (
-                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip cursor={false}
-                        formatter={(v: number) => formatBRL(v)} />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </AnimatedCard>
-          )}
+           {/* Device */}
+           {adDeviceData.length > 0 && (
+             <AnimatedCard index={10}>
+               <Card>
+                 <CardHeader className="pb-2">
+                   <CardTitle className="text-base">Vendas por Dispositivo</CardTitle>
+                   <p className="text-xs text-muted-foreground">Compras detectadas pelo pixel, por tipo de dispositivo</p>
+                 </CardHeader>
+                 <CardContent className="h-64">
+                   <ResponsiveContainer width="100%" height="100%">
+                     <PieChart>
+                       <Pie
+                         data={adDeviceData}
+                         cx="50%" cy="50%"
+                         innerRadius={55} outerRadius={85}
+                         paddingAngle={2}
+                         dataKey="value" nameKey="name"
+                         label={({ name, pct }) => `${name} ${pct.toFixed(1)}%`}
+                       >
+                         {adDeviceData.map((_, i) => (
+                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                         ))}
+                       </Pie>
+                       <Tooltip cursor={false}
+                         formatter={(v: number, name: string) => [formatNumber(v), "Compras"]} />
+                       <Legend />
+                     </PieChart>
+                   </ResponsiveContainer>
+                 </CardContent>
+               </Card>
+             </AnimatedCard>
+           )}
         </>
       )}
 
