@@ -237,9 +237,9 @@ function parseBRNumber(value: string): number {
 
 function mapStatus(s: string): string {
   const lower = s.toLowerCase().trim();
-  if (["paid", "completed", "approved", "aprovado"].includes(lower)) return "approved";
-  if (["refunded", "reembolsado"].includes(lower)) return "refunded";
-  if (["cancelled", "canceled", "cancelado"].includes(lower)) return "cancelled";
+  if (["paid", "completed", "approved", "aprovado", "completo", "completa"].includes(lower)) return "approved";
+  if (["refunded", "reembolsado", "reembolsada"].includes(lower)) return "refunded";
+  if (["cancelled", "canceled", "cancelado", "cancelada"].includes(lower)) return "cancelled";
   return "pending";
 }
 
