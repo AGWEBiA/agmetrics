@@ -1062,7 +1062,7 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="ads-vendas" className="space-y-6 pt-4">
-          <AdsVendasCrossTab m={m} />
+          <AdsVendasCrossTab m={m} strategy={project?.strategy} />
         </TabsContent>
       </Tabs>
     </AnimatedPage>
