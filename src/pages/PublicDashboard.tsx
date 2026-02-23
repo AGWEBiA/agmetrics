@@ -16,6 +16,8 @@ import { BarChart3, TrendingUp, TrendingDown, ExternalLink, Video, MessageCircle
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrackingTab } from "@/components/TrackingTab";
 import { AdsVendasCrossTab } from "@/components/AdsVendasCrossTab";
+import { SalesTrackingAnalysis } from "@/components/SalesTrackingAnalysis";
+import { BuyerDemographicProfile } from "@/components/BuyerDemographicProfile";
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -244,6 +246,12 @@ export default function PublicDashboard() {
                 )}
                 {(m.totalInvestment > 0 && m.salesCount > 0) && (
                   <TabsTrigger value="ads-vendas" className="text-xs sm:text-sm whitespace-nowrap">Ads × Vendas</TabsTrigger>
+                )}
+                {m.salesCount > 0 && (
+                  <TabsTrigger value="sales-tracking" className="text-xs sm:text-sm whitespace-nowrap">Vendas × Tracking</TabsTrigger>
+                )}
+                {m.salesCount > 0 && (
+                  <TabsTrigger value="buyer-profile" className="text-xs sm:text-sm whitespace-nowrap">Perfil Comprador</TabsTrigger>
                 )}
               </TabsList>
 
@@ -960,6 +968,22 @@ export default function PublicDashboard() {
               {/* ==================== ADS × VENDAS ==================== */}
               <TabsContent value="ads-vendas" className="space-y-6 pt-4">
                 <AdsVendasCrossTab m={m} strategy={project?.strategy} />
+              </TabsContent>
+
+              {/* ==================== VENDAS × TRACKING ==================== */}
+              <TabsContent value="sales-tracking" className="space-y-6 pt-4">
+                <SalesTrackingAnalysis
+                  sales={[...(m.kiwifySales || []), ...(m.hotmartSales || [])]}
+                  totalInvestment={m.totalInvestment}
+                />
+              </TabsContent>
+
+              {/* ==================== PERFIL COMPRADOR ==================== */}
+              <TabsContent value="buyer-profile" className="space-y-6 pt-4">
+                <BuyerDemographicProfile
+                  sales={[...(m.kiwifySales || []), ...(m.hotmartSales || [])]}
+                  adDemographics={[...(m.metaDemographics || []), ...(m.googleDemographics || [])]}
+                />
               </TabsContent>
             </Tabs>
           )}
