@@ -258,6 +258,23 @@ Deno.serve(async (req) => {
 
         const platformFee = Math.max(0, grossValue - netValue);
 
+        // Extract tracking data from Hotmart API response
+        const tracking = purchase.tracking || item.tracking || {};
+        const utmSource = tracking.source || tracking.utm_source || "";
+        const utmMedium = tracking.medium || tracking.utm_medium || "";
+        const utmCampaign = tracking.utm_campaign || "";
+        const utmTerm = tracking.utm_term || "";
+        const utmContent = tracking.utm_content || "";
+        const trackingSrc = tracking.src || tracking.source_sck || "";
+        const trackingSck = tracking.sck || "";
+
+        // Extract buyer location and payment method
+        const buyerAddress = buyer.address || {};
+        const buyerState = buyerAddress.state || buyerAddress.UF || "";
+        const buyerCity = buyerAddress.city || "";
+        const buyerCountry = buyerAddress.country || "BR";
+        const paymentMethod = (purchase.payment || {}).type || (purchase.payment || {}).method || "";
+
         const { error } = await supabase
           .from("sales_events")
           .upsert(
@@ -274,6 +291,17 @@ Deno.serve(async (req) => {
               buyer_email: buyerEmail,
               buyer_name: buyerName,
               sale_date: saleDate,
+              payment_method: paymentMethod || undefined,
+              buyer_state: buyerState || undefined,
+              buyer_city: buyerCity || undefined,
+              buyer_country: buyerCountry || undefined,
+              utm_source: utmSource || undefined,
+              utm_medium: utmMedium || undefined,
+              utm_campaign: utmCampaign || undefined,
+              utm_term: utmTerm || undefined,
+              utm_content: utmContent || undefined,
+              tracking_src: trackingSrc || undefined,
+              tracking_sck: trackingSck || undefined,
               payload: item,
             },
             { onConflict: "platform,external_id,project_id" }

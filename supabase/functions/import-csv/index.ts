@@ -152,6 +152,13 @@ Deno.serve(async (req) => {
         const buyerCity = row["cidade"] || row["buyer_city"] || "";
         const buyerCountry = row["país"] || row["pais"] || row["buyer_country"] || "";
 
+        // Extract UTM tracking data from CSV
+        const utmSource = row["utm_source"] || row["tracking utm_source"] || "";
+        const utmMedium = row["utm_medium"] || row["tracking utm_medium"] || "";
+        const utmCampaign = row["utm_campaign"] || row["tracking utm_campaign"] || "";
+        const utmTerm = row["utm_term"] || row["tracking utm_term"] || "";
+        const utmContent = row["utm_content"] || row["tracking utm_content"] || "";
+
         // Use registered product type
         const productType = matchedProduct.type || "main";
 
@@ -179,6 +186,11 @@ Deno.serve(async (req) => {
               buyer_state: buyerState || undefined,
               buyer_city: buyerCity || undefined,
               buyer_country: buyerCountry || undefined,
+              utm_source: utmSource || undefined,
+              utm_medium: utmMedium || undefined,
+              utm_campaign: utmCampaign || undefined,
+              utm_term: utmTerm || undefined,
+              utm_content: utmContent || undefined,
               payload: row,
             },
             { onConflict: "platform,external_id,project_id" }
