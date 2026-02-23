@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,41 +29,64 @@ export default function SalesTable() {
   const [platformFilter, setPlatformFilter] = useState("all");
   const [page, setPage] = useState(0);
 
-  const { data: allSales = [], isLoading } = useQuery({
-    queryKey: ["sales_events_full", projectId],
+  // Server-side paginated query
+  const { data, isLoading } = useQuery({
+    queryKey: ["sales_events_paginated", projectId, statusFilter, platformFilter, search, page],
     enabled: !!projectId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("sales_events")
-        .select("*")
+        .select("*", { count: "exact" })
         .eq("project_id", projectId!)
         .order("sale_date", { ascending: false });
+
+      if (statusFilter !== "all") {
+        query = query.eq("status", statusFilter as any);
+      }
+      if (platformFilter !== "all") {
+        query = query.eq("platform", platformFilter as any);
+      }
+      if (search) {
+        query = query.or(
+          `buyer_name.ilike.%${search}%,buyer_email.ilike.%${search}%,product_name.ilike.%${search}%,external_id.ilike.%${search}%`
+        );
+      }
+
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
       if (error) throw error;
-      return data as any[];
+      return { rows: data as any[], total: count || 0 };
     },
     refetchInterval: 60000,
   });
 
-  const filtered = allSales.filter((s) => {
-    if (statusFilter !== "all" && s.status !== statusFilter) return false;
-    if (platformFilter !== "all" && s.platform !== platformFilter) return false;
+  const rows = data?.rows || [];
+  const totalCount = data?.total || 0;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // CSV export: fetch all filtered rows (no pagination)
+  const handleCSVExport = useCallback(async () => {
+    let query = supabase
+      .from("sales_events")
+      .select("sale_date, buyer_name, buyer_email, product_name, platform, status, gross_amount, amount")
+      .eq("project_id", projectId!)
+      .order("sale_date", { ascending: false });
+
+    if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
+    if (platformFilter !== "all") query = query.eq("platform", platformFilter as any);
     if (search) {
-      const q = search.toLowerCase();
-      const match =
-        (s.buyer_name || "").toLowerCase().includes(q) ||
-        (s.buyer_email || "").toLowerCase().includes(q) ||
-        (s.product_name || "").toLowerCase().includes(q) ||
-        (s.external_id || "").toLowerCase().includes(q);
-      if (!match) return false;
+      query = query.or(
+        `buyer_name.ilike.%${search}%,buyer_email.ilike.%${search}%,product_name.ilike.%${search}%,external_id.ilike.%${search}%`
+      );
     }
-    return true;
-  });
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+    const { data: exportData } = await query;
+    if (!exportData) return;
 
-  const handleCSVExport = () => {
-    const csvData = filtered.map((s) => ({
+    const csvData = exportData.map((s: any) => ({
       Data: s.sale_date ? new Date(s.sale_date).toLocaleDateString("pt-BR") : "",
       Cliente: s.buyer_name || "",
       Email: s.buyer_email || "",
@@ -74,14 +97,19 @@ export default function SalesTable() {
       Valor_Liquido: Number(s.amount || 0),
     }));
     exportCSV(csvData, "vendas");
-  };
+  }, [projectId, statusFilter, platformFilter, search]);
+
+  const handleFilterChange = useCallback((setter: (v: string) => void) => (v: string) => {
+    setter(v);
+    setPage(0);
+  }, []);
 
   return (
     <AnimatedPage className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Vendas</h1>
-          <p className="text-sm text-muted-foreground">{filtered.length} registros</p>
+          <p className="text-sm text-muted-foreground">{totalCount} registros</p>
         </div>
         <Button variant="outline" size="sm" onClick={handleCSVExport}>
           <FileSpreadsheet className="mr-1.5 h-4 w-4" />
@@ -104,7 +132,7 @@ export default function SalesTable() {
                 />
               </div>
               <div className="flex gap-2">
-                <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
+                <Select value={statusFilter} onValueChange={handleFilterChange(setStatusFilter)}>
                   <SelectTrigger className="w-full sm:w-[130px]"><SelectValue placeholder="Status" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
@@ -114,7 +142,7 @@ export default function SalesTable() {
                     <SelectItem value="refunded">Reembolsadas</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={platformFilter} onValueChange={(v) => { setPlatformFilter(v); setPage(0); }}>
+                <Select value={platformFilter} onValueChange={handleFilterChange(setPlatformFilter)}>
                   <SelectTrigger className="w-full sm:w-[120px]"><SelectValue placeholder="Plataforma" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todas</SelectItem>
@@ -129,7 +157,7 @@ export default function SalesTable() {
         <CardContent>
           {isLoading ? (
             <p className="py-8 text-center text-muted-foreground">Carregando...</p>
-          ) : paginated.length === 0 ? (
+          ) : rows.length === 0 ? (
             <p className="py-8 text-center text-muted-foreground">Nenhuma venda encontrada</p>
           ) : (
             <>
@@ -148,7 +176,7 @@ export default function SalesTable() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginated.map((s) => {
+                    {rows.map((s: any) => {
                       const st = STATUS_MAP[s.status] || STATUS_MAP.pending;
                       return (
                         <TableRow key={s.id}>
@@ -179,7 +207,7 @@ export default function SalesTable() {
 
               {/* Mobile cards */}
               <div className="sm:hidden space-y-3">
-                {paginated.map((s) => {
+                {rows.map((s: any) => {
                   const st = STATUS_MAP[s.status] || STATUS_MAP.pending;
                   return (
                     <div key={s.id} className="rounded-lg border p-3 space-y-2">
