@@ -21,9 +21,11 @@ const tooltipStyle = {
 
 interface AdsVendasCrossTabProps {
   m: any;
+  strategy?: string;
 }
 
-export function AdsVendasCrossTab({ m }: AdsVendasCrossTabProps) {
+export function AdsVendasCrossTab({ m, strategy }: AdsVendasCrossTabProps) {
+  const isPerpetuo = strategy === "perpetuo";
   const [platformFilter, setPlatformFilter] = useState<string>("all");
 
   // Build daily cross-data: merge ads metrics + sales by date
@@ -131,7 +133,9 @@ export function AdsVendasCrossTab({ m }: AdsVendasCrossTabProps) {
     const roi = t.spend > 0 ? ((t.revenue - t.spend) / t.spend) * 100 : 0;
     const roas = t.spend > 0 ? t.revenue / t.spend : 0;
     const cpa = t.sales > 0 ? t.spend / t.sales : 0;
-    const convRate = t.leads > 0 ? (t.sales / t.leads) * 100 : 0;
+    const convRate = isPerpetuo
+      ? (t.clicks > 0 ? (t.sales / t.clicks) * 100 : 0)
+      : (t.leads > 0 ? (t.sales / t.leads) * 100 : 0);
     return { ...t, roi, roas, cpa, convRate };
   }, [filteredData]);
 
@@ -173,13 +177,18 @@ export function AdsVendasCrossTab({ m }: AdsVendasCrossTabProps) {
       .slice(0, 5),
   [filteredData]);
 
-  // Funnel data
-  const funnelData = useMemo(() => [
-    { name: "Impressões", value: totals.impressions },
-    { name: "Cliques", value: totals.clicks },
-    { name: "Leads", value: totals.leads },
-    { name: "Vendas", value: totals.sales },
-  ], [totals]);
+  // Funnel data — perpétuo skips "Leads" step
+  const funnelData = useMemo(() => {
+    const steps = [
+      { name: "Impressões", value: totals.impressions },
+      { name: "Cliques", value: totals.clicks },
+    ];
+    if (!isPerpetuo) {
+      steps.push({ name: "Leads", value: totals.leads });
+    }
+    steps.push({ name: "Vendas", value: totals.sales });
+    return steps;
+  }, [totals, isPerpetuo]);
 
   if (crossData.length === 0) {
     return (
@@ -255,7 +264,7 @@ export function AdsVendasCrossTab({ m }: AdsVendasCrossTabProps) {
             <CardContent className="p-4">
               <p className="text-[11px] sm:text-xs font-medium uppercase tracking-wider text-muted-foreground">Conversão</p>
               <p className="text-xl sm:text-2xl font-bold mt-1">{formatPercent(totals.convRate)}</p>
-              <p className="text-[10px] text-muted-foreground">Leads → Vendas</p>
+              <p className="text-[10px] text-muted-foreground">{isPerpetuo ? "Cliques → Vendas" : "Leads → Vendas"}</p>
             </CardContent>
           </Card>
         </AnimatedCard>
