@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   BookOpen,
   FolderKanban,
@@ -21,82 +22,300 @@ import {
   TrendingUp,
   Users,
   GitCompare,
+  Package,
+  DollarSign,
+  Eye,
+  FileSpreadsheet,
+  ArrowRight,
+  CheckCircle2,
+  AlertCircle,
+  Info,
+  MonitorSmartphone,
+  Globe,
+  RefreshCw,
+  Shield,
 } from "lucide-react";
 
-const sections = [
+interface GuideSection {
+  id: string;
+  icon: any;
+  title: string;
+  badge: string;
+  badgeColor?: string;
+  intro?: string;
+  content: string[];
+  subsections?: {
+    title: string;
+    steps: string[];
+    tip?: string;
+  }[];
+  tip?: string;
+  warning?: string;
+}
+
+const sections: GuideSection[] = [
+  {
+    id: "visao-geral",
+    icon: MonitorSmartphone,
+    title: "Navegação do Sistema",
+    badge: "Início",
+    intro: "Entenda como navegar pelo AGMetrics e onde encontrar cada funcionalidade.",
+    content: [
+      "O **menu lateral** (barra esquerda) é seu ponto de partida. Ele mostra todas as seções disponíveis.",
+      "**Projetos** → Lista todos os seus projetos. Clique em um para abrir o dashboard.",
+      "**Comparar** → Compare métricas entre dois ou mais projetos lado a lado.",
+      "**Guia** → Esta página que você está lendo agora.",
+      "**Integrações** → Verifique o status de conexão de todas as plataformas.",
+      "**Usuários** → Gerencie contas de usuários (apenas para administradores).",
+      "Dentro de cada projeto, use as **abas** no topo do dashboard para alternar entre visões: Resumo, Aquisição, Vendas, Timeline, Vendas×Tracking, etc.",
+    ],
+    tip: "Use o **filtro de datas** no topo do dashboard para analisar períodos específicos. Em projetos de lançamento, o período é definido automaticamente pelas datas configuradas.",
+  },
   {
     id: "projeto",
     icon: FolderKanban,
     title: "1. Criando um Projeto",
-    badge: "Início",
+    badge: "Passo a Passo",
+    intro: "Todo acompanhamento começa com a criação de um projeto. Siga os passos abaixo.",
     content: [
-      "Acesse **Projetos** no menu lateral e clique em **Novo Projeto**.",
-      "Preencha o nome, descrição e selecione a **estratégia** do seu lançamento (Perpétuo, Lançamento, Lançamento Pago, Funis ou Evento Presencial).",
-      "Defina as **datas** de início, fim e abertura de carrinho conforme sua estratégia.",
-      "Após criar, você será redirecionado para a página de configurações do projeto.",
-    ],
-  },
-  {
-    id: "config",
-    icon: Settings,
-    title: "2. Configurações do Projeto",
-    badge: "Essencial",
-    content: [
-      "Na aba **Config**, você pode editar os dados gerais do projeto a qualquer momento.",
-      "Defina o **orçamento** total planejado e o **investimento manual** (valores que não vêm de plataformas de anúncios).",
-      "Ative ou desative o rastreamento de **leads do Meta** e **leads do Google** conforme suas integrações.",
-      "Cadastre seus **produtos** (principal e order bump) com preço e plataforma (Kiwify, Hotmart ou ambos).",
-    ],
-  },
-  {
-    id: "integracoes",
-    icon: Plug,
-    title: "3. Integrações",
-    badge: "Dados",
-    content: [
-      "Acesse **Integrações** no menu do projeto para ver o status de cada conexão.",
+      "**Passo 1:** Clique em **Projetos** no menu lateral.",
+      "**Passo 2:** Clique no botão **+ Novo Projeto** (canto superior direito).",
+      "**Passo 3:** Preencha o **nome** do projeto (ex: \"Lançamento Curso XYZ - Março 2026\").",
+      "**Passo 4:** Escolha a **estratégia** que melhor descreve seu modelo de vendas:",
     ],
     subsections: [
       {
-        title: "Meta Ads (Facebook/Instagram)",
+        title: "Tipos de Estratégia",
         steps: [
-          "Vá em **Config** e adicione uma credencial Meta com o **Access Token** e **Ad Account ID**.",
-          "Você pode adicionar **múltiplas contas** de anúncio por projeto.",
-          "Após salvar, use o botão **Listar Campanhas** para selecionar quais campanhas rastrear.",
-          "Clique em **Sincronizar Meta** para puxar os dados de investimento e métricas.",
+          "**Perpétuo** → Vendas contínuas, sem data de abertura/fechamento de carrinho. Ideal para produtos que vendem o ano todo.",
+          "**Lançamento** → Modelo clássico com fase de captação de leads, aquecimento e abertura de carrinho em data específica.",
+          "**Lançamento Pago** → Similar ao lançamento, mas com tráfego pago direto para a página de vendas (sem fase gratuita).",
+          "**Funis** → Estratégia de funil de vendas com páginas de captura, webinários ou VSLs.",
+          "**Evento Presencial** → Para vendas originadas de eventos ao vivo ou presenciais.",
+        ],
+        tip: "A estratégia escolhida define como o sistema calcula a métrica base de conversão: **Perpétuo** usa Page Views; as demais usam **Leads**.",
+      },
+      {
+        title: "Configurando Datas (Lançamentos)",
+        steps: [
+          "**Data de Início** → Quando começou a investir em anúncios/captação.",
+          "**Data de Fim** → Quando o carrinho fecha.",
+          "**Abertura de Carrinho** → Data exata da abertura de vendas (usado para separar fases no dashboard).",
+        ],
+        tip: "Para estratégias **Perpétuo**, as datas são opcionais. O sistema usa uma janela automática de 30 dias.",
+      },
+    ],
+    tip: "Após criar o projeto, você será redirecionado para a página de **Configurações** onde poderá conectar todas as integrações.",
+  },
+  {
+    id: "produtos",
+    icon: Package,
+    title: "2. Cadastrando Produtos",
+    badge: "Obrigatório",
+    badgeColor: "destructive",
+    intro: "⚠️ Este passo é OBRIGATÓRIO antes de importar vendas. Sem produtos cadastrados, todas as vendas serão ignoradas.",
+    content: [
+      "**Passo 1:** Dentro do projeto, clique em **Configurações** (ícone de engrenagem).",
+      "**Passo 2:** Vá até a aba **Produtos**.",
+      "**Passo 3:** Clique em **Adicionar Produto**.",
+      "**Passo 4:** Preencha:",
+    ],
+    subsections: [
+      {
+        title: "Campos do Produto",
+        steps: [
+          "**Nome** → Use **exatamente** o mesmo nome cadastrado na Kiwify ou Hotmart. Ex: \"Curso de Marketing Digital\".",
+          "**Tipo** → Escolha **Principal** (produto que você quer vender) ou **Order Bump** (produto adicional oferecido no checkout).",
+          "**Plataforma** → Selecione se o produto está na **Kiwify**, **Hotmart** ou **Ambas**.",
+          "**Preço** → Valor em reais do produto (usado para referência).",
+        ],
+        tip: "O nome do produto precisa corresponder ao que aparece na plataforma de vendas. O sistema faz correspondência parcial (se o nome cadastrado estiver contido no nome da venda, funciona), mas o ideal é usar o nome exato.",
+      },
+    ],
+    warning: "Se você tem um **Order Bump**, cadastre-o como um produto separado com tipo \"Order Bump\". Isso permite separar receita do produto principal e do bumps nos relatórios.",
+  },
+  {
+    id: "meta-ads",
+    icon: Globe,
+    title: "3. Integração Meta Ads (Facebook/Instagram)",
+    badge: "Anúncios",
+    intro: "Conecte suas contas de anúncios do Meta para importar dados de investimento, impressões, cliques e leads.",
+    content: [
+      "**Passo 1:** Vá em **Configurações** → aba **Meta Ads**.",
+      "**Passo 2:** Clique em **+ Adicionar Conta**.",
+      "**Passo 3:** Preencha os 3 campos:",
+    ],
+    subsections: [
+      {
+        title: "Obtendo as Credenciais",
+        steps: [
+          "**Label** → Um nome para identificar a conta (ex: \"Conta Principal\" ou \"Conta do Cliente\").",
+          "**Ad Account ID** → O ID da conta de anúncios. Encontre em business.facebook.com → Contas de Anúncio. Formato: `act_123456789`.",
+          "**Access Token** → Token de acesso longo do Facebook. Gere em developers.facebook.com → Graph API Explorer. Selecione as permissões `ads_read` e `ads_management`.",
+        ],
+        tip: "Você pode adicionar **múltiplas contas** de anúncio no mesmo projeto. Útil quando diferentes contas de anúncio alimentam o mesmo lançamento.",
+      },
+      {
+        title: "Selecionando Campanhas",
+        steps: [
+          "Após salvar as credenciais, clique em **Buscar Campanhas**.",
+          "O sistema listará todas as campanhas ativas e pausadas da conta.",
+          "**Marque apenas** as campanhas relacionadas ao seu projeto.",
+          "Clique em **Salvar Seleção** para confirmar.",
+        ],
+        tip: "Se você não selecionar campanhas, o sistema importará dados de **todas** as campanhas, o que pode misturar dados de outros projetos.",
+      },
+      {
+        title: "Sincronizando Dados",
+        steps: [
+          "Clique em **Sincronizar Meta** para puxar os dados manualmente.",
+          "O sistema também faz **sincronização automática a cada 15 minutos**.",
+          "Dados importados: investimento, impressões, cliques, CTR, CPC, CPM, leads, compras e métricas de funil.",
         ],
       },
       {
-        title: "Google Ads",
+        title: "Editando uma Conta",
         steps: [
-          "Em **Config**, preencha as credenciais do Google Ads: **Client ID**, **Client Secret**, **Refresh Token** e **Customer ID**.",
-          "Clique em **Sincronizar Google** para importar os dados de campanhas.",
+          "Para editar uma conta já cadastrada, clique no **ícone de lápis** ✏️ ao lado da conta.",
+          "Você pode atualizar o Label, Ad Account ID e Access Token.",
+          "Clique em **Salvar** para aplicar as alterações.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "google-ads",
+    icon: TrendingUp,
+    title: "4. Integração Google Ads",
+    badge: "Anúncios",
+    intro: "Importe dados de campanhas do Google Ads para consolidar seu investimento total.",
+    content: [
+      "**Passo 1:** Vá em **Configurações** → aba **Google Ads**.",
+      "**Passo 2:** Preencha as 4 credenciais necessárias:",
+    ],
+    subsections: [
+      {
+        title: "Credenciais Necessárias",
+        steps: [
+          "**Client ID** → Obtido no Google Cloud Console → APIs → Credenciais. Crie um OAuth 2.0 Client ID.",
+          "**Client Secret** → Gerado junto com o Client ID no Google Cloud Console.",
+          "**Refresh Token** → Token de atualização OAuth. Use o OAuth 2.0 Playground do Google para gerar.",
+          "**Customer ID** → O ID da sua conta Google Ads. Formato: `123-456-7890` (encontre no canto superior direito do Google Ads).",
+        ],
+        tip: "Se você não tem acesso direto ao Google Cloud Console, peça ao seu desenvolvedor ou gestor de tráfego para gerar essas credenciais.",
+      },
+      {
+        title: "Sincronização",
+        steps: [
+          "Após salvar, clique em **Sincronizar Google** para importar os dados.",
+          "Dados importados: investimento, impressões, cliques, CPC, CTR, conversões e custo por conversão.",
+          "A sincronização automática ocorre **a cada 15 minutos** junto com o Meta Ads.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "kiwify",
+    icon: ShoppingCart,
+    title: "5. Integração Kiwify (Vendas)",
+    badge: "Vendas",
+    intro: "Capture vendas da Kiwify em tempo real via webhook ou importe manualmente via CSV.",
+    content: [
+      "Existem **duas formas** de integrar vendas da Kiwify. O webhook é recomendado para captura automática.",
+    ],
+    subsections: [
+      {
+        title: "Opção A — Webhook (Recomendado) ⭐",
+        steps: [
+          "**Passo 1:** Vá em **Configurações** → aba **Kiwify**.",
+          "**Passo 2:** O sistema gera automaticamente uma **URL do webhook** e um **Token** de segurança.",
+          "**Passo 3:** Copie a **URL** clicando no botão de copiar.",
+          "**Passo 4:** Acesse o painel da **Kiwify** (dashboard.kiwify.com.br).",
+          "**Passo 5:** Vá em **Configurações** → **Webhooks** → **Adicionar webhook**.",
+          "**Passo 6:** Cole a URL copiada e selecione os eventos de venda.",
+          "**Passo 7:** Cole o **Token** no campo de autenticação (se disponível).",
+          "**Passo 8:** Salve. A partir de agora, toda venda será registrada **automaticamente** no AGMetrics.",
+        ],
+        tip: "O webhook captura vendas em tempo real com dados completos: valor bruto, líquido, taxas, comissões, método de pagamento e dados do comprador.",
+      },
+      {
+        title: "Opção B — Importação CSV",
+        steps: [
+          "**Passo 1:** No painel da Kiwify, vá em **Vendas** → **Exportar**.",
+          "**Passo 2:** Baixe o CSV com os dados de vendas.",
+          "**Passo 3:** No AGMetrics, vá em **Vendas** (menu lateral) → clique em **Importar CSV**.",
+          "**Passo 4:** Selecione a plataforma **Kiwify** e faça upload do arquivo.",
+          "**Passo 5:** O sistema detecta automaticamente as colunas e importa.",
+        ],
+        tip: "O CSV da Kiwify usa vírgula como separador. O sistema aceita colunas em português (ex: \"Data de Criação\", \"Valor Líquido\").",
+      },
+    ],
+  },
+  {
+    id: "hotmart",
+    icon: ShoppingCart,
+    title: "6. Integração Hotmart (Vendas)",
+    badge: "Vendas",
+    intro: "Capture vendas da Hotmart via webhook automático ou importação de CSV.",
+    content: [
+      "A integração com a Hotmart funciona de forma similar à Kiwify, com webhook e CSV.",
+    ],
+    subsections: [
+      {
+        title: "Opção A — Webhook (Recomendado) ⭐",
+        steps: [
+          "**Passo 1:** Vá em **Configurações** → aba **Hotmart**.",
+          "**Passo 2:** Copie a **URL do webhook** e o **Token (Hottok)** gerados.",
+          "**Passo 3:** Acesse o painel da **Hotmart** (app.hotmart.com).",
+          "**Passo 4:** Vá em **Ferramentas** → **Webhooks (Notificações)** → **Adicionar**.",
+          "**Passo 5:** Cole a URL do webhook no campo \"URL de Callback\".",
+          "**Passo 6:** Cole o Token no campo **\"Hottok\"**.",
+          "**Passo 7:** Selecione os eventos: **Compra aprovada**, **Compra cancelada**, **Compra reembolsada**.",
+          "**Passo 8:** Salve. Vendas serão capturadas automaticamente.",
+        ],
+        tip: "O webhook da Hotmart também captura dados de tracking (UTM, SRC, SCK) quando disponíveis.",
+      },
+      {
+        title: "Opção B — Importação CSV",
+        steps: [
+          "**Passo 1:** No painel da Hotmart, vá em **Vendas** → **Histórico de vendas** → **Exportar**.",
+          "**Passo 2:** Baixe o CSV (formato padrão da Hotmart com separador ponto e vírgula).",
+          "**Passo 3:** No AGMetrics, vá em **Vendas** → **Importar CSV**.",
+          "**Passo 4:** Selecione a plataforma **Hotmart** e faça upload.",
+          "**Passo 5:** O sistema detecta automaticamente o separador (;) e as colunas em português.",
+        ],
+        tip: "O CSV da Hotmart usa **ponto e vírgula (;)** como separador e valores no formato brasileiro (47,00). O sistema converte automaticamente.",
+      },
+    ],
+    warning: "⚠️ **IMPORTANTE:** Antes de importar vendas (CSV ou webhook), certifique-se de que os **produtos estão cadastrados** na aba Produtos com o mesmo nome da plataforma. Vendas de produtos não cadastrados serão ignoradas.",
+  },
+  {
+    id: "whatsapp",
+    icon: MessageSquare,
+    title: "7. Integração WhatsApp (Grupos)",
+    badge: "Engajamento",
+    intro: "Monitore o crescimento e engajamento dos seus grupos de WhatsApp.",
+    content: [
+      "**Passo 1:** Vá em **Configurações** → aba **WhatsApp**.",
+      "**Passo 2:** Configure a **Evolution API** (necessário ter uma instância rodando).",
+      "**Passo 3:** Preencha:",
+    ],
+    subsections: [
+      {
+        title: "Credenciais da Evolution API",
+        steps: [
+          "**URL da API** → Endereço da sua instância Evolution API (ex: `https://api.seuservidor.com`).",
+          "**API Key** → Chave de autenticação da Evolution API.",
+          "**Nome da Instância** → Nome da instância conectada ao WhatsApp.",
         ],
       },
       {
-        title: "Kiwify (Vendas)",
+        title: "Gerenciando Grupos",
         steps: [
-          "Existem **duas formas** de integrar vendas da Kiwify:",
-          "**Webhook (recomendado):** Copie a URL do webhook e o token gerados na Config e cole no painel da Kiwify em Configurações → Webhooks. Isso captura vendas em tempo real com dados financeiros completos.",
-          "**Importação CSV:** Na aba Vendas, use o botão de importar CSV para carregar o relatório exportado da Kiwify. Aceita formato PT-BR.",
-          "O sistema **evita duplicidade** automaticamente usando o ID da venda como chave única.",
-        ],
-      },
-      {
-        title: "Hotmart (Vendas)",
-        steps: [
-          "Configure o **webhook** da Hotmart na Config, copiando a URL e o token.",
-          "No painel da Hotmart, vá em Ferramentas → Webhooks e adicione a URL.",
-          "As vendas serão registradas automaticamente com status, valores e taxas.",
-        ],
-      },
-      {
-        title: "WhatsApp (Grupos)",
-        steps: [
-          "Para monitorar grupos de WhatsApp, configure a **Evolution API** na Config.",
-          "Preencha a **URL da API**, **API Key** e **Nome da Instância**.",
-          "Adicione os grupos manualmente ou sincronize via API.",
-          "O sistema rastreia membros, pico histórico, saídas e taxa de engajamento.",
+          "Após configurar, clique em **Sincronizar Grupos** para listar todos os grupos automaticamente.",
+          "Você também pode **adicionar grupos manualmente** informando o nome.",
+          "O sistema rastreia: **membros atuais**, **pico histórico**, **saídas** e **taxa de engajamento**.",
+          "O histórico de membros é registrado a cada sincronização para gerar gráficos de evolução.",
         ],
       },
     ],
@@ -104,121 +323,328 @@ const sections = [
   {
     id: "metas",
     icon: Target,
-    title: "4. Metas e Alertas",
+    title: "8. Configurando Metas",
     badge: "Estratégia",
+    intro: "Defina metas para acompanhar seu progresso e receber alertas visuais no dashboard.",
     content: [
-      "Na Config do projeto, defina **metas** para acompanhar seu progresso.",
-      "Tipos disponíveis: **Receita**, **Vendas**, **ROI**, **Leads** e **Margem**.",
-      "Cada meta pode ter período: **Diário**, **Semanal**, **Mensal** ou **Total**.",
-      "O dashboard exibe o progresso em relação às metas com barras visuais e alertas.",
+      "**Passo 1:** Vá em **Configurações** → aba **Metas**.",
+      "**Passo 2:** Clique em **Adicionar Meta**.",
+      "**Passo 3:** Preencha:",
     ],
+    subsections: [
+      {
+        title: "Tipos de Meta",
+        steps: [
+          "**Receita** → Meta de faturamento bruto (ex: R$ 100.000,00).",
+          "**Vendas** → Meta de quantidade de vendas (ex: 500 vendas).",
+          "**ROI** → Meta de retorno sobre investimento em % (ex: 300%).",
+          "**Leads** → Meta de captação de leads (ex: 5.000 leads).",
+          "**Margem** → Meta de margem de lucro em % (ex: 50%).",
+        ],
+      },
+      {
+        title: "Períodos",
+        steps: [
+          "**Total** → Meta para todo o período do projeto.",
+          "**Mensal** → Meta que se renova a cada mês.",
+          "**Semanal** → Meta que se renova a cada semana.",
+          "**Diário** → Meta que se renova a cada dia.",
+        ],
+        tip: "Use metas **diárias** para acompanhar lançamentos em tempo real e metas **totais** para o resultado final.",
+      },
+      {
+        title: "Editando e Removendo Metas",
+        steps: [
+          "Para **editar** uma meta existente, clique no **ícone de lápis** ✏️ na tabela de metas.",
+          "Para **remover**, clique no **ícone de lixeira** 🗑️.",
+          "As metas são exibidas no dashboard com **barras de progresso** visuais.",
+        ],
+      },
+    ],
+    tip: "Os valores de meta usam formatação brasileira: use ponto para milhares e vírgula para decimais (ex: 100.000,00).",
+  },
+  {
+    id: "investimentos",
+    icon: DollarSign,
+    title: "9. Investimentos Manuais",
+    badge: "Financeiro",
+    intro: "Registre investimentos que não vêm das plataformas de anúncios (influenciadores, equipe, ferramentas, etc.).",
+    content: [
+      "**Passo 1:** Vá em **Configurações** → aba **Investimentos**.",
+      "**Passo 2:** Clique em **Adicionar Investimento**.",
+      "**Passo 3:** Preencha a **data**, **valor** e uma **descrição** (opcional).",
+      "**Passo 4:** O valor será somado ao investimento total do projeto, impactando o cálculo de ROI e margem.",
+    ],
+    tip: "Use para registrar: pagamentos de influenciadores, custos de equipe, ferramentas SaaS, design, copywriting, etc.",
   },
   {
     id: "dashboard",
     icon: BarChart3,
-    title: "5. Dashboard",
+    title: "10. Entendendo o Dashboard",
     badge: "Análise",
+    intro: "O dashboard é o coração do sistema. Aqui você acompanha tudo em tempo real.",
     content: [
-      "O **Dashboard** é o painel principal com visão consolidada de todas as métricas.",
-      "Use o **filtro de datas** no topo para analisar períodos específicos.",
-      "Cards mostram: receita, investimento, ROI, vendas, leads, CPL, CPA e mais.",
-      "Gráficos de evolução mostram tendências ao longo do tempo.",
-      "As seções do dashboard podem ser **reordenadas** arrastando e soltando.",
-      "Dados são atualizados a cada sincronização manual ou webhook recebido.",
+      "O dashboard possui várias **abas** que organizam as métricas por categoria:",
     ],
+    subsections: [
+      {
+        title: "Aba Resumo",
+        steps: [
+          "Visão consolidada com os **KPIs principais**: receita, investimento, ROI, vendas, leads e taxa de conversão.",
+          "Cards de métricas com valores e indicadores visuais.",
+          "**Metas** com barras de progresso (se configuradas).",
+          "**Orçamento** com burn rate e projeção de gastos.",
+        ],
+      },
+      {
+        title: "Aba Aquisição",
+        steps: [
+          "Métricas de **tráfego e anúncios**: impressões, cliques, CTR, CPC, CPM.",
+          "Dados de **funil de conversão**: views → leads → checkouts → compras.",
+          "Tabela dos **Top Anúncios** com performance individual de cada criativo.",
+          "Gráfico de **Funil Visual** mostrando a conversão entre etapas.",
+        ],
+      },
+      {
+        title: "Aba Vendas",
+        steps: [
+          "Receita **bruta** e **líquida** separadas por plataforma (Kiwify e Hotmart).",
+          "Detalhamento de **taxas da plataforma**, **comissões de coprodutores** e **lucro líquido**.",
+          "Comparação de performance entre Kiwify e Hotmart.",
+          "Cálculo de **margem** e ticket médio por plataforma.",
+        ],
+      },
+      {
+        title: "Aba Timeline",
+        steps: [
+          "**Gráficos de evolução** ao longo do tempo.",
+          "Acompanhe a curva de investimento, receita, vendas e ROI dia a dia.",
+          "Útil para identificar **tendências** e **picos** de performance.",
+        ],
+      },
+      {
+        title: "Aba Vendas × Tracking",
+        steps: [
+          "Análise cruzada entre vendas e **parâmetros de rastreamento** (UTMs, SRC, SCK).",
+          "Descubra quais **fontes de tráfego**, **campanhas** e **criativos** geraram mais vendas.",
+          "Taxa de rastreamento: % das vendas que possuem dados de origem.",
+        ],
+      },
+      {
+        title: "Aba Demográfico",
+        steps: [
+          "Perfil dos compradores por **idade**, **gênero** e **localização**.",
+          "Mapa do Brasil com concentração de vendas por estado.",
+          "Métodos de pagamento mais utilizados (Pix, Cartão, Boleto).",
+        ],
+      },
+    ],
+    tip: "As seções do dashboard podem ser **reordenadas** arrastando e soltando. Sua preferência é salva automaticamente.",
   },
   {
     id: "vendas",
-    icon: ShoppingCart,
-    title: "6. Tabela de Vendas",
+    icon: FileSpreadsheet,
+    title: "11. Tabela de Vendas",
     badge: "Detalhes",
+    intro: "Visualize, filtre e exporte todas as transações registradas.",
     content: [
-      "A aba **Vendas** mostra todas as transações registradas no projeto.",
-      "Filtre por **status** (aprovada, pendente, cancelada, reembolsada), **plataforma** e **período**.",
-      "Veja detalhes como valor bruto, taxas da plataforma, comissões e valor líquido.",
-      "Use o botão **Exportar CSV** para baixar os dados ou **Exportar PDF** para relatórios.",
-      "A importação de CSV aceita formatos em português e inglês da Kiwify.",
+      "**Passo 1:** Clique em **Vendas** no menu lateral.",
+      "**Passo 2:** Use os filtros disponíveis:",
     ],
-  },
-  {
-    id: "comparar",
-    icon: GitCompare,
-    title: "7. Comparar Projetos",
-    badge: "Avançado",
-    content: [
-      "Acesse **Comparar** no menu lateral para análise lado a lado.",
-      "Selecione dois ou mais projetos para comparar métricas como receita, ROI, vendas e investimento.",
-      "Útil para avaliar performance entre lançamentos diferentes.",
+    subsections: [
+      {
+        title: "Filtros Disponíveis",
+        steps: [
+          "**Status** → Aprovada, Pendente, Cancelada ou Reembolsada.",
+          "**Plataforma** → Kiwify ou Hotmart.",
+          "**Período** → Selecione datas de início e fim.",
+          "**Busca** → Pesquise por nome ou e-mail do comprador.",
+        ],
+      },
+      {
+        title: "Exportação de Dados",
+        steps: [
+          "**Exportar CSV** → Baixe todos os dados filtrados em formato planilha.",
+          "**Exportar PDF** → Gere um relatório formatado para apresentação.",
+        ],
+      },
+      {
+        title: "Importação de CSV",
+        steps: [
+          "Clique em **Importar CSV** para carregar vendas manualmente.",
+          "Selecione a **plataforma** (Kiwify ou Hotmart).",
+          "Faça upload do arquivo CSV exportado da plataforma.",
+          "O sistema detecta automaticamente o formato (vírgula ou ponto e vírgula) e colunas em português.",
+          "Vendas duplicadas são ignoradas automaticamente (baseado no ID da transação).",
+        ],
+      },
     ],
   },
   {
     id: "publico",
     icon: ExternalLink,
-    title: "8. Dashboard Público",
+    title: "12. Dashboard Público",
     badge: "Compartilhamento",
+    intro: "Compartilhe métricas com sua equipe ou clientes sem necessidade de login.",
     content: [
-      "Cada projeto tem um **link público** único gerado automaticamente.",
-      "Compartilhe com sua equipe ou clientes — não requer login.",
-      "O dashboard público mostra métricas de performance **sem dados sensíveis** (e-mails e nomes de compradores são ocultados).",
-      "Acesse o link pelo ícone de link externo no card do projeto ou no menu lateral.",
+      "Cada projeto gera automaticamente um **link público único**.",
+      "**Como acessar:** Na lista de projetos, clique no **ícone de link externo** 🔗 no card do projeto.",
+      "**O que mostra:** Todas as métricas de performance (receita, ROI, vendas, anúncios).",
+      "**O que NÃO mostra:** Dados sensíveis como e-mails, nomes de compradores e credenciais de integração.",
+      "**Segurança:** O link não é indexado por buscadores (noindex, nofollow). Apenas quem tem o link pode acessar.",
     ],
+    tip: "Compartilhe o link público com coprodutores, afiliados ou clientes para dar transparência sobre os resultados sem expor dados confidenciais.",
+  },
+  {
+    id: "comparar",
+    icon: GitCompare,
+    title: "13. Comparar Projetos",
+    badge: "Avançado",
+    intro: "Compare a performance de diferentes projetos ou lançamentos lado a lado.",
+    content: [
+      "**Passo 1:** Clique em **Comparar** no menu lateral.",
+      "**Passo 2:** Selecione **dois ou mais projetos** para comparar.",
+      "**Passo 3:** Analise as métricas lado a lado: receita, ROI, investimento, vendas, leads, CPL e CPA.",
+    ],
+    tip: "Útil para avaliar qual lançamento performou melhor e identificar padrões de sucesso.",
+  },
+  {
+    id: "integracoes-status",
+    icon: RefreshCw,
+    title: "14. Monitoramento de Integrações",
+    badge: "Status",
+    intro: "Verifique se todas as conexões estão funcionando corretamente.",
+    content: [
+      "**Passo 1:** Clique em **Integrações** no menu lateral.",
+      "**Passo 2:** O painel mostra o status de cada integração com indicadores visuais:",
+      "🟢 **Conectado** → Integração ativa e funcionando.",
+      "🟡 **Configuração parcial** → Faltam credenciais ou configuração.",
+      "🔴 **Desconectado** → Integração não configurada.",
+      "**Passo 3:** Clique em **Verificar Saúde** para testar webhooks (Kiwify e Hotmart).",
+      "**Passo 4:** Veja o **timestamp da última sincronização** de cada plataforma.",
+    ],
+    tip: "A sincronização automática roda **a cada 15 minutos** para Meta Ads, Google Ads e WhatsApp. Vendas via webhook são capturadas **instantaneamente**.",
   },
   {
     id: "usuarios",
-    icon: Users,
-    title: "9. Gestão de Usuários",
+    icon: Shield,
+    title: "15. Gestão de Usuários (Admin)",
     badge: "Admin",
+    intro: "Gerencie contas de usuários e permissões. Disponível apenas para administradores.",
     content: [
-      "Apenas **administradores** têm acesso à página de Gestão de Usuários.",
-      "Altere o papel de qualquer usuário entre **Admin** e **Usuário**.",
-      "Admins podem remover usuários permanentemente do sistema.",
-      "Não é possível remover seu próprio acesso admin por segurança.",
+      "**Passo 1:** Clique em **Usuários** no menu lateral (visível apenas para admins).",
+      "**Passo 2:** Veja a lista completa de usuários cadastrados.",
+      "**Funcionalidades:**",
+      "• **Alterar papel** → Promova um usuário a **Admin** ou rebaixe para **Usuário**.",
+      "• **Remover usuário** → Exclua permanentemente um usuário do sistema.",
+      "• Admins podem ver e gerenciar **todos os projetos** de todos os usuários.",
+      "• Usuários comuns só veem seus **próprios projetos**.",
     ],
+    warning: "Por segurança, você **não pode remover seu próprio acesso** de administrador.",
   },
 ];
 
 function renderMarkdown(text: string) {
-  return text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-foreground">$1</strong>');
+  return text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>');
 }
 
 export default function Guide() {
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-          <BookOpen className="h-7 w-7" />
-          Guia de Utilização
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
+          <BookOpen className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+          Guia Completo do AGMetrics
         </h1>
-        <p className="text-muted-foreground">
-          Aprenda a configurar e utilizar todas as funcionalidades do sistema
+        <p className="text-muted-foreground mt-1">
+          Aprenda passo a passo como configurar e utilizar todas as funcionalidades do sistema
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Visão Geral</CardTitle>
-          <CardDescription>
-            O LaunchMetrics é uma plataforma de acompanhamento de lançamentos digitais.
-            Ele consolida dados de anúncios (Meta e Google), vendas (Kiwify e Hotmart) e
-            grupos de WhatsApp em um único dashboard com métricas em tempo real.
-          </CardDescription>
+      {/* Quick overview card */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Info className="h-5 w-5 text-primary" />
+            O que é o AGMetrics?
+          </CardTitle>
         </CardHeader>
+        <CardContent className="text-sm text-muted-foreground space-y-2">
+          <p>
+            O AGMetrics é uma plataforma de <strong className="text-foreground">acompanhamento centralizado</strong> de lançamentos e projetos digitais.
+            Ele consolida dados de anúncios (Meta Ads e Google Ads), vendas (Kiwify e Hotmart) e grupos de WhatsApp em um único dashboard com métricas em tempo real.
+          </p>
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Badge variant="outline" className="text-xs">📊 Dashboard em Tempo Real</Badge>
+            <Badge variant="outline" className="text-xs">💰 Receita & ROI</Badge>
+            <Badge variant="outline" className="text-xs">📈 Meta Ads & Google Ads</Badge>
+            <Badge variant="outline" className="text-xs">🛒 Kiwify & Hotmart</Badge>
+            <Badge variant="outline" className="text-xs">📱 WhatsApp</Badge>
+            <Badge variant="outline" className="text-xs">🔗 Dashboard Público</Badge>
+          </div>
+        </CardContent>
       </Card>
 
+      {/* Quick start checklist */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            Checklist de Configuração Rápida
+          </CardTitle>
+          <CardDescription>Siga estes passos na ordem para configurar seu primeiro projeto</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 text-sm">
+            {[
+              { step: "1", text: "Criar o projeto com nome e estratégia", section: "projeto" },
+              { step: "2", text: "Cadastrar os produtos (OBRIGATÓRIO para vendas)", section: "produtos" },
+              { step: "3", text: "Conectar Meta Ads e/ou Google Ads", section: "meta-ads" },
+              { step: "4", text: "Configurar webhook da Kiwify e/ou Hotmart", section: "kiwify" },
+              { step: "5", text: "Definir metas de receita, vendas e ROI", section: "metas" },
+              { step: "6", text: "Acompanhar o dashboard! 🚀", section: "dashboard" },
+            ].map((item) => (
+              <div key={item.step} className="flex items-center gap-3 py-1.5 px-3 rounded-md hover:bg-muted/50 transition-colors">
+                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0">
+                  {item.step}
+                </span>
+                <span className="text-muted-foreground">{item.text}</span>
+                <ArrowRight className="h-3 w-3 text-muted-foreground/50 ml-auto shrink-0" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* All sections */}
       <Accordion type="multiple" className="space-y-2">
         {sections.map((section) => (
-          <AccordionItem key={section.id} value={section.id} className="border rounded-lg px-2">
+          <AccordionItem key={section.id} value={section.id} className="border rounded-lg px-2 sm:px-4">
             <AccordionTrigger className="hover:no-underline py-4">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <section.icon className="h-5 w-5 text-primary shrink-0" />
-                <span className="text-left font-semibold">{section.title}</span>
-                <Badge variant="outline" className="ml-2 text-xs shrink-0">
+                <span className="text-left font-semibold text-sm sm:text-base truncate">{section.title}</span>
+                <Badge
+                  variant={section.badgeColor === "destructive" ? "destructive" : "outline"}
+                  className="ml-1 text-[10px] sm:text-xs shrink-0"
+                >
                   {section.badge}
                 </Badge>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pb-4">
-              <div className="space-y-4 pl-8">
+              <div className="space-y-4 pl-2 sm:pl-8">
+                {/* Intro */}
+                {section.intro && (
+                  <p
+                    className="text-sm text-muted-foreground leading-relaxed border-l-2 border-primary/30 pl-3 italic"
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(section.intro) }}
+                  />
+                )}
+
+                {/* Main content */}
                 <ul className="space-y-2">
                   {section.content.map((line, i) => (
                     <li
@@ -229,25 +655,66 @@ export default function Guide() {
                   ))}
                 </ul>
 
+                {/* Subsections */}
                 {section.subsections?.map((sub, si) => (
-                  <div key={si} className="space-y-2 pt-2">
+                  <div key={si} className="space-y-2 pt-2 border-l-2 border-muted pl-4">
                     <h4 className="text-sm font-semibold text-foreground">{sub.title}</h4>
-                    <ul className="space-y-1.5 pl-4">
+                    <ul className="space-y-1.5">
                       {sub.steps.map((step, j) => (
                         <li
                           key={j}
-                          className="text-sm text-muted-foreground leading-relaxed list-disc"
+                          className="text-sm text-muted-foreground leading-relaxed list-disc ml-4"
                           dangerouslySetInnerHTML={{ __html: renderMarkdown(step) }}
                         />
                       ))}
                     </ul>
+                    {sub.tip && (
+                      <div className="flex gap-2 mt-2 p-2.5 rounded-md bg-blue-500/10 border border-blue-500/20">
+                        <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                        <p
+                          className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: renderMarkdown(sub.tip) }}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
+
+                {/* Tip */}
+                {section.tip && (
+                  <div className="flex gap-2 p-3 rounded-md bg-blue-500/10 border border-blue-500/20">
+                    <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                    <p
+                      className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(section.tip) }}
+                    />
+                  </div>
+                )}
+
+                {/* Warning */}
+                {section.warning && (
+                  <div className="flex gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/20">
+                    <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                    <p
+                      className="text-xs text-destructive leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(section.warning) }}
+                    />
+                  </div>
+                )}
               </div>
             </AccordionContent>
           </AccordionItem>
         ))}
       </Accordion>
+
+      {/* Footer help */}
+      <Card className="border-muted">
+        <CardContent className="py-4">
+          <p className="text-sm text-muted-foreground text-center">
+            Ainda tem dúvidas? Entre em contato com o suporte ou consulte este guia sempre que precisar. 💬
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
