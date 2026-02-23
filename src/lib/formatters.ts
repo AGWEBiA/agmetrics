@@ -14,6 +14,13 @@ export function formatNumber(value: number): string {
   return value.toLocaleString("pt-BR");
 }
 
+export function formatNumberBR(value: number, decimals = 2): string {
+  return value.toLocaleString("pt-BR", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
 export function formatDecimal(value: number, decimals = 2): string {
   return value.toFixed(decimals).replace(".", ",");
 }

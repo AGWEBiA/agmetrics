@@ -142,21 +142,22 @@ export default function ProjectsHub() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Projetos</h1>
-          <p className="text-muted-foreground">Gerencie seus lançamentos digitais</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Projetos</h1>
+          <p className="text-muted-foreground text-sm">Gerencie seus lançamentos digitais</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigate("/admin/compare")}>
-            <GitCompare className="mr-2 h-4 w-4" />
-            Comparar
+          <Button variant="outline" size="sm" onClick={() => navigate("/admin/compare")}>
+            <GitCompare className="mr-1.5 h-4 w-4" />
+            <span className="hidden sm:inline">Comparar</span>
           </Button>
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Projeto
+              <Button size="sm">
+                <Plus className="mr-1.5 h-4 w-4" />
+                <span className="hidden sm:inline">Novo Projeto</span>
+                <span className="sm:hidden">Novo</span>
               </Button>
             </DialogTrigger>
           <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -194,7 +195,7 @@ export default function ProjectsHub() {
       </Dialog>
 
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <Card key={i}>
               <CardHeader>
@@ -208,7 +209,7 @@ export default function ProjectsHub() {
           ))}
         </div>
       ) : projects && projects.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
             <Card key={project.id} className="group relative transition-shadow hover:shadow-md">
               <CardHeader className="pb-3">
@@ -240,14 +241,15 @@ export default function ProjectsHub() {
                   )}
                 </div>
               </CardContent>
-              <CardFooter className="gap-2">
+              <CardFooter className="gap-1.5 flex-wrap">
                 <Button size="sm" onClick={() => navigate(`/admin/projects/${project.id}/dashboard`)}>
                   <BarChart3 className="mr-1 h-3 w-3" />
-                  Dashboard
+                  <span className="hidden sm:inline">Dashboard</span>
+                  <span className="sm:hidden">Dash</span>
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => navigate(`/admin/projects/${project.id}/config`)}>
                   <Settings className="mr-1 h-3 w-3" />
-                  Config
+                  <span className="hidden sm:inline">Config</span>
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => openEdit(project)}>
                   <Pencil className="h-3 w-3" />

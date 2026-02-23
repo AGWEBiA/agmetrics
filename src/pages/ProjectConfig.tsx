@@ -35,21 +35,21 @@ export default function ProjectConfig() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
-        <p className="text-muted-foreground">{project?.name || "Carregando..."}</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Configurações</h1>
+        <p className="text-muted-foreground text-sm">{project?.name || "Carregando..."}</p>
       </div>
 
       <Tabs defaultValue="general">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="general">Geral</TabsTrigger>
-          <TabsTrigger value="meta">Meta Ads</TabsTrigger>
-          <TabsTrigger value="google">Google Ads</TabsTrigger>
-          <TabsTrigger value="kiwify">Kiwify</TabsTrigger>
-          <TabsTrigger value="hotmart">Hotmart</TabsTrigger>
-          <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
-          <TabsTrigger value="products">Produtos</TabsTrigger>
-          <TabsTrigger value="goals">Metas</TabsTrigger>
-          <TabsTrigger value="investments">Investimentos</TabsTrigger>
+        <TabsList className="w-full sm:w-auto flex overflow-x-auto no-scrollbar">
+          <TabsTrigger value="general" className="text-xs sm:text-sm whitespace-nowrap">Geral</TabsTrigger>
+          <TabsTrigger value="meta" className="text-xs sm:text-sm whitespace-nowrap">Meta Ads</TabsTrigger>
+          <TabsTrigger value="google" className="text-xs sm:text-sm whitespace-nowrap">Google Ads</TabsTrigger>
+          <TabsTrigger value="kiwify" className="text-xs sm:text-sm whitespace-nowrap">Kiwify</TabsTrigger>
+          <TabsTrigger value="hotmart" className="text-xs sm:text-sm whitespace-nowrap">Hotmart</TabsTrigger>
+          <TabsTrigger value="whatsapp" className="text-xs sm:text-sm whitespace-nowrap">WhatsApp</TabsTrigger>
+          <TabsTrigger value="products" className="text-xs sm:text-sm whitespace-nowrap">Produtos</TabsTrigger>
+          <TabsTrigger value="goals" className="text-xs sm:text-sm whitespace-nowrap">Metas</TabsTrigger>
+          <TabsTrigger value="investments" className="text-xs sm:text-sm whitespace-nowrap">Investimentos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
