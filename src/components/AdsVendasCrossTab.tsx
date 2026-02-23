@@ -13,12 +13,8 @@ import {
 
 const COLORS = ["hsl(220, 90%, 56%)", "hsl(265, 80%, 60%)", "hsl(152, 60%, 42%)", "hsl(38, 92%, 50%)", "hsl(0, 72%, 51%)"];
 
-const tooltipStyle = {
-  background: "hsl(var(--card))",
-  border: "1px solid hsl(var(--border))",
-  borderRadius: "8px",
-  fontSize: "13px",
-};
+// Tooltip styled globally via CSS — pass empty object to avoid overrides
+const tooltipStyle = {};
 
 interface AdsVendasCrossTabProps {
   m: any;

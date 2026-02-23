@@ -82,12 +82,7 @@ function SmallMetric({ label, value, change, colorClass }: {
   );
 }
 
-const tooltipStyle = {
-  background: "hsl(var(--card))",
-  border: "1px solid hsl(var(--border))",
-  borderRadius: "8px",
-  fontSize: "12px",
-};
+const tooltipStyle = {};
 
 function TopAdsSection({ metaAds }: { metaAds: any[] }) {
   const [page, setPage] = useState(0);
