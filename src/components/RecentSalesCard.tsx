@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { formatBRL } from "@/lib/formatters";
+import { formatBRL, formatDateTimeBR } from "@/lib/formatters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -102,7 +102,7 @@ export function RecentSalesCard({ projectId }: RecentSalesCardProps) {
                       <Badge variant="outline" className="capitalize text-[10px]">{s.platform}</Badge>
                       <span>•</span>
                       <span className="whitespace-nowrap">
-                        {s.sale_date ? new Date(s.sale_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—"}
+                        {formatDateTimeBR(s.sale_date)}
                       </span>
                     </div>
                   </div>
