@@ -245,6 +245,23 @@ Deno.serve(async (req) => {
 
         const platformFee = Math.max(0, orderAmount - netValue);
 
+        // Extract tracking data from Kiwify API response
+        const tracking = tx.tracking || {};
+        const utmSource = tracking.utm_source || tx.utm_source || "";
+        const utmMedium = tracking.utm_medium || tx.utm_medium || "";
+        const utmCampaign = tracking.utm_campaign || tx.utm_campaign || "";
+        const utmTerm = tracking.utm_term || tx.utm_term || "";
+        const utmContent = tracking.utm_content || tx.utm_content || "";
+        const trackingSrc = tracking.src || tx.src || "";
+        const trackingSck = tracking.sck || tx.sck || "";
+
+        // Extract buyer location
+        const customer = tx.customer || {};
+        const buyerState = customer.state || customer.estado || "";
+        const buyerCity = customer.city || customer.cidade || "";
+        const buyerCountry = customer.country || customer.pais || "";
+        const paymentMethod = tx.payment_method || tx.pagamento || "";
+
         const { error } = await supabase
           .from("sales_events")
           .upsert(
@@ -261,6 +278,17 @@ Deno.serve(async (req) => {
               buyer_email: buyerEmail,
               buyer_name: buyerName,
               sale_date: createdAt,
+              payment_method: paymentMethod || undefined,
+              buyer_state: buyerState || undefined,
+              buyer_city: buyerCity || undefined,
+              buyer_country: buyerCountry || undefined,
+              utm_source: utmSource || undefined,
+              utm_medium: utmMedium || undefined,
+              utm_campaign: utmCampaign || undefined,
+              utm_term: utmTerm || undefined,
+              utm_content: utmContent || undefined,
+              tracking_src: trackingSrc || undefined,
+              tracking_sck: trackingSck || undefined,
               payload: tx,
             },
             { onConflict: "platform,external_id,project_id" }
