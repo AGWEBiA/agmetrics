@@ -9,7 +9,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
       // Use only non-PII fields — buyer_email/buyer_name are excluded
       const { data, error } = await supabase
         .from("sales_events")
-        .select("amount, gross_amount, platform_fee, product_name, product_type, platform, sale_date, created_at")
+        .select("amount, gross_amount, platform_fee, coproducer_commission, product_name, product_type, platform, sale_date, created_at")
         .eq("project_id", projectId!)
         .eq("status", "approved");
       if (error) throw error;
@@ -83,7 +83,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   const google = googleQuery.data || [];
   const goals = goalsQuery.data || [];
 
-  const totalRevenue = sales.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+  const totalRevenue = sales.reduce((s: number, e: any) => s + Number(e.amount || 0) + Number(e.coproducer_commission || 0), 0);
   const grossRevenue = sales.reduce((s: number, e: any) => s + Number(e.gross_amount || 0), 0);
   const totalFees = sales.reduce((s: number, e: any) => s + Number(e.platform_fee || 0), 0);
   const salesCount = sales.length;
