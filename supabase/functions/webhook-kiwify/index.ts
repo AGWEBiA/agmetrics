@@ -241,6 +241,15 @@ Deno.serve(async (req) => {
     const buyerCity = payload["cidade"] || payload["city"] || "";
     const buyerCountry = payload["país"] || payload["country"] || "br";
 
+    // Extract UTM tracking data from Kiwify payload
+    const utmSource = payload["tracking utm_source"] || payload["utm_source"] || "";
+    const utmMedium = payload["tracking utm_medium"] || payload["utm_medium"] || "";
+    const utmCampaign = payload["tracking utm_campaign"] || payload["utm_campaign"] || "";
+    const utmTerm = payload["tracking utm_term"] || payload["utm_term"] || "";
+    const utmContent = payload["tracking utm_content"] || payload["utm_content"] || "";
+    const trackingSrc = payload["tracking src"] || payload["src"] || "";
+    const trackingSck = payload["tracking sck"] || payload["sck"] || "";
+
     const { data: saleRecord, error: saleError } = await supabase
       .from("sales_events")
       .upsert(
@@ -263,6 +272,13 @@ Deno.serve(async (req) => {
           buyer_state: buyerState,
           buyer_city: buyerCity,
           buyer_country: buyerCountry,
+          utm_source: utmSource,
+          utm_medium: utmMedium,
+          utm_campaign: utmCampaign,
+          utm_term: utmTerm,
+          utm_content: utmContent,
+          tracking_src: trackingSrc,
+          tracking_sck: trackingSck,
           payload,
         },
         { onConflict: "platform,external_id,project_id" }

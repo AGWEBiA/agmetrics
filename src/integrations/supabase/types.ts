@@ -770,6 +770,13 @@ export type Database = {
           sale_date: string | null
           status: Database["public"]["Enums"]["sale_status"] | null
           taxes: number | null
+          tracking_sck: string | null
+          tracking_src: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
         }
         Insert: {
           amount?: number | null
@@ -793,6 +800,13 @@ export type Database = {
           sale_date?: string | null
           status?: Database["public"]["Enums"]["sale_status"] | null
           taxes?: number | null
+          tracking_sck?: string | null
+          tracking_src?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Update: {
           amount?: number | null
@@ -816,6 +830,13 @@ export type Database = {
           sale_date?: string | null
           status?: Database["public"]["Enums"]["sale_status"] | null
           taxes?: number | null
+          tracking_sck?: string | null
+          tracking_src?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Relationships: [
           {
