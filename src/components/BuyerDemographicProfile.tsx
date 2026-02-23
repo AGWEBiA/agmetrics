@@ -202,28 +202,32 @@ export function BuyerDemographicProfile({ sales, adDemographics }: BuyerDemograp
   const adDeviceData = useMemo(() => {
     const demos = adDemographics.filter(d => d.breakdown_type === "device");
     if (demos.length === 0) return [];
-    const totalPurchases = demos.reduce((s, d) => s + (d.purchases || 0), 0);
-    if (totalPurchases === 0) return [];
+    const totalPixelPurchases = demos.reduce((s, d) => s + (d.purchases || 0), 0);
+    if (totalPixelPurchases === 0) return [];
 
-    const merged = new Map<string, { spend: number; purchases: number }>();
+    const merged = new Map<string, number>();
     demos.forEach(d => {
       const name = d.dimension_1 === "mobile_app" || d.dimension_1 === "mobile_web" || d.dimension_1 === "mobile" ? "Mobile"
         : d.dimension_1 === "desktop" ? "Desktop"
         : d.dimension_1 === "tablet" ? "Tablet"
         : d.dimension_1;
-      const existing = merged.get(name) || { spend: 0, purchases: 0 };
-      merged.set(name, { spend: existing.spend + Number(d.spend), purchases: existing.purchases + (d.purchases || 0) });
+      merged.set(name, (merged.get(name) || 0) + (d.purchases || 0));
     });
 
+    // Apply pixel proportions to actual approved sales count
     return Array.from(merged.entries())
-      .filter(([, v]) => v.purchases > 0)
-      .map(([name, v]) => ({
-        name,
-        value: v.purchases,
-        gasto: v.spend,
-        pct: totalPurchases > 0 ? (v.purchases / totalPurchases) * 100 : 0,
-      }));
-  }, [adDemographics]);
+      .filter(([, pixelCount]) => pixelCount > 0)
+      .map(([name, pixelCount]) => {
+        const ratio = pixelCount / totalPixelPurchases;
+        const estimatedSales = Math.round(ratio * totalSales);
+        return {
+          name,
+          value: estimatedSales,
+          pct: ratio * 100,
+        };
+      })
+      .filter(d => d.value > 0);
+  }, [adDemographics, totalSales]);
 
   const hasAdDemos = adAgeData.length > 0 || adDeviceData.length > 0;
   const hasDirectDemos = locationData.length > 0 || cityData.length > 0;
