@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
       const errText = await tokenRes.text();
       console.error("Hotmart token error:", tokenRes.status, errText);
       return new Response(
-        JSON.stringify({ error: `Hotmart auth error: ${tokenRes.status}`, details: errText }),
+        JSON.stringify({ error: "Failed to authenticate with Hotmart" }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
         const errText = await res.text();
         console.error("Hotmart API error:", res.status, errText);
         return new Response(
-          JSON.stringify({ error: `Hotmart API error: ${res.status}`, details: errText }),
+          JSON.stringify({ error: "Failed to fetch sales from Hotmart" }),
           { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

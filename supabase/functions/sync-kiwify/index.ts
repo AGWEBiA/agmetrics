@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
     } catch (err) {
       console.error("OAuth error:", err);
       return new Response(
-        JSON.stringify({ error: `Failed to authenticate with Kiwify: ${err.message}` }),
+        JSON.stringify({ error: "Failed to authenticate with Kiwify" }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
         const errText = await res.text();
         console.error("Kiwify API error:", res.status, errText);
         return new Response(
-          JSON.stringify({ error: `Kiwify API error: ${res.status}`, details: errText }),
+          JSON.stringify({ error: "Failed to fetch sales from Kiwify" }),
           { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

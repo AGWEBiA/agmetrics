@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
     if (!metaRes.ok) {
       const errBody = await metaRes.text();
       console.error("Meta API error:", errBody);
-      return new Response(JSON.stringify({ error: "Meta API error", details: errBody }), {
+      return new Response(JSON.stringify({ error: "Failed to fetch campaigns from Meta" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

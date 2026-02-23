@@ -56,7 +56,8 @@ Deno.serve(async (req) => {
       .order("created_at", { ascending: true });
 
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      console.error("Admin users list error:", error);
+      return new Response(JSON.stringify({ error: "Failed to list users" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const { data: roles } = await adminClient.from("user_roles").select("user_id, role");
@@ -99,7 +100,8 @@ Deno.serve(async (req) => {
     });
 
     if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      console.error("Admin create user error:", createError);
+      return new Response(JSON.stringify({ error: "Failed to create user" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Update role if admin
@@ -130,7 +132,8 @@ Deno.serve(async (req) => {
       .eq("user_id", user_id);
 
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      console.error("Admin update role error:", error);
+      return new Response(JSON.stringify({ error: "Failed to update role" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -149,7 +152,8 @@ Deno.serve(async (req) => {
 
     const { error } = await adminClient.auth.admin.deleteUser(userId);
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      console.error("Admin delete user error:", error);
+      return new Response(JSON.stringify({ error: "Failed to delete user" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -173,7 +177,8 @@ Deno.serve(async (req) => {
       const rows = permissions.map((p: string) => ({ user_id, permission: p }));
       const { error } = await adminClient.from("user_permissions").insert(rows);
       if (error) {
-        return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        console.error("Admin update permissions error:", error);
+        return new Response(JSON.stringify({ error: "Failed to update permissions" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
 
