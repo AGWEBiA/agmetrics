@@ -81,7 +81,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    const headers = lines[0].split(",").map((h: string) => h.trim().toLowerCase().replace(/"/g, ""));
+    // Auto-detect delimiter: semicolon (Hotmart) or comma (Kiwify)
+    const firstLine = lines[0];
+    const delimiter = firstLine.includes(";") ? ";" : ",";
+    console.log(`[import-csv] Detected delimiter: "${delimiter}"`);
+
+    const headers = splitCSVLine(firstLine, delimiter).map((h: string) => h.trim().toLowerCase().replace(/"/g, "").replace(/^\uFEFF/, ""));
+    console.log(`[import-csv] Headers found: ${JSON.stringify(headers.slice(0, 10))}...`);
     // Load registered products for this project
     const { data: registeredProducts } = await supabase
       .from("products")
@@ -96,32 +102,55 @@ Deno.serve(async (req) => {
 
     for (let i = 1; i < lines.length; i++) {
       try {
-        const values = parseCSVLine(lines[i]);
+        const values = splitCSVLine(lines[i], delimiter);
         const row: Record<string, string> = {};
         headers.forEach((h: string, idx: number) => { row[h] = (values[idx] || "").trim().replace(/^"|"$/g, ""); });
 
-        // Flexible column mapping (supports Kiwify PT-BR exports)
-        const externalId = row["transaction_id"] || row["order_id"] || row["external_id"] || row["id da venda"] || row["id"] || `csv-${i}`;
+        // Flexible column mapping (supports Kiwify and Hotmart PT-BR exports)
+        const externalId = row["transaction_id"] || row["order_id"] || row["external_id"] || row["id da venda"] || row["id"] || row["código da transação"] || row["codigo da transacao"] || `csv-${i}`;
         const productName = row["product_name"] || row["produto"] || row["product"] || "";
 
-        // Skip products not registered in the project
-        const matchedProduct = (registeredProducts || []).find((p: any) => p.name.toLowerCase() === productName.toLowerCase());
+        // Flexible product matching: exact → partial → single main fallback
+        let matchedProduct = (registeredProducts || []).find((p: any) => p.name.toLowerCase() === productName.toLowerCase());
         if (!matchedProduct) {
+          const saleLower = productName.toLowerCase();
+          matchedProduct = (registeredProducts || []).find((p: any) => {
+            const pLower = p.name.toLowerCase();
+            return saleLower.includes(pLower) || pLower.includes(saleLower);
+          });
+        }
+        if (!matchedProduct) {
+          const mainProducts = (registeredProducts || []).filter((p: any) => p.type === "main");
+          if (mainProducts.length === 1) matchedProduct = mainProducts[0];
+        }
+        if (!matchedProduct) {
+          console.log(`[import-csv] Skipped: product "${productName}" not found in project`);
           skipped++;
           continue;
         }
 
-        const grossAmount = parseFloat(row["gross_amount"] || row["total com acréscimo"] || row["total com acrescimo"] || row["valor_bruto"] || row["amount"] || row["valor"] || "0");
-        const netAmount = parseFloat(row["net_amount"] || row["valor líquido"] || row["valor liquido"] || row["valor_liquido"] || row["net_value"] || String(grossAmount));
-        const buyerEmail = row["buyer_email"] || row["email"] || "";
-        const buyerName = row["buyer_name"] || row["cliente"] || row["nome"] || row["name"] || "";
-        const status = mapStatus(row["status"] || "approved");
-        const rawDate = row["sale_date"] || row["data de criação"] || row["data de criacao"] || row["data"] || row["date"] || row["created_at"] || "";
+        // Hotmart CSV columns: "valor de compra sem impostos" (gross), "faturamento líquido" (net), "faturamento líquido do(a) produtor(a)" (producer net)
+        const grossAmount = parseBRNumber(row["gross_amount"] || row["total com acréscimo"] || row["total com acrescimo"] || row["valor_bruto"] || row["amount"] || row["valor"] || row["valor de compra sem impostos"] || row["faturamento bruto (sem impostos)"] || "0");
+        const netAmount = parseBRNumber(row["net_amount"] || row["valor líquido"] || row["valor liquido"] || row["valor_liquido"] || row["net_value"] || row["faturamento líquido"] || row["faturamento liquido"] || row["faturamento líquido do(a) produtor(a)"] || row["faturamento liquido do(a) produtor(a)"] || String(grossAmount));
+        const buyerEmail = row["buyer_email"] || row["email"] || row["email do(a) comprador(a)"] || "";
+        const buyerName = row["buyer_name"] || row["cliente"] || row["nome"] || row["name"] || row["comprador(a)"] || "";
+        const rawStatus = row["status"] || row["status da transação"] || row["status da transacao"] || "approved";
+        const status = mapStatus(rawStatus);
+        const rawDate = row["sale_date"] || row["data de criação"] || row["data de criacao"] || row["data"] || row["date"] || row["created_at"] || row["data da transação"] || row["data da transacao"] || "";
         const saleDate = parseDateFlexible(rawDate);
 
-        const taxes = parseFloat(row["taxas"] || row["taxes"] || row["platform_tax"] || "0");
-        const coproducerCommission = parseFloat(row["comissões dos coprodutores"] || row["comissoes dos coprodutores"] || row["coproducer_commission"] || "0");
+        // Hotmart-specific: "taxa de processamento" for platform fee, "faturamento do(a) coprodutor(a)" for coproducer
+        const taxes = parseBRNumber(row["taxas"] || row["taxes"] || row["platform_tax"] || row["taxa de processamento"] || "0");
+        const coproducerCommission = parseBRNumber(row["comissões dos coprodutores"] || row["comissoes dos coprodutores"] || row["coproducer_commission"] || row["faturamento do(a) coprodutor(a)"] || "0");
         const platformFee = taxes > 0 ? taxes : Math.max(0, grossAmount - netAmount - coproducerCommission);
+
+        // Hotmart tracking columns
+        const paymentMethod = row["payment_method"] || row["método de pagamento"] || row["metodo de pagamento"] || "";
+        const trackingSrc = row["código src"] || row["codigo src"] || "";
+        const trackingSck = row["código sck"] || row["codigo sck"] || "";
+        const buyerState = row["estado / província"] || row["estado / provincia"] || row["buyer_state"] || "";
+        const buyerCity = row["cidade"] || row["buyer_city"] || "";
+        const buyerCountry = row["país"] || row["pais"] || row["buyer_country"] || "";
 
         // Use registered product type
         const productType = matchedProduct.type || "main";
@@ -144,6 +173,12 @@ Deno.serve(async (req) => {
               buyer_email: buyerEmail,
               buyer_name: buyerName,
               sale_date: saleDate,
+              payment_method: paymentMethod || undefined,
+              tracking_src: trackingSrc || undefined,
+              tracking_sck: trackingSck || undefined,
+              buyer_state: buyerState || undefined,
+              buyer_city: buyerCity || undefined,
+              buyer_country: buyerCountry || undefined,
               payload: row,
             },
             { onConflict: "platform,external_id,project_id" }
@@ -174,17 +209,30 @@ Deno.serve(async (req) => {
   }
 });
 
-function parseCSVLine(line: string): string[] {
+function splitCSVLine(line: string, delimiter: string): string[] {
   const result: string[] = [];
   let current = "";
   let inQuotes = false;
   for (const char of line) {
     if (char === '"') { inQuotes = !inQuotes; }
-    else if (char === "," && !inQuotes) { result.push(current); current = ""; }
+    else if (char === delimiter && !inQuotes) { result.push(current); current = ""; }
     else { current += char; }
   }
   result.push(current);
   return result;
+}
+
+// Parse Brazilian number format: "1.234,56" → 1234.56
+function parseBRNumber(value: string): number {
+  if (!value || value === "(none)") return 0;
+  // If contains comma as decimal separator (BR format)
+  if (value.includes(",") && value.includes(".")) {
+    return parseFloat(value.replace(/\./g, "").replace(",", "."));
+  }
+  if (value.includes(",") && !value.includes(".")) {
+    return parseFloat(value.replace(",", "."));
+  }
+  return parseFloat(value) || 0;
 }
 
 function mapStatus(s: string): string {
