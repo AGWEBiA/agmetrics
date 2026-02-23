@@ -106,6 +106,9 @@ Deno.serve(async (req) => {
         const row: Record<string, string> = {};
         headers.forEach((h: string, idx: number) => { row[h] = (values[idx] || "").trim().replace(/^"|"$/g, ""); });
 
+        // Clean Hotmart "(none)" placeholder values
+        const clean = (v: string) => (!v || v === "(none)") ? "" : v;
+
         // Flexible column mapping (supports Kiwify and Hotmart PT-BR exports)
         const externalId = row["transaction_id"] || row["order_id"] || row["external_id"] || row["id da venda"] || row["id"] || row["código da transação"] || row["codigo da transacao"] || `csv-${i}`;
         const productName = row["product_name"] || row["produto"] || row["product"] || "";
@@ -145,19 +148,19 @@ Deno.serve(async (req) => {
         const platformFee = taxes > 0 ? taxes : Math.max(0, grossAmount - netAmount - coproducerCommission);
 
         // Hotmart tracking columns
-        const paymentMethod = row["payment_method"] || row["método de pagamento"] || row["metodo de pagamento"] || "";
-        const trackingSrc = row["código src"] || row["codigo src"] || "";
-        const trackingSck = row["código sck"] || row["codigo sck"] || "";
-        const buyerState = row["estado / província"] || row["estado / provincia"] || row["buyer_state"] || "";
-        const buyerCity = row["cidade"] || row["buyer_city"] || "";
-        const buyerCountry = row["país"] || row["pais"] || row["buyer_country"] || "";
+        const paymentMethod = clean(row["payment_method"] || row["método de pagamento"] || row["metodo de pagamento"] || "");
+        const trackingSrc = clean(row["código src"] || row["codigo src"] || "");
+        const trackingSck = clean(row["código sck"] || row["codigo sck"] || "");
+        const buyerState = clean(row["estado / província"] || row["estado / provincia"] || row["buyer_state"] || "");
+        const buyerCity = clean(row["cidade"] || row["buyer_city"] || "");
+        const buyerCountry = clean(row["país"] || row["pais"] || row["buyer_country"] || "");
 
         // Extract UTM tracking data from CSV
-        const utmSource = row["utm_source"] || row["tracking utm_source"] || "";
-        const utmMedium = row["utm_medium"] || row["tracking utm_medium"] || "";
-        const utmCampaign = row["utm_campaign"] || row["tracking utm_campaign"] || "";
-        const utmTerm = row["utm_term"] || row["tracking utm_term"] || "";
-        const utmContent = row["utm_content"] || row["tracking utm_content"] || "";
+        const utmSource = clean(row["utm_source"] || row["tracking utm_source"] || "");
+        const utmMedium = clean(row["utm_medium"] || row["tracking utm_medium"] || "");
+        const utmCampaign = clean(row["utm_campaign"] || row["tracking utm_campaign"] || "");
+        const utmTerm = clean(row["utm_term"] || row["tracking utm_term"] || "");
+        const utmContent = clean(row["utm_content"] || row["tracking utm_content"] || "");
 
         // Use registered product type
         const productType = matchedProduct.type || "main";
