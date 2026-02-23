@@ -144,8 +144,9 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   // Sales by date
   const salesByDate = new Map<string, { count: number; revenue: number }>();
   sales.forEach((s: any) => {
-    const d = s.sale_date ? s.sale_date.split("T")[0] : s.created_at?.split("T")[0];
-    if (!d) return;
+    const raw = s.sale_date || s.created_at;
+    if (!raw) return;
+    const d = new Date(raw).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     const existing = salesByDate.get(d) || { count: 0, revenue: 0 };
     salesByDate.set(d, { count: existing.count + 1, revenue: existing.revenue + Number(s.amount || 0) });
   });
@@ -153,7 +154,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   const salesChartData = Array.from(salesByDate.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, data]) => ({
-      date: new Date(date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+      date: new Date(date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" }),
       vendas: data.count,
       receita: data.revenue,
     }));

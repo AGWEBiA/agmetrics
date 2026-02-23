@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { formatBRL } from "@/lib/formatters";
+import { formatBRL, formatDateBR } from "@/lib/formatters";
 import { exportCSV } from "@/lib/exportCSV";
 import { AnimatedPage } from "@/components/AnimatedCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -87,7 +87,7 @@ export default function SalesTable() {
     if (!exportData) return;
 
     const csvData = exportData.map((s: any) => ({
-      Data: s.sale_date ? new Date(s.sale_date).toLocaleDateString("pt-BR") : "",
+      Data: formatDateBR(s.sale_date),
       Cliente: s.buyer_name || "",
       Email: s.buyer_email || "",
       Produto: s.product_name || "",
@@ -181,7 +181,7 @@ export default function SalesTable() {
                       return (
                         <TableRow key={s.id}>
                           <TableCell className="whitespace-nowrap text-sm">
-                            {s.sale_date ? new Date(s.sale_date).toLocaleDateString("pt-BR") : "—"}
+                            {formatDateBR(s.sale_date)}
                           </TableCell>
                           <TableCell>
                             <div>
@@ -221,7 +221,7 @@ export default function SalesTable() {
                         <span className="font-bold">{formatBRL(Number(s.amount || 0))}</span>
                       </div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{s.sale_date ? new Date(s.sale_date).toLocaleDateString("pt-BR") : "—"}</span>
+                        <span>{formatDateBR(s.sale_date)}</span>
                         <Badge variant="outline" className="capitalize text-[10px]">{s.platform}</Badge>
                       </div>
                     </div>
