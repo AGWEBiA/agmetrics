@@ -8,6 +8,33 @@ const corsHeaders = {
 };
 
 /**
+ * Parses Hotmart source_sck string into UTM-like fields.
+ * Pattern: {source_prefix}-{placement}-{campaign}-{content}-{term}
+ * Example: ig_fbads_WHAV0226-Instagram_Feed-WHAV0226_VENDAS_...-00_AUTO_...-2002_VÍDEO_AD13
+ */
+function parseSourceSck(sourceSck: string): {
+  utm_source: string;
+  utm_medium: string;
+  utm_campaign: string;
+  utm_content: string;
+  utm_term: string;
+} {
+  const empty = { utm_source: "", utm_medium: "", utm_campaign: "", utm_content: "", utm_term: "" };
+  if (!sourceSck || sourceSck.trim() === "") return empty;
+
+  const parts = sourceSck.split("-");
+  if (parts.length < 2) return empty;
+
+  return {
+    utm_source: parts[0] || "",       // e.g. ig_fbads_WHAV0226
+    utm_medium: parts[1] || "",       // e.g. Instagram_Feed
+    utm_campaign: parts[2] || "",     // e.g. WHAV0226_VENDAS_ADVANTAGE_AUTO_...
+    utm_content: parts[3] || "",      // e.g. 00_AUTO_ADVANTAGE_VIDEO_AD13
+    utm_term: parts[4] || "",         // e.g. 2002_VÍDEO_AD13
+  };
+}
+
+/**
  * Finds the best matching product using multiple strategies:
  * 1. Exact match (ilike)
  * 2. Partial match (product name contains or is contained in sale product name)
@@ -256,13 +283,16 @@ Deno.serve(async (req) => {
 
         // Extract tracking data from Hotmart API response
         const tracking = purchase.tracking || item.tracking || {};
-        const utmSource = tracking.source || tracking.utm_source || "";
-        const utmMedium = tracking.medium || tracking.utm_medium || "";
-        const utmCampaign = tracking.utm_campaign || "";
-        const utmTerm = tracking.utm_term || "";
-        const utmContent = tracking.utm_content || "";
         const trackingSrc = tracking.src || tracking.source_sck || "";
         const trackingSck = tracking.sck || "";
+
+        // Try native UTMs first, then parse from source_sck
+        const parsedUtms = parseSourceSck(trackingSrc || trackingSck);
+        const utmSource = tracking.source || tracking.utm_source || parsedUtms.utm_source;
+        const utmMedium = tracking.medium || tracking.utm_medium || parsedUtms.utm_medium;
+        const utmCampaign = tracking.utm_campaign || parsedUtms.utm_campaign;
+        const utmTerm = tracking.utm_term || parsedUtms.utm_term;
+        const utmContent = tracking.utm_content || parsedUtms.utm_content;
 
         // Extract buyer location and payment method
         const buyerAddress = buyer.address || {};
