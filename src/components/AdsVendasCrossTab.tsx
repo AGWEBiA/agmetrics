@@ -85,9 +85,10 @@ export function AdsVendasCrossTab({ m, strategy }: AdsVendasCrossTabProps) {
       if (!dateStr) return;
       const d = getOrCreate(dateStr);
       d.salesCount++;
-      d.revenue += Number(s.amount || 0);
-      if (s.platform === "kiwify") { d.kiwifySales++; d.kiwifyRevenue += Number(s.amount || 0); }
-      if (s.platform === "hotmart") { d.hotmartSales++; d.hotmartRevenue += Number(s.amount || 0); }
+      const saleRevenue = Number(s.amount || 0) + Number(s.coproducer_commission || 0);
+      d.revenue += saleRevenue;
+      if (s.platform === "kiwify") { d.kiwifySales++; d.kiwifyRevenue += saleRevenue; }
+      if (s.platform === "hotmart") { d.hotmartSales++; d.hotmartRevenue += saleRevenue; }
     });
 
     return Array.from(dailyMap.values())

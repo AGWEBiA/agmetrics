@@ -176,7 +176,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const cancelledSales = sales.filter((s) => s.status === "cancelled");
   const refundedSales = sales.filter((s) => s.status === "refunded");
 
-  const totalRevenue = approvedSales.reduce((s, e) => s + Number(e.amount), 0);
+  const totalRevenue = approvedSales.reduce((s, e) => s + Number(e.amount) + Number((e as any).coproducer_commission || 0), 0);
   const grossRevenue = approvedSales.reduce((s, e) => s + Number(e.gross_amount), 0);
   const totalFees = approvedSales.reduce((s, e) => s + Number(e.platform_fee), 0);
   const totalTaxes = approvedSales.reduce((s, e) => s + Number((e as any).taxes || 0), 0);
