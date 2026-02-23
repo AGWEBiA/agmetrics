@@ -7,6 +7,32 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+/**
+ * Parses Hotmart source_sck string into UTM-like fields.
+ * Pattern: {source_prefix}-{placement}-{campaign}-{content}-{term}
+ */
+function parseSourceSck(sourceSck: string): {
+  utm_source: string;
+  utm_medium: string;
+  utm_campaign: string;
+  utm_content: string;
+  utm_term: string;
+} {
+  const empty = { utm_source: "", utm_medium: "", utm_campaign: "", utm_content: "", utm_term: "" };
+  if (!sourceSck || sourceSck.trim() === "") return empty;
+
+  const parts = sourceSck.split("-");
+  if (parts.length < 2) return empty;
+
+  return {
+    utm_source: parts[0] || "",
+    utm_medium: parts[1] || "",
+    utm_campaign: parts[2] || "",
+    utm_content: parts[3] || "",
+    utm_term: parts[4] || "",
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -129,13 +155,16 @@ Deno.serve(async (req) => {
 
     // Extract UTM tracking data from Hotmart payload
     const tracking = payload.data?.purchase?.tracking || purchase.tracking || {};
-    const utmSource = tracking.source || tracking.utm_source || "";
-    const utmMedium = tracking.medium || tracking.utm_medium || "";
-    const utmCampaign = tracking.utm_campaign || "";
-    const utmTerm = tracking.utm_term || "";
-    const utmContent = tracking.utm_content || "";
     const trackingSrc = tracking.src || tracking.source_sck || "";
     const trackingSck = tracking.sck || "";
+
+    // Try native UTMs first, then parse from source_sck
+    const parsedUtms = parseSourceSck(trackingSrc || trackingSck);
+    const utmSource = tracking.source || tracking.utm_source || parsedUtms.utm_source;
+    const utmMedium = tracking.medium || tracking.utm_medium || parsedUtms.utm_medium;
+    const utmCampaign = tracking.utm_campaign || parsedUtms.utm_campaign;
+    const utmTerm = tracking.utm_term || parsedUtms.utm_term;
+    const utmContent = tracking.utm_content || parsedUtms.utm_content;
 
     // Upsert sale
     const { data: sale, error: saleError } = await supabase
