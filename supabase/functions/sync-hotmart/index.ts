@@ -78,6 +78,8 @@ Deno.serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const isInternalCron = syncSource === "auto-sync-cron" && token === serviceRoleKey;
 
+    let authenticatedUserId: string | null = null;
+
     if (!isInternalCron) {
       const anonClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
@@ -85,16 +87,14 @@ Deno.serve(async (req) => {
         { global: { headers: { Authorization: authHeader } } }
       );
 
-      const claimsResult = await anonClient.auth.getClaims(token);
-      if (!claimsResult.data?.claims) {
-        const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
-        if (authError || !user) {
-          return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
+      const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
+      authenticatedUserId = user.id;
     }
 
     const { project_id } = await req.json();
@@ -106,36 +106,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify project ownership for non-cron calls
-    if (!isInternalCron) {
-      const anonClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader! } } }
-      );
-      const claimsResult = await anonClient.auth.getClaims(token);
-      const userId = claimsResult.data?.claims?.sub;
+    if (!isInternalCron && authenticatedUserId) {
+      const { data: project } = await supabase
+        .from("projects")
+        .select("id, owner_id")
+        .eq("id", project_id)
+        .single();
 
-      if (userId) {
-        const { data: project } = await supabase
-          .from("projects")
-          .select("id, owner_id")
-          .eq("id", project_id)
-          .single();
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", authenticatedUserId)
+        .single();
 
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", userId)
-          .single();
-
-        const isAdmin = roleData?.role === "admin";
-        if (!project || (!isAdmin && project.owner_id !== userId)) {
-          return new Response(JSON.stringify({ error: "Forbidden" }), {
-            status: 403,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
+      const isAdmin = roleData?.role === "admin";
+      if (!project || (!isAdmin && project.owner_id !== authenticatedUserId)) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     }
 
