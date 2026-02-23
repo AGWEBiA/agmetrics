@@ -1,47 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-
-interface AdDemographic {
-  id: string;
-  project_id: string;
-  platform: string;
-  breakdown_type: string;
-  dimension_1: string;
-  dimension_2: string;
-  spend: number;
-  impressions: number;
-  clicks: number;
-  conversions: number;
-  leads: number;
-  purchases: number;
-  date_start: string;
-  date_end: string | null;
-}
-
-interface SalesEvent {
-  id: string;
-  project_id: string;
-  platform: "kiwify" | "hotmart";
-  product_name: string | null;
-  product_type: "main" | "order_bump" | null;
-  amount: number;
-  gross_amount: number;
-  platform_fee: number;
-  status: "approved" | "pending" | "cancelled" | "refunded";
-  buyer_email: string | null;
-  buyer_name: string | null;
-  sale_date: string | null;
-  created_at: string;
-  payment_method: string | null;
-  buyer_state: string | null;
-  buyer_city: string | null;
-  buyer_country: string | null;
-}
-
-interface DateFilter {
-  from?: Date;
-  to?: Date;
-}
+import type { SalesEvent, AdDemographic, DateFilter } from "@/types/database";
 
 function inRange(dateStr: string | null, filter: DateFilter): boolean {
   if (!filter.from && !filter.to) return true;

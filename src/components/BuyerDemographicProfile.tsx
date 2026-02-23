@@ -9,6 +9,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { BrazilStateMap } from "./BrazilStateMap";
+import type { SalesEvent, AdDemographic } from "@/types/database";
 
 const COLORS = [
   "hsl(220, 90%, 56%)", "hsl(265, 80%, 60%)", "hsl(152, 60%, 42%)",
@@ -16,43 +17,9 @@ const COLORS = [
   "hsl(300, 60%, 50%)", "hsl(30, 80%, 55%)",
 ];
 
-interface Sale {
-  amount?: number;
-  gross_amount?: number;
-  coproducer_commission?: number;
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-  utm_content?: string;
-  tracking_src?: string;
-  tracking_sck?: string;
-  buyer_state?: string;
-  buyer_city?: string;
-  buyer_country?: string;
-  payment_method?: string;
-  product_name?: string;
-  status?: string;
-  sale_date?: string;
-  created_at?: string;
-  payload?: Record<string, any>;
-}
-
-interface AdDemographic {
-  platform: string;
-  breakdown_type: string;
-  dimension_1: string;
-  dimension_2: string;
-  spend: number;
-  impressions: number;
-  clicks: number;
-  conversions: number;
-  leads: number;
-  purchases: number;
-}
-
 interface BuyerDemographicProfileProps {
-  sales: Sale[];
-  adDemographics: AdDemographic[];
+  sales: Partial<SalesEvent>[];
+  adDemographics: Partial<AdDemographic>[];
 }
 
 export function BuyerDemographicProfile({ sales, adDemographics }: BuyerDemographicProfileProps) {

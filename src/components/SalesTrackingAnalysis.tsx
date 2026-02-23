@@ -9,6 +9,7 @@ import {
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
+import type { SalesEvent } from "@/types/database";
 
 const COLORS = [
   "hsl(220, 90%, 56%)", "hsl(265, 80%, 60%)", "hsl(152, 60%, 42%)",
@@ -16,24 +17,7 @@ const COLORS = [
   "hsl(300, 60%, 50%)", "hsl(45, 90%, 48%)",
 ];
 
-interface Sale {
-  amount?: number;
-  gross_amount?: number;
-  coproducer_commission?: number;
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-  utm_term?: string;
-  utm_content?: string;
-  tracking_src?: string;
-  tracking_sck?: string;
-  sale_date?: string;
-  created_at?: string;
-  product_name?: string;
-  platform?: string;
-  status?: string;
-  payload?: Record<string, any>;
-}
+type Sale = Partial<SalesEvent>;
 
 interface SalesTrackingAnalysisProps {
   sales: Sale[];
