@@ -32,6 +32,7 @@ export function RecentSalesCard({ projectId }: RecentSalesCardProps) {
         .from("sales_events")
         .select("id, buyer_name, buyer_email, product_name, status, amount, gross_amount, platform, sale_date")
         .eq("project_id", projectId!)
+        .eq("is_ignored", false)
         .order("sale_date", { ascending: false })
         .limit(50);
       if (error) throw error;

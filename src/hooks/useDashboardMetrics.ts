@@ -23,7 +23,8 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
       const { data, error } = await supabase
         .from("sales_events")
         .select("*")
-        .eq("project_id", projectId!);
+        .eq("project_id", projectId!)
+        .eq("is_ignored", false);
       if (error) throw error;
       return data as unknown as SalesEvent[];
     },
