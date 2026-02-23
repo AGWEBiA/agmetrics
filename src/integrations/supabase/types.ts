@@ -674,6 +674,9 @@ export type Database = {
           evolution_api_url: string | null
           evolution_instance_name: string | null
           google_leads_enabled: boolean
+          hotmart_basic_auth: string | null
+          hotmart_client_id: string | null
+          hotmart_client_secret: string | null
           hotmart_webhook_token: string | null
           id: string
           is_active: boolean
@@ -701,6 +704,9 @@ export type Database = {
           evolution_api_url?: string | null
           evolution_instance_name?: string | null
           google_leads_enabled?: boolean
+          hotmart_basic_auth?: string | null
+          hotmart_client_id?: string | null
+          hotmart_client_secret?: string | null
           hotmart_webhook_token?: string | null
           id?: string
           is_active?: boolean
@@ -728,6 +734,9 @@ export type Database = {
           evolution_api_url?: string | null
           evolution_instance_name?: string | null
           google_leads_enabled?: boolean
+          hotmart_basic_auth?: string | null
+          hotmart_client_id?: string | null
+          hotmart_client_secret?: string | null
           hotmart_webhook_token?: string | null
           id?: string
           is_active?: boolean
