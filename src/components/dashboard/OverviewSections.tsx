@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { MetricCard, Stat } from "./MetricCard";
 import { BudgetSection, type BudgetData } from "./BudgetSection";
 import { COLORS, TOOLTIP_STYLE, GOAL_LABELS } from "./constants";
-import { formatBRL, formatPercent, formatNumber, formatDecimal } from "@/lib/formatters";
+import { formatBRL, formatPercent, formatNumber, formatNumberBR, formatDecimal } from "@/lib/formatters";
 import { openAdPreview } from "@/lib/openAdPreview";
 import { TrendingUp, TrendingDown, ExternalLink, Video, MessageCircle } from "lucide-react";
 import {
@@ -505,12 +505,12 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
           <CardContent className="space-y-5">
             {goalsProgress.map((g: any, i: number) => (
               <div key={i}>
-                <div className="mb-2 flex items-center justify-between text-sm">
+                <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
                   <span className="font-medium">{GOAL_LABELS[g.type] || g.type}</span>
                   <span className="text-muted-foreground text-xs">
-                    {g.type === "revenue" ? formatBRL(g.current) : g.type === "roi" || g.type === "margin" ? formatPercent(g.current) : formatNumber(g.current)}
+                    {g.type === "revenue" ? formatBRL(g.current) : g.type === "roi" || g.type === "margin" ? formatPercent(g.current) : formatNumberBR(g.current, 2)}
                     {" / "}
-                    {g.type === "revenue" ? formatBRL(g.target) : g.type === "roi" || g.type === "margin" ? formatPercent(g.target) : formatNumber(g.target)}
+                    {g.type === "revenue" ? formatBRL(g.target) : g.type === "roi" || g.type === "margin" ? formatPercent(g.target) : formatNumberBR(g.target, 2)}
                   </span>
                 </div>
                 <Progress value={Math.min(g.pct, 100)} className="h-3" />
