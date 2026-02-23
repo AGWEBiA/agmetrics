@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-sync-source, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -32,6 +32,49 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("authorization");
+    const syncSource = req.headers.get("x-sync-source");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      serviceRoleKey
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const isInternalCron = syncSource === "auto-sync-cron" && token === serviceRoleKey;
+
+    let userId: string | null = null;
+
+    if (!isInternalCron) {
+      const anonClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      const claimsResult = await anonClient.auth.getClaims(token);
+      if (claimsResult.data?.claims) {
+        userId = claimsResult.data.claims.sub;
+      } else {
+        const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
+        if (authError || !user) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        userId = user.id;
+      }
+    }
+
     const { project_id } = await req.json();
 
     if (!project_id) {
@@ -41,10 +84,33 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    // Verify project ownership for non-cron calls
+    if (!isInternalCron && userId) {
+      const { data: project } = await supabase
+        .from("projects")
+        .select("id, owner_id")
+        .eq("id", project_id)
+        .single();
+
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .single();
+
+      const isAdmin = roleData?.role === "admin";
+      if (!project || (!isAdmin && project.owner_id !== userId)) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else if (!isInternalCron) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Get OAuth credentials from project row
     const { data: projectData, error: projectError } = await supabase
@@ -154,7 +220,6 @@ Deno.serve(async (req) => {
         const orderStatus = tx.status || "";
         const rawCharge = parseFloat(tx.charge_amount || tx.order_amount || "0") / 100;
         const rawNet = parseFloat(tx.net_amount || "0") / 100;
-        // Kiwify OAuth API may not return charge_amount; fallback to net_amount
         const netValue = rawNet || rawCharge;
         const orderAmount = rawCharge > 0 ? rawCharge : netValue;
         const buyerEmail = tx.customer?.email || "";
@@ -208,7 +273,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Check pagination - Kiwify uses page_number and count
       const pagination = data.pagination || {};
       const totalItems = pagination.count || 0;
       const pageSize = pagination.page_size || 100;

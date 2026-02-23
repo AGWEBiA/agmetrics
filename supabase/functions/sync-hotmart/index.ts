@@ -3,9 +3,55 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-sync-source, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+/**
+ * Finds the best matching product using multiple strategies:
+ * 1. Exact match (ilike)
+ * 2. Partial match (product name contains or is contained in sale product name)
+ * 3. Fallback to first "main" product if only one exists
+ */
+async function findMatchingProduct(
+  supabase: any,
+  projectId: string,
+  saleProductName: string
+): Promise<{ type: string; name: string } | null> {
+  const { data: exact } = await supabase
+    .from("products")
+    .select("type, name")
+    .eq("project_id", projectId)
+    .ilike("name", saleProductName)
+    .maybeSingle();
+
+  if (exact) return exact;
+
+  const { data: allProducts } = await supabase
+    .from("products")
+    .select("type, name")
+    .eq("project_id", projectId);
+
+  if (allProducts && allProducts.length > 0) {
+    const saleLower = saleProductName.toLowerCase();
+
+    for (const p of allProducts) {
+      const pLower = p.name.toLowerCase();
+      if (saleLower.includes(pLower) || pLower.includes(saleLower)) {
+        console.log(`[sync-hotmart] Partial match: "${saleProductName}" → "${p.name}"`);
+        return p;
+      }
+    }
+
+    const mainProducts = allProducts.filter((p: any) => p.type === "main");
+    if (mainProducts.length === 1) {
+      console.log(`[sync-hotmart] Fallback: using single main product "${mainProducts[0].name}" for "${saleProductName}"`);
+      return mainProducts[0];
+    }
+  }
+
+  return null;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -13,6 +59,44 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("authorization");
+    const syncSource = req.headers.get("x-sync-source");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      serviceRoleKey
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const isInternalCron = syncSource === "auto-sync-cron" && token === serviceRoleKey;
+
+    if (!isInternalCron) {
+      const anonClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      const claimsResult = await anonClient.auth.getClaims(token);
+      if (!claimsResult.data?.claims) {
+        const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
+        if (authError || !user) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
+
     const { project_id } = await req.json();
 
     if (!project_id) {
@@ -22,10 +106,38 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    // Verify project ownership for non-cron calls
+    if (!isInternalCron) {
+      const anonClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader! } } }
+      );
+      const claimsResult = await anonClient.auth.getClaims(token);
+      const userId = claimsResult.data?.claims?.sub;
+
+      if (userId) {
+        const { data: project } = await supabase
+          .from("projects")
+          .select("id, owner_id")
+          .eq("id", project_id)
+          .single();
+
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .single();
+
+        const isAdmin = roleData?.role === "admin";
+        if (!project || (!isAdmin && project.owner_id !== userId)) {
+          return new Response(JSON.stringify({ error: "Forbidden" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
 
     // Get credentials from secrets
     const clientId = Deno.env.get("HOTMART_CLIENT_ID");
@@ -35,19 +147,6 @@ Deno.serve(async (req) => {
     if (!clientId || !clientSecret || !basicAuth) {
       return new Response(
         JSON.stringify({ error: "Hotmart credentials not configured. Add HOTMART_CLIENT_ID, HOTMART_CLIENT_SECRET, and HOTMART_BASIC_AUTH secrets." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Load registered products for this project
-    const { data: registeredProducts } = await supabase
-      .from("products")
-      .select("name, type")
-      .eq("project_id", project_id);
-
-    if (!registeredProducts || registeredProducts.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "No products registered for this project" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -115,9 +214,9 @@ Deno.serve(async (req) => {
         const buyer = purchase.buyer || {};
 
         const productName = product.name || "";
-        const matchedProduct = registeredProducts.find(
-          (p: any) => p.name.toLowerCase() === productName.toLowerCase()
-        );
+
+        // Use flexible product matching (exact → partial → single main fallback)
+        const matchedProduct = await findMatchingProduct(supabase, project_id, productName);
 
         if (!matchedProduct) {
           skipped++;
@@ -187,7 +286,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Check pagination
       if (items.length < 50) {
         hasMore = false;
       } else {
