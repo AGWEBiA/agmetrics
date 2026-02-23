@@ -163,7 +163,7 @@ async function handleSync(supabase: any, project_id: string, corsHeaders: Record
     if (!googleRes.ok) {
       const errBody = await googleRes.text();
       console.error("Google Ads API error:", errBody);
-      return new Response(JSON.stringify({ error: "Google Ads API error", details: errBody }), {
+      return new Response(JSON.stringify({ error: "Failed to sync Google Ads data" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

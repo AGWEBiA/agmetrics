@@ -346,7 +346,7 @@ Deno.serve(async (req) => {
                   date_start: sinceStr,
                   date_end: untilStr,
                   last_updated: new Date().toISOString(),
-                }, { onConflict: "project_id,ad_id,date_start" });
+                }, { onConflict: "project_id,ad_id" });
               if (!error) adsSynced++;
               else console.warn(`[sync-meta] Ad upsert error for ${adId}:`, error.message);
             }

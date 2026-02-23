@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     if (!metaRes.ok) {
       const errBody = await metaRes.text();
       console.error("Meta API error:", errBody);
-      return new Response(JSON.stringify({ error: "Erro ao buscar contas na Meta API", details: errBody }), {
+      return new Response(JSON.stringify({ error: "Erro ao buscar contas na Meta API" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

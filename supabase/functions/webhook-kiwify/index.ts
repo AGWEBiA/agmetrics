@@ -169,9 +169,11 @@ Deno.serve(async (req) => {
     const pathParts = url.pathname.split("/");
     const projectId = pathParts[pathParts.length - 1] || url.searchParams.get("projectId");
 
-    if (!projectId) {
+    // Input validation: projectId must be a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!projectId || !uuidRegex.test(projectId)) {
       return new Response(
-        JSON.stringify({ error: "projectId is required" }),
+        JSON.stringify({ error: "Valid projectId (UUID) is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -271,7 +273,7 @@ Deno.serve(async (req) => {
     if (saleError) {
       console.error("Error inserting sale:", saleError);
       return new Response(
-        JSON.stringify({ error: saleError.message }),
+        JSON.stringify({ error: "Failed to process sale" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
