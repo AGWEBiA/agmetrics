@@ -418,23 +418,23 @@ function MetaAccountCard({ cred, projectId, onDelete }: { cred: any; projectId: 
     }
   };
 
-  const handleToggleCampaign = async (campaignId: string, selected: boolean) => {
-    await supabase
+  const handleToggleCampaign = async (campaignDbId: string, selected: boolean) => {
+    const { error } = await supabase
       .from("meta_campaigns")
       .update({ is_selected: selected })
-      .eq("project_id", projectId)
-      .eq("campaign_id", campaignId)
-      .eq("credential_id", cred.id);
+      .eq("id", campaignDbId);
+    if (error) console.error("Toggle campaign error:", error);
     await refetchCampaigns();
   };
 
   const handleSelectAll = async (selected: boolean) => {
     setSavingCampaigns(true);
-    await supabase
+    const { error } = await supabase
       .from("meta_campaigns")
       .update({ is_selected: selected })
       .eq("project_id", projectId)
       .eq("credential_id", cred.id);
+    if (error) console.error("Select all error:", error);
     await refetchCampaigns();
     setSavingCampaigns(false);
   };
@@ -516,8 +516,8 @@ function MetaAccountCard({ cred, projectId, onDelete }: { cred: any; projectId: 
                     return (a.campaign_name || "").localeCompare(b.campaign_name || "");
                   })
                   .map((c: any) => (
-                  <label key={c.campaign_id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors">
-                    <Checkbox checked={c.is_selected} onCheckedChange={(checked) => handleToggleCampaign(c.campaign_id, !!checked)} />
+                  <label key={c.id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors">
+                    <Checkbox checked={c.is_selected} onCheckedChange={(checked) => handleToggleCampaign(c.id, !!checked)} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm truncate">{c.campaign_name}</p>
                     </div>
