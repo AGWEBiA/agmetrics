@@ -616,7 +616,7 @@ function GoogleTab({ projectId }: { projectId: string }) {
 }
 
 // ============ SYNC BUTTON ============
-function SyncButton({ projectId, platform, disabled }: { projectId: string; platform: "meta" | "google"; disabled: boolean }) {
+function SyncButton({ projectId, platform, disabled }: { projectId: string; platform: "meta" | "google" | "hotmart"; disabled: boolean }) {
   const [syncing, setSyncing] = useState(false);
   const { toast } = useToast();
 
@@ -635,7 +635,8 @@ function SyncButton({ projectId, platform, disabled }: { projectId: string; plat
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Sync failed");
-      toast({ title: `Sincronização concluída`, description: `${result.synced} dias sincronizados` });
+      const desc = platform === "hotmart" ? `${result.imported} vendas importadas, ${result.skipped} ignoradas` : `${result.synced} dias sincronizados`;
+      toast({ title: `Sincronização concluída`, description: desc });
     } catch (err: any) {
       toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
     } finally {
@@ -667,11 +668,21 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
   const platformLabel = platform === "kiwify" ? "Kiwify" : "Hotmart";
   const tokenField = platform === "kiwify" ? "kiwify_webhook_token" : "hotmart_webhook_token";
 
+  // Hotmart API credentials (per-project)
+  const [hotmartClientId, setHotmartClientId] = useState("");
+  const [hotmartClientSecret, setHotmartClientSecret] = useState("");
+  const [hotmartBasicAuth, setHotmartBasicAuth] = useState("");
+
   useEffect(() => {
     if (project) {
       setWebhookToken((project as any)[tokenField] || "");
+      if (platform === "hotmart") {
+        setHotmartClientId((project as any).hotmart_client_id || "");
+        setHotmartClientSecret((project as any).hotmart_client_secret || "");
+        setHotmartBasicAuth((project as any).hotmart_basic_auth || "");
+      }
     }
-  }, [project, tokenField]);
+  }, [project, tokenField, platform]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(webhookUrl);
@@ -681,11 +692,17 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
 
   const handleSaveToken = async () => {
     try {
-      await updateProject.mutateAsync({
+      const updates: any = {
         id: projectId,
         [tokenField]: webhookToken || null,
-      });
-      toast({ title: "Token salvo!" });
+      };
+      if (platform === "hotmart") {
+        updates.hotmart_client_id = hotmartClientId || null;
+        updates.hotmart_client_secret = hotmartClientSecret || null;
+        updates.hotmart_basic_auth = hotmartBasicAuth || null;
+      }
+      await updateProject.mutateAsync(updates);
+      toast({ title: "Configurações salvas!" });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
@@ -831,6 +848,53 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
           </p>
         </div>
 
+        {platform === "hotmart" && (
+          <div className="rounded-lg border border-border p-4 space-y-4">
+            <div>
+              <h4 className="font-semibold text-sm">API Hotmart (Sincronização de Vendas)</h4>
+              <p className="text-xs text-muted-foreground mt-1">
+                Configure as credenciais da API para sincronizar vendas passadas com UTMs completos. Obtenha em{" "}
+                <a href="https://developers.hotmart.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                  developers.hotmart.com
+                </a>
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Client ID</Label>
+              <Input
+                placeholder="Seu Client ID da Hotmart"
+                value={hotmartClientId}
+                onChange={(e) => setHotmartClientId(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Client Secret</Label>
+              <Input
+                type="password"
+                placeholder="Seu Client Secret da Hotmart"
+                value={hotmartClientSecret}
+                onChange={(e) => setHotmartClientSecret(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Basic Auth (Base64)</Label>
+              <Input
+                type="password"
+                placeholder="Base64 de client_id:client_secret"
+                value={hotmartBasicAuth}
+                onChange={(e) => setHotmartBasicAuth(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Gere com: <code className="bg-muted px-1 rounded text-[10px]">echo -n "CLIENT_ID:CLIENT_SECRET" | base64</code>
+              </p>
+            </div>
+            <Button onClick={handleSaveToken} disabled={updateProject.isPending} size="sm">
+              <Save className="mr-1 h-4 w-4" />
+              {updateProject.isPending ? "Salvando..." : "Salvar Credenciais"}
+            </Button>
+          </div>
+        )}
+
 
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={handleTestWebhook} disabled={testing}>
@@ -847,6 +911,10 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
             {deleting ? "Excluindo..." : "Excluir Vendas de Teste"}
           </Button>
         </div>
+
+        {platform === "hotmart" && (hotmartClientId || hotmartClientSecret) && (
+          <SyncButton projectId={projectId} platform="hotmart" disabled={!hotmartClientId || !hotmartClientSecret || !hotmartBasicAuth} />
+        )}
 
         <div className="rounded-lg border border-border p-4 space-y-2">
           <h4 className="font-semibold">Como configurar:</h4>

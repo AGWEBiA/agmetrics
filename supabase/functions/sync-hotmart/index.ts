@@ -139,14 +139,21 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get credentials from secrets
-    const clientId = Deno.env.get("HOTMART_CLIENT_ID");
-    const clientSecret = Deno.env.get("HOTMART_CLIENT_SECRET");
-    const basicAuth = Deno.env.get("HOTMART_BASIC_AUTH");
+    // Get project details to check for per-project credentials
+    const { data: projectData } = await supabase
+      .from("projects")
+      .select("hotmart_client_id, hotmart_client_secret, hotmart_basic_auth")
+      .eq("id", project_id)
+      .single();
+
+    // Use per-project credentials first, fallback to env secrets
+    const clientId = projectData?.hotmart_client_id || Deno.env.get("HOTMART_CLIENT_ID");
+    const clientSecret = projectData?.hotmart_client_secret || Deno.env.get("HOTMART_CLIENT_SECRET");
+    const basicAuth = projectData?.hotmart_basic_auth || Deno.env.get("HOTMART_BASIC_AUTH");
 
     if (!clientId || !clientSecret || !basicAuth) {
       return new Response(
-        JSON.stringify({ error: "Hotmart credentials not configured. Add HOTMART_CLIENT_ID, HOTMART_CLIENT_SECRET, and HOTMART_BASIC_AUTH secrets." }),
+        JSON.stringify({ error: "Credenciais da Hotmart não configuradas. Acesse Configurações → Hotmart para cadastrar Client ID, Client Secret e Basic Auth." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
