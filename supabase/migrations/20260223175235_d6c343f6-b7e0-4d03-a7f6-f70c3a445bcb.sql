@@ -1,0 +1,1 @@
+UPDATE sales_events SET status = 'approved' WHERE external_id = 'HP1064622775' AND platform = 'hotmart' AND status = 'pending';
