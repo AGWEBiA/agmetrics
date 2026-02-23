@@ -77,12 +77,13 @@ export function DateRangeFilter({ dateRange, onDateRangeChange }: DateRangeFilte
         <PopoverContent className="w-auto p-0" align="end">
           <Calendar
             mode="range"
-            selected={dateRange.from && dateRange.to ? { from: dateRange.from, to: dateRange.to } : undefined}
+            selected={dateRange.from ? { from: dateRange.from, to: dateRange.to } : undefined}
             onSelect={(range) => {
               setPreset("all");
               onDateRangeChange({ from: range?.from, to: range?.to });
             }}
             numberOfMonths={2}
+            locale={ptBR}
             className="p-3 pointer-events-auto"
           />
         </PopoverContent>
