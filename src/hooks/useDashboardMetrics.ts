@@ -176,11 +176,12 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const cancelledSales = sales.filter((s) => s.status === "cancelled");
   const refundedSales = sales.filter((s) => s.status === "refunded");
 
-  const totalRevenue = approvedSales.reduce((s, e) => s + Number(e.amount) + Number((e as any).coproducer_commission || 0), 0);
+  const producerRevenue = approvedSales.reduce((s, e) => s + Number(e.amount), 0);
+  const totalCoproducerCommission = approvedSales.reduce((s, e) => s + Number((e as any).coproducer_commission || 0), 0);
+  const totalRevenue = producerRevenue + totalCoproducerCommission;
   const grossRevenue = approvedSales.reduce((s, e) => s + Number(e.gross_amount), 0);
   const totalFees = approvedSales.reduce((s, e) => s + Number(e.platform_fee), 0);
   const totalTaxes = approvedSales.reduce((s, e) => s + Number((e as any).taxes || 0), 0);
-  const totalCoproducerCommission = approvedSales.reduce((s, e) => s + Number((e as any).coproducer_commission || 0), 0);
   const salesCount = approvedSales.length;
   const avgTicket = salesCount > 0 ? totalRevenue / salesCount : 0;
 
@@ -192,10 +193,12 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const manualInvestment = manualInvestments.reduce((s: number, m: any) => s + Number(m.amount), 0);
   const totalInvestment = metaInvestment + googleInvestment + manualInvestment;
 
-  const netProfit = totalRevenue - totalInvestment;
-  const roi = totalInvestment > 0 ? (netProfit / totalInvestment) * 100 : 0;
+  const netProfitProject = totalRevenue - totalInvestment;
+  const netProfitProducer = producerRevenue - totalInvestment;
+  const netProfit = netProfitProject; // backward compat
+  const roi = totalInvestment > 0 ? (netProfitProject / totalInvestment) * 100 : 0;
   const roas = totalInvestment > 0 ? totalRevenue / totalInvestment : 0;
-  const margin = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0;
+  const margin = grossRevenue > 0 ? (netProfitProject / grossRevenue) * 100 : 0;
 
   const metaLeads = metaMetrics.reduce((s: number, m: any) => s + (m.leads || 0), 0);
   const googleLeads = googleMetrics.reduce((s: number, m: any) => s + (m.conversions || 0), 0);
@@ -404,7 +407,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     pendingSalesCount: pendingSales.length, cancelledSalesCount: cancelledSales.length, refundedSalesCount: refundedSales.length,
     totalSalesCount: sales.length, kiwifySales, hotmartSales,
     metaInvestment, googleInvestment, manualInvestment, totalInvestment,
-    roi, roas, margin, netProfit,
+    roi, roas, margin, netProfit, netProfitProject, netProfitProducer, producerRevenue,
     totalLeads, metaLeads, googleLeads, conversionRate, conversionLabel, conversionBase, avgCpl,
     metaImpressions, metaClicks, metaResults, metaPurchases, metaLinkClicks, metaLpViews, metaCheckouts,
     metaInvestment_total: metaInvestment,

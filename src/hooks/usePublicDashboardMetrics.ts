@@ -83,9 +83,12 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   const google = googleQuery.data || [];
   const goals = goalsQuery.data || [];
 
-  const totalRevenue = sales.reduce((s: number, e: any) => s + Number(e.amount || 0) + Number(e.coproducer_commission || 0), 0);
+  const producerRevenue = sales.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+  const totalCoproducerCommission = sales.reduce((s: number, e: any) => s + Number(e.coproducer_commission || 0), 0);
+  const totalRevenue = producerRevenue + totalCoproducerCommission;
   const grossRevenue = sales.reduce((s: number, e: any) => s + Number(e.gross_amount || 0), 0);
   const totalFees = sales.reduce((s: number, e: any) => s + Number(e.platform_fee || 0), 0);
+  const totalTaxes = sales.reduce((s: number, e: any) => s + Number((e as any).taxes || 0), 0);
   const salesCount = sales.length;
   const avgTicket = salesCount > 0 ? totalRevenue / salesCount : 0;
 
@@ -93,10 +96,12 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   const googleInvestment = google.reduce((s: number, m: any) => s + Number(m.investment || 0), 0);
   const totalInvestment = metaInvestment + googleInvestment;
 
-  const netProfit = totalRevenue - totalInvestment;
-  const roi = totalInvestment > 0 ? (netProfit / totalInvestment) * 100 : 0;
+  const netProfitProject = totalRevenue - totalInvestment;
+  const netProfitProducer = producerRevenue - totalInvestment;
+  const netProfit = netProfitProject;
+  const roi = totalInvestment > 0 ? (netProfitProject / totalInvestment) * 100 : 0;
   const roas = totalInvestment > 0 ? totalRevenue / totalInvestment : 0;
-  const margin = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0;
+  const margin = grossRevenue > 0 ? (netProfitProject / grossRevenue) * 100 : 0;
 
   // Meta Ads aggregate metrics (excluding leads/CPL for privacy)
   const metaImpressions = meta.reduce((s: number, m: any) => s + (m.impressions || 0), 0);
@@ -201,8 +206,8 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
 
   return {
     isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || goalsQuery.isLoading,
-    totalRevenue, grossRevenue, totalFees, salesCount, avgTicket,
-    totalInvestment, metaInvestment, googleInvestment, netProfit, roi, roas, margin,
+    totalRevenue, grossRevenue, totalFees, totalTaxes, totalCoproducerCommission, producerRevenue, salesCount, avgTicket,
+    totalInvestment, metaInvestment, googleInvestment, netProfit, netProfitProject, netProfitProducer, roi, roas, margin,
     metaImpressions, metaClicks, metaResults, metaPurchases, metaLinkClicks, metaLpViews, metaCheckouts,
     metaLeads, metaCostPerLead,
     metaCpm, metaCtr, metaCpc, metaCostPerResult, metaCostPerPurchase,
