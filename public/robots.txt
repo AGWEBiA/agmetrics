@@ -1,19 +1,8 @@
-User-agent: Googlebot
-Allow: /
-Disallow: /view/
+# Block all search engines and AI crawlers
+User-agent: *
+Disallow: /
 
-User-agent: Bingbot
-Allow: /
-Disallow: /view/
-
-User-agent: Twitterbot
-Allow: /
-Disallow: /view/
-
-User-agent: facebookexternalhit
-Allow: /
-Disallow: /view/
-
+# Explicitly block AI crawlers
 User-agent: GPTBot
 Disallow: /
 
@@ -40,7 +29,3 @@ Disallow: /
 
 User-agent: cohere-ai
 Disallow: /
-
-User-agent: *
-Allow: /
-Disallow: /view/
