@@ -138,20 +138,22 @@ Deno.serve(async (req) => {
     // Use per-project credentials first, fallback to env secrets
     const clientId = projectData?.hotmart_client_id || Deno.env.get("HOTMART_CLIENT_ID");
     const clientSecret = projectData?.hotmart_client_secret || Deno.env.get("HOTMART_CLIENT_SECRET");
-    const basicAuth = projectData?.hotmart_basic_auth || Deno.env.get("HOTMART_BASIC_AUTH");
 
-    if (!clientId || !clientSecret || !basicAuth) {
+    if (!clientId || !clientSecret) {
       return new Response(
-        JSON.stringify({ error: "Credenciais da Hotmart não configuradas. Acesse Configurações → Hotmart para cadastrar Client ID, Client Secret e Basic Auth." }),
+        JSON.stringify({ error: "Credenciais da Hotmart não configuradas. Acesse Configurações → Hotmart para cadastrar Client ID e Client Secret." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Compute Basic Auth from client_id:client_secret (override any manual value)
+    const computedBasicAuth = btoa(`${clientId}:${clientSecret}`);
 
     // Step 1: Get access token from Hotmart
     const tokenRes = await fetch("https://api-sec-vlc.hotmart.com/security/oauth/token?grant_type=client_credentials", {
       method: "POST",
       headers: {
-        "Authorization": `Basic ${basicAuth}`,
+        "Authorization": `Basic ${computedBasicAuth}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
     });
