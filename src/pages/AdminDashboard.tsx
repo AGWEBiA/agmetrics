@@ -31,6 +31,7 @@ import { RecentSalesCard } from "@/components/RecentSalesCard";
 import { TrackingTab } from "@/components/TrackingTab";
 import { AdsVendasCrossTab } from "@/components/AdsVendasCrossTab";
 import { SalesTrackingAnalysis } from "@/components/SalesTrackingAnalysis";
+import { BuyerDemographicProfile } from "@/components/BuyerDemographicProfile";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -908,6 +909,9 @@ export default function AdminDashboard() {
           {m.salesCount > 0 && (
             <TabsTrigger value="sales-tracking" className="text-xs sm:text-sm whitespace-nowrap">Vendas × Tracking</TabsTrigger>
           )}
+          {m.salesCount > 0 && (
+            <TabsTrigger value="buyer-profile" className="text-xs sm:text-sm whitespace-nowrap">Perfil Comprador</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6 pt-4">
@@ -1075,6 +1079,13 @@ export default function AdminDashboard() {
           <SalesTrackingAnalysis
             sales={[...(m.kiwifySales || []), ...(m.hotmartSales || [])]}
             totalInvestment={m.totalInvestment}
+          />
+        </TabsContent>
+
+        <TabsContent value="buyer-profile" className="space-y-6 pt-4">
+          <BuyerDemographicProfile
+            sales={[...(m.kiwifySales || []), ...(m.hotmartSales || [])]}
+            adDemographics={[...(m.metaDemographics || []), ...(m.googleDemographics || [])]}
           />
         </TabsContent>
       </Tabs>
