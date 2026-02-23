@@ -616,7 +616,7 @@ function GoogleTab({ projectId }: { projectId: string }) {
 }
 
 // ============ SYNC BUTTON ============
-function SyncButton({ projectId, platform, disabled }: { projectId: string; platform: "meta" | "google" | "hotmart"; disabled: boolean }) {
+function SyncButton({ projectId, platform, disabled }: { projectId: string; platform: "meta" | "google" | "hotmart" | "kiwify"; disabled: boolean }) {
   const [syncing, setSyncing] = useState(false);
   const { toast } = useToast();
 
@@ -635,7 +635,7 @@ function SyncButton({ projectId, platform, disabled }: { projectId: string; plat
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Sync failed");
-      const desc = platform === "hotmart" ? `${result.imported} vendas importadas, ${result.skipped} ignoradas` : `${result.synced} dias sincronizados`;
+      const desc = (platform === "hotmart" || platform === "kiwify") ? `${result.imported} vendas importadas, ${result.skipped} ignoradas` : `${result.synced} dias sincronizados`;
       toast({ title: `Sincronização concluída`, description: desc });
     } catch (err: any) {
       toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
@@ -673,6 +673,11 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
   const [hotmartClientSecret, setHotmartClientSecret] = useState("");
   const [hotmartBasicAuth, setHotmartBasicAuth] = useState("");
 
+  // Kiwify API credentials (per-project)
+  const [kiwifyClientId, setKiwifyClientId] = useState("");
+  const [kiwifyClientSecret, setKiwifyClientSecret] = useState("");
+  const [kiwifyAccountId, setKiwifyAccountId] = useState("");
+
   useEffect(() => {
     if (project) {
       setWebhookToken((project as any)[tokenField] || "");
@@ -680,6 +685,11 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
         setHotmartClientId((project as any).hotmart_client_id || "");
         setHotmartClientSecret((project as any).hotmart_client_secret || "");
         setHotmartBasicAuth((project as any).hotmart_basic_auth || "");
+      }
+      if (platform === "kiwify") {
+        setKiwifyClientId((project as any).kiwify_client_id || "");
+        setKiwifyClientSecret((project as any).kiwify_client_secret || "");
+        setKiwifyAccountId((project as any).kiwify_account_id || "");
       }
     }
   }, [project, tokenField, platform]);
@@ -700,6 +710,11 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
         updates.hotmart_client_id = hotmartClientId || null;
         updates.hotmart_client_secret = hotmartClientSecret || null;
         updates.hotmart_basic_auth = hotmartBasicAuth || null;
+      }
+      if (platform === "kiwify") {
+        updates.kiwify_client_id = kiwifyClientId || null;
+        updates.kiwify_client_secret = kiwifyClientSecret || null;
+        updates.kiwify_account_id = kiwifyAccountId || null;
       }
       await updateProject.mutateAsync(updates);
       toast({ title: "Configurações salvas!" });
@@ -896,6 +911,52 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
         )}
 
 
+        {platform === "kiwify" && (
+          <div className="rounded-lg border border-border p-4 space-y-4">
+            <div>
+              <h4 className="font-semibold text-sm">API Kiwify (Sincronização de Vendas)</h4>
+              <p className="text-xs text-muted-foreground mt-1">
+                Configure as credenciais da API para sincronizar vendas passadas. Obtenha em{" "}
+                <a href="https://dashboard.kiwify.com.br/settings/api" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                  dashboard.kiwify.com.br → Configurações → API
+                </a>
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Client ID</Label>
+              <Input
+                placeholder="Seu Client ID da Kiwify"
+                value={kiwifyClientId}
+                onChange={(e) => setKiwifyClientId(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Client Secret</Label>
+              <Input
+                type="password"
+                placeholder="Seu Client Secret da Kiwify"
+                value={kiwifyClientSecret}
+                onChange={(e) => setKiwifyClientSecret(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Account ID</Label>
+              <Input
+                placeholder="Seu Account ID da Kiwify"
+                value={kiwifyAccountId}
+                onChange={(e) => setKiwifyAccountId(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Encontrado no painel da Kiwify em Configurações → API
+              </p>
+            </div>
+            <Button onClick={handleSaveToken} disabled={updateProject.isPending} size="sm">
+              <Save className="mr-1 h-4 w-4" />
+              {updateProject.isPending ? "Salvando..." : "Salvar Credenciais"}
+            </Button>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={handleTestWebhook} disabled={testing}>
             <Send className="mr-2 h-4 w-4" />
@@ -914,6 +975,10 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
 
         {platform === "hotmart" && (hotmartClientId || hotmartClientSecret) && (
           <SyncButton projectId={projectId} platform="hotmart" disabled={!hotmartClientId || !hotmartClientSecret || !hotmartBasicAuth} />
+        )}
+
+        {platform === "kiwify" && (kiwifyClientId || kiwifyClientSecret) && (
+          <SyncButton projectId={projectId} platform="kiwify" disabled={!kiwifyClientId || !kiwifyClientSecret || !kiwifyAccountId} />
         )}
 
         <div className="rounded-lg border border-border p-4 space-y-2">
