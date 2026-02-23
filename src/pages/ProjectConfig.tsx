@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, Check, Upload, RefreshCw, Send, Save, Loader2 } from "lucide-react";
+import { Plus, Trash2, Copy, Check, Upload, RefreshCw, Send, Save, Loader2, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1182,6 +1182,13 @@ function GoalsTab({ projectId }: { projectId: string }) {
   const [targetValue, setTargetValue] = useState("");
   const [period, setPeriod] = useState<string>("total");
 
+  // Edit state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editType, setEditType] = useState<string>("revenue");
+  const [editTargetValue, setEditTargetValue] = useState("");
+  const [editPeriod, setEditPeriod] = useState<string>("total");
+
   const goalLabels: Record<string, string> = {
     revenue: "Receita",
     sales: "Vendas",
@@ -1213,10 +1220,40 @@ function GoalsTab({ projectId }: { projectId: string }) {
     }
   };
 
+  const openEdit = (g: any) => {
+    setEditId(g.id);
+    setEditType(g.type);
+    setEditTargetValue(
+      (g.type === "roi" || g.type === "margin")
+        ? Number(g.target_value).toFixed(1).replace(".", ",")
+        : Number(g.target_value).toFixed(2).replace(".", ",")
+    );
+    setEditPeriod(g.period);
+    setEditOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editId) return;
+    try {
+      await updateGoal.mutateAsync({
+        id: editId,
+        project_id: projectId,
+        type: editType,
+        target_value: parseFloat(editTargetValue.replace(",", ".")) || 0,
+        period: editPeriod,
+      });
+      toast({ title: "Meta atualizada!" });
+      setEditOpen(false);
+      setEditId(null);
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle>Metas</CardTitle>
             <CardDescription>Defina metas para acompanhar o progresso do lançamento</CardDescription>
@@ -1260,42 +1297,87 @@ function GoalsTab({ projectId }: { projectId: string }) {
         </div>
       </CardHeader>
       <CardContent>
+        {/* Edit Dialog */}
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Editar Meta</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label>Tipo</Label>
+                <Select value={editType} onValueChange={setEditType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(goalLabels).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1"><Label>Valor Alvo</Label><Input placeholder="30.000,00" value={editTargetValue} onChange={(e) => setEditTargetValue(e.target.value)} /></div>
+              <div className="space-y-1">
+                <Label>Período</Label>
+                <Select value={editPeriod} onValueChange={setEditPeriod}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(periodLabels).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
+              <Button onClick={handleEdit} disabled={!editTargetValue || updateGoal.isPending}>
+                {updateGoal.isPending ? "Salvando..." : "Atualizar"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {!goals?.length ? (
           <p className="py-8 text-center text-muted-foreground">Nenhuma meta cadastrada</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Valor Alvo</TableHead>
-                <TableHead>Período</TableHead>
-                <TableHead>Ativa</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {goals.map((g) => (
-                <TableRow key={g.id}>
-                  <TableCell className="font-medium">{goalLabels[g.type]}</TableCell>
-                  <TableCell>{g.type === "roi" || g.type === "margin" ? `${Number(g.target_value).toFixed(1)}%` : `R$ ${Number(g.target_value).toFixed(2).replace(".", ",")}`}</TableCell>
-                  <TableCell>{periodLabels[g.period]}</TableCell>
-                  <TableCell>
-                    <Switch
-                      checked={g.is_active}
-                      onCheckedChange={(checked) =>
-                        updateGoal.mutate({ id: g.id, project_id: projectId, is_active: checked })
-                      }
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteGoal.mutate({ id: g.id, project_id: projectId })}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Valor Alvo</TableHead>
+                  <TableHead>Período</TableHead>
+                  <TableHead>Ativa</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {goals.map((g) => (
+                  <TableRow key={g.id}>
+                    <TableCell className="font-medium">{goalLabels[g.type]}</TableCell>
+                    <TableCell>{g.type === "roi" || g.type === "margin" ? `${Number(g.target_value).toFixed(1)}%` : `R$ ${Number(g.target_value).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</TableCell>
+                    <TableCell>{periodLabels[g.period]}</TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={g.is_active}
+                        onCheckedChange={(checked) =>
+                          updateGoal.mutate({ id: g.id, project_id: projectId, is_active: checked })
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button size="icon" variant="ghost" onClick={() => openEdit(g)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteGoal.mutate({ id: g.id, project_id: projectId })}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>
