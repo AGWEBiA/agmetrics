@@ -42,12 +42,6 @@ async function findMatchingProduct(
         return p;
       }
     }
-
-    const mainProducts = allProducts.filter((p: any) => p.type === "main");
-    if (mainProducts.length === 1) {
-      console.log(`[sync-hotmart] Fallback: using single main product "${mainProducts[0].name}" for "${saleProductName}"`);
-      return mainProducts[0];
-    }
   }
 
   return null;
