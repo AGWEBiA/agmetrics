@@ -29,6 +29,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { RecentSalesCard } from "@/components/RecentSalesCard";
 import { TrackingTab } from "@/components/TrackingTab";
+import { AdsVendasCrossTab } from "@/components/AdsVendasCrossTab";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -899,6 +900,9 @@ export default function AdminDashboard() {
           {(m.metaInvestment > 0 || m.metaImpressions > 0 || m.googleInvestment > 0 || m.gImpressions > 0) && (
             <TabsTrigger value="tracking" className="text-xs sm:text-sm whitespace-nowrap">Rastreamento</TabsTrigger>
           )}
+          {(m.totalInvestment > 0 && m.salesCount > 0) && (
+            <TabsTrigger value="ads-vendas" className="text-xs sm:text-sm whitespace-nowrap">Ads × Vendas</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6 pt-4">
@@ -1055,6 +1059,10 @@ export default function AdminDashboard() {
 
         <TabsContent value="tracking" className="space-y-6 pt-4">
           <TrackingTab m={m} project={project} />
+        </TabsContent>
+
+        <TabsContent value="ads-vendas" className="space-y-6 pt-4">
+          <AdsVendasCrossTab m={m} />
         </TabsContent>
       </Tabs>
     </AnimatedPage>

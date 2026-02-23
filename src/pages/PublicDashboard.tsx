@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { BarChart3, TrendingUp, TrendingDown, ExternalLink, Video, MessageCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrackingTab } from "@/components/TrackingTab";
+import { AdsVendasCrossTab } from "@/components/AdsVendasCrossTab";
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -240,6 +241,9 @@ export default function PublicDashboard() {
                 )}
                 {(hasMeta || hasGoogle) && (
                   <TabsTrigger value="tracking" className="text-xs sm:text-sm whitespace-nowrap">Rastreamento</TabsTrigger>
+                )}
+                {(m.totalInvestment > 0 && m.salesCount > 0) && (
+                  <TabsTrigger value="ads-vendas" className="text-xs sm:text-sm whitespace-nowrap">Ads × Vendas</TabsTrigger>
                 )}
               </TabsList>
 
@@ -949,6 +953,11 @@ export default function PublicDashboard() {
               {/* ==================== RASTREAMENTO ==================== */}
               <TabsContent value="tracking" className="space-y-6 pt-4">
                 <TrackingTab m={m} project={project} />
+              </TabsContent>
+
+              {/* ==================== ADS × VENDAS ==================== */}
+              <TabsContent value="ads-vendas" className="space-y-6 pt-4">
+                <AdsVendasCrossTab m={m} />
               </TabsContent>
             </Tabs>
           )}
