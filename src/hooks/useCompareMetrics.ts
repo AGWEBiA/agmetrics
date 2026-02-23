@@ -52,7 +52,8 @@ export function useCompareMetrics(
         const { data, error } = await supabase
           .from("sales_events")
           .select("amount, status, sale_date, created_at")
-          .eq("project_id", p.id);
+          .eq("project_id", p.id)
+          .eq("is_ignored", false);
         if (error) throw error;
         return data || [];
       },

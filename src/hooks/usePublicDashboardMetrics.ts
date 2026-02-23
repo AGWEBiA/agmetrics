@@ -11,7 +11,8 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
         .from("sales_events")
         .select("amount, gross_amount, platform_fee, coproducer_commission, product_name, product_type, platform, sale_date, created_at")
         .eq("project_id", projectId!)
-        .eq("status", "approved");
+        .eq("status", "approved")
+        .eq("is_ignored", false);
       if (error) throw error;
       return (data as any[]) || [];
     },

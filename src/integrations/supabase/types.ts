@@ -769,6 +769,7 @@ export type Database = {
           external_id: string
           gross_amount: number | null
           id: string
+          is_ignored: boolean
           payload: Json | null
           payment_method: string | null
           platform: Database["public"]["Enums"]["sales_platform"]
@@ -799,6 +800,7 @@ export type Database = {
           external_id: string
           gross_amount?: number | null
           id?: string
+          is_ignored?: boolean
           payload?: Json | null
           payment_method?: string | null
           platform: Database["public"]["Enums"]["sales_platform"]
@@ -829,6 +831,7 @@ export type Database = {
           external_id?: string
           gross_amount?: number | null
           id?: string
+          is_ignored?: boolean
           payload?: Json | null
           payment_method?: string | null
           platform?: Database["public"]["Enums"]["sales_platform"]

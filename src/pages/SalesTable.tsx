@@ -38,6 +38,7 @@ export default function SalesTable() {
         .from("sales_events")
         .select("*", { count: "exact" })
         .eq("project_id", projectId!)
+        .eq("is_ignored", false)
         .order("sale_date", { ascending: false });
 
       if (statusFilter !== "all") {
@@ -73,6 +74,7 @@ export default function SalesTable() {
       .from("sales_events")
       .select("sale_date, buyer_name, buyer_email, product_name, platform, status, gross_amount, amount")
       .eq("project_id", projectId!)
+      .eq("is_ignored", false)
       .order("sale_date", { ascending: false });
 
     if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
