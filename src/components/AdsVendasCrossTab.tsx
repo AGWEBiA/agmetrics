@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AnimatedCard } from "@/components/AnimatedCard";
 import { formatBRL, formatPercent, formatNumber, formatDecimal } from "@/lib/formatters";
+import { VisualFunnel } from "@/components/VisualFunnel";
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, ComposedChart,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie,
@@ -395,23 +396,7 @@ export function AdsVendasCrossTab({ m, strategy }: AdsVendasCrossTabProps) {
             <p className="text-xs text-muted-foreground">Conversão em cada etapa do funil</p>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {funnelData.map((step, i) => {
-                const prevValue = i > 0 ? funnelData[i - 1].value : 0;
-                const convRate = prevValue > 0 ? (step.value / prevValue) * 100 : 0;
-                return (
-                  <div key={step.name} className="text-center rounded-lg border p-4">
-                    <p className="text-xs text-muted-foreground mb-1">{step.name}</p>
-                    <p className="text-2xl font-bold">{formatNumber(step.value)}</p>
-                    {i > 0 && prevValue > 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        ↓ {formatPercent(convRate)}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <VisualFunnel data={funnelData} />
           </CardContent>
         </Card>
       </AnimatedCard>
