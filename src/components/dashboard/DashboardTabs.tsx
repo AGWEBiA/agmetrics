@@ -7,6 +7,7 @@ import { TrackingTab } from "@/components/TrackingTab";
 import { AdsVendasCrossTab } from "@/components/AdsVendasCrossTab";
 import { SalesTrackingAnalysis } from "@/components/SalesTrackingAnalysis";
 import { BuyerDemographicProfile } from "@/components/BuyerDemographicProfile";
+import { RefundsSection } from "./RefundsSection";
 
 interface DashboardTabsProps {
   m: any;
@@ -42,6 +43,9 @@ export function DashboardTabs({ m, project, overviewContent }: DashboardTabsProp
         )}
         {m.salesCount > 0 && (
           <TabsTrigger value="buyer-profile" className="text-xs sm:text-sm whitespace-nowrap">Perfil Comprador</TabsTrigger>
+        )}
+        {m.refundedSalesCount > 0 && (
+          <TabsTrigger value="refunds" className="text-xs sm:text-sm whitespace-nowrap">Reembolsos</TabsTrigger>
         )}
       </TabsList>
 
@@ -87,6 +91,14 @@ export function DashboardTabs({ m, project, overviewContent }: DashboardTabsProp
         <BuyerDemographicProfile
           sales={[...(m.kiwifySales || []), ...(m.hotmartSales || [])]}
           adDemographics={[...(m.metaDemographics || []), ...(m.googleDemographics || [])]}
+        />
+      </TabsContent>
+
+      <TabsContent value="refunds" className="space-y-6 pt-4">
+        <RefundsSection
+          projectId={project?.id}
+          totalRevenue={m.totalRevenue}
+          totalSalesCount={m.totalSalesCount}
         />
       </TabsContent>
     </Tabs>

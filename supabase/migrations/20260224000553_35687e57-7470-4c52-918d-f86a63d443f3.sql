@@ -1,0 +1,1 @@
+ALTER TABLE public.sales_events ADD COLUMN IF NOT EXISTS refund_reason text DEFAULT NULL;

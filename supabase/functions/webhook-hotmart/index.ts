@@ -166,6 +166,9 @@ Deno.serve(async (req) => {
     const utmTerm = tracking.utm_term || parsedUtms.utm_term;
     const utmContent = tracking.utm_content || parsedUtms.utm_content;
 
+    // Extract refund reason from Hotmart payload
+    const refundReason = purchase.refund_reason || payload.data?.refund_reason || payload.data?.purchase?.refund_reason || null;
+
     // Upsert sale
     const { data: sale, error: saleError } = await supabase
       .from("sales_events")
@@ -194,6 +197,7 @@ Deno.serve(async (req) => {
           utm_content: utmContent,
           tracking_src: trackingSrc,
           tracking_sck: trackingSck,
+          refund_reason: status === "refunded" ? refundReason : null,
           payload,
         },
         { onConflict: "platform,external_id,project_id" }
