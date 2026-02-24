@@ -36,7 +36,7 @@ export default function SalesTable() {
     queryFn: async () => {
       let query = supabase
         .from("sales_events")
-        .select("*", { count: "exact" })
+        .select("*, refund_reason", { count: "exact" })
         .eq("project_id", projectId!)
         .eq("is_ignored", false)
         .order("sale_date", { ascending: false });
@@ -173,6 +173,7 @@ export default function SalesTable() {
                       <TableHead>Produto</TableHead>
                       <TableHead>Plataforma</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Motivo Reembolso</TableHead>
                       <TableHead className="text-right">Bruto</TableHead>
                       <TableHead className="text-right">Líquido</TableHead>
                     </TableRow>
@@ -198,6 +199,9 @@ export default function SalesTable() {
                           <TableCell>
                             <Badge variant={st.variant} className="text-xs">{st.label}</Badge>
                           </TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate" title={s.status === "refunded" ? (s.refund_reason || "Não informado") : ""}>
+                            {s.status === "refunded" ? (s.refund_reason || <span className="italic">Não informado</span>) : "—"}
+                          </TableCell>
                           <TableCell className="text-right text-sm">{formatBRL(Number(s.gross_amount || 0))}</TableCell>
                           <TableCell className="text-right text-sm font-medium">{formatBRL(Number(s.amount || 0))}</TableCell>
                         </TableRow>
@@ -222,6 +226,11 @@ export default function SalesTable() {
                         <span className="text-muted-foreground">{s.product_name || "—"}</span>
                         <span className="font-bold">{formatBRL(Number(s.amount || 0))}</span>
                       </div>
+                      {s.status === "refunded" && (
+                        <p className="text-[10px] text-destructive">
+                          Motivo: {s.refund_reason || "Não informado"}
+                        </p>
+                      )}
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>{formatDateBR(s.sale_date)}</span>
                         <Badge variant="outline" className="capitalize text-[10px]">{s.platform}</Badge>
