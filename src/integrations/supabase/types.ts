@@ -777,6 +777,7 @@ export type Database = {
           product_name: string | null
           product_type: Database["public"]["Enums"]["product_type"] | null
           project_id: string
+          refund_reason: string | null
           sale_date: string | null
           status: Database["public"]["Enums"]["sale_status"] | null
           taxes: number | null
@@ -808,6 +809,7 @@ export type Database = {
           product_name?: string | null
           product_type?: Database["public"]["Enums"]["product_type"] | null
           project_id: string
+          refund_reason?: string | null
           sale_date?: string | null
           status?: Database["public"]["Enums"]["sale_status"] | null
           taxes?: number | null
@@ -839,6 +841,7 @@ export type Database = {
           product_name?: string | null
           product_type?: Database["public"]["Enums"]["product_type"] | null
           project_id?: string
+          refund_reason?: string | null
           sale_date?: string | null
           status?: Database["public"]["Enums"]["sale_status"] | null
           taxes?: number | null

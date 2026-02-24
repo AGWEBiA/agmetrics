@@ -250,6 +250,9 @@ Deno.serve(async (req) => {
     const trackingSrc = payload["tracking src"] || payload["src"] || "";
     const trackingSck = payload["tracking sck"] || payload["sck"] || "";
 
+    // Extract refund reason from Kiwify payload
+    const refundReason = payload.refund_reason || payload.cancellation_reason || payload.reason || payload["motivo do reembolso"] || payload["motivo"] || null;
+
     const { data: saleRecord, error: saleError } = await supabase
       .from("sales_events")
       .upsert(
@@ -279,6 +282,7 @@ Deno.serve(async (req) => {
           utm_content: utmContent,
           tracking_src: trackingSrc,
           tracking_sck: trackingSck,
+          refund_reason: sale.status === "refunded" ? refundReason : null,
           payload,
         },
         { onConflict: "platform,external_id,project_id" }
