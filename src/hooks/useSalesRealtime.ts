@@ -10,6 +10,14 @@ export function useSalesRealtime(projectId: string | undefined) {
   useEffect(() => {
     if (!projectId) return;
 
+    const invalidateAllSalesQueries = () => {
+      queryClient.invalidateQueries({ queryKey: ["sales_events", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["recent_sales", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["sales_events_paginated", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["public_sales", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["compare_sales"] });
+    };
+
     const channel = supabase
       .channel(`sales-${projectId}`)
       .on(
@@ -22,7 +30,8 @@ export function useSalesRealtime(projectId: string | undefined) {
         },
         (payload) => {
           const sale = payload.new as any;
-          queryClient.invalidateQueries({ queryKey: ["sales_events", projectId] });
+          // Invalidate all sales-related queries so dashboards refresh
+          invalidateAllSalesQueries();
 
           toast({
             title: "🎉 Nova venda!",
@@ -38,8 +47,25 @@ export function useSalesRealtime(projectId: string | undefined) {
           table: "sales_events",
           filter: `project_id=eq.${projectId}`,
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["sales_events", projectId] });
+        (payload) => {
+          const oldSale = payload.old as any;
+          const newSale = payload.new as any;
+          // Invalidate all sales-related queries on any update (status change, etc.)
+          invalidateAllSalesQueries();
+
+          // Notify on status changes (e.g. approved → refunded)
+          if (oldSale.status && newSale.status && oldSale.status !== newSale.status) {
+            const statusLabels: Record<string, string> = {
+              approved: "Aprovada",
+              pending: "Pendente",
+              cancelled: "Cancelada",
+              refunded: "Reembolsada",
+            };
+            toast({
+              title: "🔄 Status de venda atualizado",
+              description: `${newSale.buyer_name || "Cliente"} — ${statusLabels[oldSale.status] || oldSale.status} → ${statusLabels[newSale.status] || newSale.status}`,
+            });
+          }
         }
       )
       .subscribe();
