@@ -40,8 +40,7 @@ export function RefundsSection({ projectId, totalRevenue, totalSalesCount }: Ref
 
   const stats = useMemo(() => {
     const count = refundedSales.length;
-    const totalLost = refundedSales.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
-    const grossLost = refundedSales.reduce((s: number, e: any) => s + Number(e.gross_amount || 0), 0);
+    const totalLost = refundedSales.reduce((s: number, e: any) => s + Number(e.gross_amount || e.amount || 0), 0);
     const refundRate = totalSalesCount > 0 ? (count / totalSalesCount) * 100 : 0;
 
     // Group by reason
@@ -57,7 +56,7 @@ export function RefundsSection({ projectId, totalRevenue, totalSalesCount }: Ref
       }
       reason = reason || "Não informado";
       const existing = reasonMap.get(reason) || { count: 0, amount: 0 };
-      reasonMap.set(reason, { count: existing.count + 1, amount: existing.amount + Number(s.amount || 0) });
+      reasonMap.set(reason, { count: existing.count + 1, amount: existing.amount + Number(s.gross_amount || s.amount || 0) });
     });
 
     const reasonData = Array.from(reasonMap.entries())
@@ -69,7 +68,7 @@ export function RefundsSection({ projectId, totalRevenue, totalSalesCount }: Ref
     refundedSales.forEach((s: any) => {
       const name = s.product_name || "Sem nome";
       const existing = productMap.get(name) || { count: 0, amount: 0 };
-      productMap.set(name, { count: existing.count + 1, amount: existing.amount + Number(s.amount || 0) });
+      productMap.set(name, { count: existing.count + 1, amount: existing.amount + Number(s.gross_amount || s.amount || 0) });
     });
     const productData = Array.from(productMap.entries())
       .map(([name, data]) => ({ name, ...data }))
@@ -81,7 +80,7 @@ export function RefundsSection({ projectId, totalRevenue, totalSalesCount }: Ref
       hotmart: refundedSales.filter((s: any) => s.platform === "hotmart"),
     };
 
-    return { count, totalLost, grossLost, refundRate, reasonData, productData, byPlatform };
+    return { count, totalLost, refundRate, reasonData, productData, byPlatform };
   }, [refundedSales, totalSalesCount]);
 
   if (refundedSales.length === 0) {
@@ -129,7 +128,7 @@ export function RefundsSection({ projectId, totalRevenue, totalSalesCount }: Ref
                 <p className="text-[11px] sm:text-xs font-medium uppercase tracking-wider text-muted-foreground">Valor Perdido</p>
               </div>
               <p className="text-xl sm:text-2xl font-bold text-destructive">{formatBRL(stats.totalLost)}</p>
-              <p className="text-[10px] text-muted-foreground">líquido devolvido</p>
+              <p className="text-[10px] text-muted-foreground">bruto devolvido</p>
             </CardContent>
           </Card>
         </AnimatedCard>
@@ -289,7 +288,7 @@ export function RefundsSection({ projectId, totalRevenue, totalSalesCount }: Ref
                       <p className="text-[10px] text-muted-foreground">{formatDateBR(s.sale_date)}</p>
                     </div>
                     <div className="text-right ml-3 shrink-0">
-                      <p className="text-sm font-bold text-destructive">-{formatBRL(Number(s.amount || 0))}</p>
+                      <p className="text-sm font-bold text-destructive">-{formatBRL(Number(s.gross_amount || s.amount || 0))}</p>
                     </div>
                   </div>
                 );
