@@ -180,6 +180,7 @@ function buildAdRecord(projectId: string, adId: string, agg: any, meta: any, sin
     date_start: sinceStr,
     date_end: untilStr,
     last_updated: new Date().toISOString(),
+    thumbnail_url: meta.thumbnail_url || null,
   };
 }
 
@@ -357,7 +358,7 @@ Deno.serve(async (req) => {
 
       // === Fetch and save ads ===
       try {
-        const insightFields = "id,name,status,preview_shareable_link";
+        const insightFields = "id,name,status,preview_shareable_link,creative{thumbnail_url,effective_object_story_id}";
         const insightMetrics = "spend,impressions,clicks,actions,video_play_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,ad_id,ad_name";
 
         const adsListUrl = `https://graph.facebook.com/v21.0/${adAccountId}/ads?fields=${insightFields}&limit=200&access_token=${creds.access_token}`;
@@ -368,7 +369,7 @@ Deno.serve(async (req) => {
           const adsList = (adsListData.data || []) as any[];
 
           // Build ad metadata map
-          const adMeta = new Map<string, { name: string; status: string; preview_link: string | null }>();
+          const adMeta = new Map<string, { name: string; status: string; preview_link: string | null; thumbnail_url: string | null }>();
           for (const ad of adsList) {
             let previewLink: string | null = null;
             const rawLink = ad.preview_shareable_link || ad.ad_preview_shareable_link;
@@ -377,7 +378,8 @@ Deno.serve(async (req) => {
               const first = rawLink[0];
               previewLink = typeof first === "string" ? first : (first?.body || first?.share_link || null);
             }
-            adMeta.set(ad.id, { name: ad.name, status: ad.status, preview_link: previewLink });
+            const thumbnailUrl = ad.creative?.thumbnail_url || null;
+            adMeta.set(ad.id, { name: ad.name, status: ad.status, preview_link: previewLink, thumbnail_url: thumbnailUrl });
           }
 
           // Fetch ad-level insights
@@ -401,7 +403,7 @@ Deno.serve(async (req) => {
 
             // Batch upsert ads (chunks of 20)
             const adRecords = Array.from(adAggMap.entries()).map(([adId, agg]) => {
-              const meta = adMeta.get(adId) || { name: agg.ad_name || "—", status: "UNKNOWN", preview_link: null };
+              const meta = adMeta.get(adId) || { name: agg.ad_name || "—", status: "UNKNOWN", preview_link: null, thumbnail_url: null };
               return buildAdRecord(project_id, adId, agg, meta, sinceStr, untilStr);
             });
 
