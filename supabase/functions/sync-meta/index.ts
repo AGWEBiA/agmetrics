@@ -138,6 +138,9 @@ function aggregateAdRow(agg: any, row: any) {
   for (const a of (row.actions || [])) {
     if (a.action_type === "purchase" || a.action_type === "offsite_conversion.fb_pixel_purchase") agg.purchases += parseInt(a.value || "0");
     if (a.action_type === "lead" || a.action_type === "offsite_conversion.fb_pixel_lead") agg.leads += parseInt(a.value || "0");
+    if (a.action_type === "link_click") agg.link_clicks += parseInt(a.value || "0");
+    if (a.action_type === "landing_page_view") agg.landing_page_views += parseInt(a.value || "0");
+    if (a.action_type === "offsite_conversion.fb_pixel_initiate_checkout" || a.action_type === "initiate_checkout") agg.checkouts_initiated += parseInt(a.value || "0");
   }
   for (const v of (row.video_play_actions || [])) {
     if (v.action_type === "video_view") agg.video_plays += parseInt(v.value || "0");
@@ -150,6 +153,10 @@ function aggregateAdRow(agg: any, row: any) {
 
 // ─── Helper: build ad upsert record ───
 function buildAdRecord(projectId: string, adId: string, agg: any, meta: any, sinceStr: string, untilStr: string) {
+  const linkClicks = agg.link_clicks || 0;
+  const lpViews = agg.landing_page_views || 0;
+  const checkouts = agg.checkouts_initiated || 0;
+  const results = agg.leads || agg.purchases || 0;
   return {
     project_id: projectId,
     ad_id: adId,
@@ -163,6 +170,10 @@ function buildAdRecord(projectId: string, adId: string, agg: any, meta: any, sin
     cpc: agg.clicks > 0 ? agg.spend / agg.clicks : 0,
     purchases: agg.purchases,
     leads: agg.leads,
+    link_clicks: linkClicks,
+    results,
+    landing_page_views: lpViews,
+    checkouts_initiated: checkouts,
     preview_link: meta.preview_link,
     hook_rate: agg.impressions > 0 ? (agg.video_plays / agg.impressions) * 100 : 0,
     hold_rate: agg.video_plays > 0 ? (agg.video_p50 / agg.video_plays) * 100 : 0,
@@ -383,7 +394,7 @@ Deno.serve(async (req) => {
               const adId = row.ad_id;
               if (!adId) continue;
               if (!adAggMap.has(adId)) {
-                adAggMap.set(adId, { spend: 0, impressions: 0, clicks: 0, purchases: 0, leads: 0, ad_name: row.ad_name, video_plays: 0, video_p25: 0, video_p50: 0, video_p75: 0, video_p100: 0 });
+                adAggMap.set(adId, { spend: 0, impressions: 0, clicks: 0, purchases: 0, leads: 0, link_clicks: 0, landing_page_views: 0, checkouts_initiated: 0, ad_name: row.ad_name, video_plays: 0, video_p25: 0, video_p50: 0, video_p75: 0, video_p100: 0 });
               }
               aggregateAdRow(adAggMap.get(adId)!, row);
             }

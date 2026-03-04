@@ -86,25 +86,44 @@ const tooltipStyle = {};
 
 function TopAdsSection({ metaAds }: { metaAds: any[] }) {
   const [page, setPage] = useState(0);
-  const pageSize = 12;
+  const pageSize = 5;
 
   const topAds = useMemo(() => {
-    return metaAds.map((ad: any) => ({
-      id: ad.ad_id,
-      name: ad.ad_name,
-      status: ad.status,
-      spend: Number(ad.spend || 0),
-      impressions: Number(ad.impressions || 0),
-      clicks: Number(ad.clicks || 0),
-      cpm: Number(ad.cpm || 0),
-      ctr: Number(ad.ctr || 0),
-      cpc: Number(ad.cpc || 0),
-      purchases: Number(ad.purchases || 0),
-      leads: Number(ad.leads || 0),
-      preview_link: ad.preview_link,
-      cpa: ad.purchases > 0 ? Number(ad.spend || 0) / Number(ad.purchases) : 0,
-      cpl: ad.leads > 0 ? Number(ad.spend || 0) / Number(ad.leads) : 0,
-    })).sort((a: any, b: any) => b.spend - a.spend);
+    return metaAds.map((ad: any) => {
+      const spend = Number(ad.spend || 0);
+      const impressions = Number(ad.impressions || 0);
+      const clicks = Number(ad.clicks || 0);
+      const purchases = Number(ad.purchases || 0);
+      const leads = Number(ad.leads || 0);
+      const linkClicks = Number(ad.link_clicks || 0);
+      const lpViews = Number(ad.landing_page_views || 0);
+      const checkouts = Number(ad.checkouts_initiated || 0);
+      const results = Number(ad.results || 0) || leads || purchases;
+      return {
+        id: ad.ad_id,
+        name: ad.ad_name,
+        status: ad.status,
+        spend,
+        impressions,
+        clicks,
+        purchases,
+        leads,
+        linkClicks,
+        lpViews,
+        checkouts,
+        results,
+        preview_link: ad.preview_link,
+        hook_rate: Number(ad.hook_rate || 0),
+        hold_rate: Number(ad.hold_rate || 0),
+        cpc: linkClicks > 0 ? spend / linkClicks : 0,
+        ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
+        costPerResult: results > 0 ? spend / results : 0,
+        costPerPurchase: purchases > 0 ? spend / purchases : 0,
+        connectRate: linkClicks > 0 ? (lpViews / linkClicks) * 100 : 0,
+        pageConversion: lpViews > 0 ? (checkouts / lpViews) * 100 : 0,
+        checkoutConversion: checkouts > 0 ? (purchases / checkouts) * 100 : 0,
+      };
+    }).sort((a, b) => b.spend - a.spend);
   }, [metaAds]);
 
   const totalPages = Math.ceil(topAds.length / pageSize);
@@ -123,121 +142,63 @@ function TopAdsSection({ metaAds }: { metaAds: any[] }) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-base font-semibold mb-1">Melhores Anúncios — Meta Ads</h3>
-        <p className="text-xs text-muted-foreground">Ordenados por investimento. Clique em "Ver Anúncio" para abrir o preview na Meta.</p>
+        <h3 className="text-base font-semibold mb-1 flex items-center gap-2">
+          <TrendingUp className="h-4 w-4" />
+          Top {Math.min(topAds.length, pageSize * totalPages)} Anúncios
+        </h3>
+        <p className="text-xs text-muted-foreground">Ordenados por investimento. Clique em "Ver anúncio" para abrir na Biblioteca de Anúncios.</p>
       </div>
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-        {paginatedAds.map((ad, i) => (
-          <Card key={ad.id} className="relative overflow-hidden">
-            <div className="absolute top-3 right-3">
-              <Badge variant={ad.status === "ACTIVE" ? "default" : "secondary"} className="text-[10px]">
-                {ad.status === "ACTIVE" ? "Ativo" : ad.status || "—"}
-              </Badge>
-            </div>
-            <CardContent className="p-4 space-y-3">
-              <div className="pr-16">
-                <p className="text-[10px] text-muted-foreground font-medium">#{i + 1}</p>
-                <p className="text-sm font-semibold leading-tight line-clamp-2">{ad.name || "Anúncio sem nome"}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{ad.id}</p>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-center border rounded-lg p-2 bg-muted/30">
-                <div>
-                  <p className="text-[9px] text-muted-foreground uppercase">Gasto</p>
-                  <p className="text-sm font-bold">{formatBRL(ad.spend)}</p>
+
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        {paginatedAds.map((ad) => (
+          <Card key={ad.id} className="overflow-hidden border-border/50">
+            {/* Header with hook/hold badges */}
+            <div className="relative bg-muted/40 p-3 pb-2">
+              {(ad.hook_rate > 0 || ad.hold_rate > 0) && (
+                <div className="flex gap-1.5 mb-2">
+                  {ad.hook_rate > 0 && (
+                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 font-semibold">
+                      Hook {formatPercent(ad.hook_rate)}
+                    </Badge>
+                  )}
+                  {ad.hold_rate > 0 && (
+                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 font-semibold">
+                      Hold {formatPercent(ad.hold_rate)}
+                    </Badge>
+                  )}
                 </div>
-                <div>
-                  <p className="text-[9px] text-muted-foreground uppercase">Compras</p>
-                  <p className="text-sm font-bold">{formatNumber(ad.purchases)}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] text-muted-foreground uppercase">Leads</p>
-                  <p className="text-sm font-bold">{formatNumber(ad.leads)}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-xs">
-                <div><span className="text-muted-foreground">CPM:</span> <span className="font-medium">{formatBRL(ad.cpm)}</span></div>
-                <div><span className="text-muted-foreground">CTR:</span> <span className="font-medium">{formatPercent(ad.ctr)}</span></div>
-                <div><span className="text-muted-foreground">CPC:</span> <span className="font-medium">{formatBRL(ad.cpc)}</span></div>
-                {ad.purchases > 0 && <div><span className="text-muted-foreground">CPA:</span> <span className="font-medium">{formatBRL(ad.cpa)}</span></div>}
-                {ad.leads > 0 && <div><span className="text-muted-foreground">CPL:</span> <span className="font-medium">{formatBRL(ad.cpl)}</span></div>}
-                <div><span className="text-muted-foreground">Cliques:</span> <span className="font-medium">{formatNumber(ad.clicks)}</span></div>
-              </div>
-              {ad.id && ad.status === "ACTIVE" ? (
+              )}
+              <p className="text-xs font-bold leading-tight line-clamp-2">{ad.name || "Anúncio sem nome"}</p>
+              {ad.id && (
                 <button
                   onClick={() => openAdPreview(ad.id)}
-                  className="flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
+                  className="flex items-center gap-1 text-[10px] text-primary hover:underline font-medium mt-1"
                 >
-                  <ExternalLink className="h-3 w-3" />
-                  Ver Anúncio
+                  <ExternalLink className="h-2.5 w-2.5" />
+                  Ver anúncio
                 </button>
-              ) : ad.id ? (
-                <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                  Anúncio inativo
-                </span>
-              ) : (
-                <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                  Preview indisponível
-                </span>
               )}
+            </div>
+
+            {/* Metrics list */}
+            <CardContent className="p-0">
+              <div className="divide-y divide-border/30">
+                <AdMetricRow label="Valor Usado" value={formatBRL(ad.spend)} />
+                <AdMetricRow label="Resultados" value={formatNumber(ad.results)} />
+                <AdMetricRow label="Custo por Resultado" value={formatBRL(ad.costPerResult)} />
+                <AdMetricRow label="Fin. de Compras" value={formatNumber(ad.purchases)} />
+                <AdMetricRow label="Custo Fin. Compras" value={formatBRL(ad.costPerPurchase)} />
+                <AdMetricRow label="Cliques no Link" value={formatNumber(ad.linkClicks)} />
+                <AdMetricRow label="CPC" value={formatBRL(ad.cpc)} />
+                <AdMetricRow label="CTR" value={formatPercent(ad.ctr)} />
+                <AdMetricRow label="Connect Rate" value={formatPercent(ad.connectRate)} />
+                <AdMetricRow label="Conv. da Página" value={formatPercent(ad.pageConversion)} />
+                <AdMetricRow label="Conv. do Checkout" value={formatPercent(ad.checkoutConversion)} />
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
-
-      {/* Table view */}
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-base">Tabela de Anúncios</CardTitle></CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-[10px]">Anúncio</TableHead>
-                <TableHead className="text-[10px] text-right whitespace-nowrap">Gasto</TableHead>
-                <TableHead className="text-[10px] text-right whitespace-nowrap">Impressões</TableHead>
-                <TableHead className="text-[10px] text-right whitespace-nowrap">Cliques</TableHead>
-                <TableHead className="text-[10px] text-right whitespace-nowrap">CTR</TableHead>
-                <TableHead className="text-[10px] text-right whitespace-nowrap">CPC</TableHead>
-                <TableHead className="text-[10px] text-right whitespace-nowrap">CPM</TableHead>
-                <TableHead className="text-[10px] text-right whitespace-nowrap">Compras</TableHead>
-                <TableHead className="text-[10px] text-right whitespace-nowrap">CPA</TableHead>
-                <TableHead className="text-[10px] text-right whitespace-nowrap">Leads</TableHead>
-                <TableHead className="text-[10px] text-right whitespace-nowrap">CPL</TableHead>
-                <TableHead className="text-[10px] text-right whitespace-nowrap">Link</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {topAds.map((ad) => (
-                <TableRow key={ad.id}>
-                  <TableCell className="text-[10px] max-w-[160px]">
-                    <p className="font-medium truncate">{ad.name || "—"}</p>
-                    <p className="text-muted-foreground">{ad.id}</p>
-                  </TableCell>
-                  <TableCell className="text-[10px] text-right">{formatBRL(ad.spend)}</TableCell>
-                  <TableCell className="text-[10px] text-right">{formatNumber(ad.impressions)}</TableCell>
-                  <TableCell className="text-[10px] text-right">{formatNumber(ad.clicks)}</TableCell>
-                  <TableCell className="text-[10px] text-right">{formatPercent(ad.ctr)}</TableCell>
-                  <TableCell className="text-[10px] text-right">{formatBRL(ad.cpc)}</TableCell>
-                  <TableCell className="text-[10px] text-right">{formatBRL(ad.cpm)}</TableCell>
-                  <TableCell className="text-[10px] text-right">{formatNumber(ad.purchases)}</TableCell>
-                  <TableCell className="text-[10px] text-right">{ad.purchases > 0 ? formatBRL(ad.cpa) : "—"}</TableCell>
-                  <TableCell className="text-[10px] text-right">{formatNumber(ad.leads)}</TableCell>
-                  <TableCell className="text-[10px] text-right">{ad.leads > 0 ? formatBRL(ad.cpl) : "—"}</TableCell>
-                  <TableCell className="text-[10px] text-right">
-                    {ad.id && ad.status === "ACTIVE" ? (
-                      <button onClick={() => openAdPreview(ad.id)} className="text-primary hover:underline inline-flex items-center gap-0.5">
-                        <ExternalLink className="h-3 w-3" />
-                        Ver
-                      </button>
-                    ) : ad.id ? (
-                      <span className="text-muted-foreground text-[10px]">Inativo</span>
-                    ) : "—"}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -261,6 +222,15 @@ function TopAdsSection({ metaAds }: { metaAds: any[] }) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function AdMetricRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between px-3 py-1.5">
+      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span className="text-[11px] font-semibold text-foreground">{value}</span>
     </div>
   );
 }

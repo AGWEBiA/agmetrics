@@ -246,6 +246,7 @@ export type Database = {
         Row: {
           ad_id: string
           ad_name: string | null
+          checkouts_initiated: number | null
           clicks: number | null
           cpc: number | null
           cpm: number | null
@@ -257,17 +258,21 @@ export type Database = {
           hook_rate: number | null
           id: string
           impressions: number | null
+          landing_page_views: number | null
           last_updated: string | null
           leads: number | null
+          link_clicks: number | null
           preview_link: string | null
           project_id: string
           purchases: number | null
+          results: number | null
           spend: number | null
           status: string | null
         }
         Insert: {
           ad_id: string
           ad_name?: string | null
+          checkouts_initiated?: number | null
           clicks?: number | null
           cpc?: number | null
           cpm?: number | null
@@ -279,17 +284,21 @@ export type Database = {
           hook_rate?: number | null
           id?: string
           impressions?: number | null
+          landing_page_views?: number | null
           last_updated?: string | null
           leads?: number | null
+          link_clicks?: number | null
           preview_link?: string | null
           project_id: string
           purchases?: number | null
+          results?: number | null
           spend?: number | null
           status?: string | null
         }
         Update: {
           ad_id?: string
           ad_name?: string | null
+          checkouts_initiated?: number | null
           clicks?: number | null
           cpc?: number | null
           cpm?: number | null
@@ -301,11 +310,14 @@ export type Database = {
           hook_rate?: number | null
           id?: string
           impressions?: number | null
+          landing_page_views?: number | null
           last_updated?: string | null
           leads?: number | null
+          link_clicks?: number | null
           preview_link?: string | null
           project_id?: string
           purchases?: number | null
+          results?: number | null
           spend?: number | null
           status?: string | null
         }
