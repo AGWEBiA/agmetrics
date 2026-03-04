@@ -268,6 +268,7 @@ export type Database = {
           results: number | null
           spend: number | null
           status: string | null
+          thumbnail_url: string | null
         }
         Insert: {
           ad_id: string
@@ -294,6 +295,7 @@ export type Database = {
           results?: number | null
           spend?: number | null
           status?: string | null
+          thumbnail_url?: string | null
         }
         Update: {
           ad_id?: string
@@ -320,6 +322,7 @@ export type Database = {
           results?: number | null
           spend?: number | null
           status?: string | null
+          thumbnail_url?: string | null
         }
         Relationships: [
           {

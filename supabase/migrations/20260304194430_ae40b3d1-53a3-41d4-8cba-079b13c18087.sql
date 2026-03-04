@@ -1,0 +1,1 @@
+ALTER TABLE public.meta_ads ADD COLUMN IF NOT EXISTS thumbnail_url text;
