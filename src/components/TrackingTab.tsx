@@ -151,28 +151,52 @@ function TopAdsSection({ metaAds }: { metaAds: any[] }) {
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {paginatedAds.map((ad) => (
-          <Card key={ad.id} className="overflow-hidden border-border/50">
-            {/* Header with hook/hold badges */}
-            <div className="relative bg-muted/40 p-3 pb-2">
+          <Card key={ad.id} className="overflow-hidden border-border/50 flex flex-col">
+            {/* Ad Preview Embed */}
+            <div className="relative bg-muted/30 border-b border-border/30">
+              <div style={{ aspectRatio: "4/5" }} className="w-full overflow-hidden">
+                {ad.preview_link ? (
+                  <iframe
+                    src={ad.preview_link}
+                    className="w-full h-full border-0 pointer-events-none"
+                    title={`Preview ${ad.name}`}
+                    sandbox="allow-scripts allow-same-origin"
+                    loading="lazy"
+                    scrolling="no"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-muted/60 text-muted-foreground">
+                    <div className="text-center space-y-1">
+                      <ExternalLink className="h-6 w-6 mx-auto opacity-40" />
+                      <p className="text-[10px]">Preview indisponível</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Hook/Hold badges overlay */}
               {(ad.hook_rate > 0 || ad.hold_rate > 0) && (
-                <div className="flex gap-1.5 mb-2">
+                <div className="absolute top-2 left-2 flex gap-1.5">
                   {ad.hook_rate > 0 && (
-                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 font-semibold">
+                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 font-semibold bg-background/80 backdrop-blur-sm">
                       Hook {formatPercent(ad.hook_rate)}
                     </Badge>
                   )}
                   {ad.hold_rate > 0 && (
-                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 font-semibold">
+                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 font-semibold bg-background/80 backdrop-blur-sm">
                       Hold {formatPercent(ad.hold_rate)}
                     </Badge>
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Ad name + link */}
+            <div className="p-3 pb-2 space-y-1">
               <p className="text-xs font-bold leading-tight line-clamp-2">{ad.name || "Anúncio sem nome"}</p>
               {ad.id && (
                 <button
                   onClick={() => openAdPreview(ad.id)}
-                  className="flex items-center gap-1 text-[10px] text-primary hover:underline font-medium mt-1"
+                  className="flex items-center gap-1 text-[10px] text-primary hover:underline font-medium"
                 >
                   <ExternalLink className="h-2.5 w-2.5" />
                   Ver anúncio
@@ -181,7 +205,7 @@ function TopAdsSection({ metaAds }: { metaAds: any[] }) {
             </div>
 
             {/* Metrics list */}
-            <CardContent className="p-0">
+            <CardContent className="p-0 flex-1">
               <div className="divide-y divide-border/30">
                 <AdMetricRow label="Valor Usado" value={formatBRL(ad.spend)} />
                 <AdMetricRow label="Resultados" value={formatNumber(ad.results)} />
