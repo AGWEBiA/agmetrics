@@ -31,9 +31,90 @@ interface TrackingEvent {
   created_at: string;
 }
 
+interface PagePreviewResponse {
+  html: string;
+  finalUrl: string;
+  title?: string;
+}
+
+const TRACKING_QUERY_PARAMS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "utm_id",
+  "fbclid",
+];
+
 function getPathname(url: string | null): string {
   if (!url) return "/";
   try { return new URL(url).pathname; } catch { return url; }
+}
+
+function normalizeTrackedPageUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    TRACKING_QUERY_PARAMS.forEach((param) => parsed.searchParams.delete(param));
+    parsed.hash = "";
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+function getRepresentativePageUrl(events: TrackingEvent[], selectedPage: string): string | null {
+  if (selectedPage === "all") return null;
+
+  const rankedUrls = new Map<string, { score: number; count: number }>();
+
+  events.forEach((event) => {
+    if (!event.page_url || getPathname(event.page_url) !== selectedPage) return;
+
+    const normalizedUrl = normalizeTrackedPageUrl(event.page_url);
+    const current = rankedUrls.get(normalizedUrl) ?? { score: 0, count: 0 };
+    let scoreBoost = event.event_type === "page_view" ? 4 : 1;
+
+    try {
+      const parsed = new URL(normalizedUrl);
+      if (!parsed.search) scoreBoost += 2;
+      if (!parsed.hash) scoreBoost += 1;
+    } catch {
+      // keep default score
+    }
+
+    rankedUrls.set(normalizedUrl, {
+      score: current.score + scoreBoost,
+      count: current.count + 1,
+    });
+  });
+
+  return Array.from(rankedUrls.entries())
+    .sort((a, b) => b[1].score - a[1].score || b[1].count - a[1].count || a[0].length - b[0].length)[0]?.[0] ?? null;
+}
+
+function getPagePreviewMetrics(events: TrackingEvent[]) {
+  const viewportWidths: number[] = [];
+  const pageHeights: number[] = [];
+
+  events.forEach((event) => {
+    const meta = event.metadata as any;
+    if (typeof meta?.vw === "number" && meta.vw > 0) viewportWidths.push(meta.vw);
+    if (typeof meta?.page_h === "number" && meta.page_h > 0) pageHeights.push(meta.page_h);
+  });
+
+  const sortedWidths = [...viewportWidths].sort((a, b) => a - b);
+  const viewportWidth = sortedWidths.length
+    ? sortedWidths[Math.floor(sortedWidths.length / 2)]
+    : 1440;
+  const pageHeight = pageHeights.length
+    ? Math.max(...pageHeights)
+    : Math.max(960, Math.round(viewportWidth * 1.8));
+
+  return {
+    viewportWidth,
+    pageHeight: Math.max(pageHeight, viewportWidth),
+  };
 }
 
 function computePageMetrics(events: TrackingEvent[]) {
@@ -99,6 +180,27 @@ export default function BehaviorAnalytics() {
     if (selectedPage === "all") return events;
     return events.filter((e) => getPathname(e.page_url) === selectedPage);
   }, [events, selectedPage]);
+
+  const selectedPageUrl = useMemo(() => getRepresentativePageUrl(events, selectedPage), [events, selectedPage]);
+  const pagePreviewMetrics = useMemo(
+    () => getPagePreviewMetrics(selectedPage === "all" ? [] : filtered),
+    [filtered, selectedPage],
+  );
+
+  const { data: pagePreview, isFetching: isPagePreviewLoading } = useQuery({
+    queryKey: ["page_layout_preview", projectId, selectedPageUrl],
+    enabled: !!projectId && !!selectedPageUrl,
+    staleTime: 1000 * 60 * 5,
+    retry: 1,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("page-layout-preview", {
+        body: { projectId, url: selectedPageUrl },
+      });
+
+      if (error) throw error;
+      return data as PagePreviewResponse;
+    },
+  });
 
   // Per-page metrics for page selector cards
   const pageMetrics = useMemo(() => {
@@ -239,80 +341,126 @@ export default function BehaviorAnalytics() {
   };
 
 
-  const HeatGrid = ({ data, title, showPageLayout = false }: { data: typeof heatmapGrid; title: string; showPageLayout?: boolean }) => {
+  const HeatGrid = ({
+    data,
+    title,
+    showPageLayout = false,
+    layoutHtml,
+    layoutLoading = false,
+    layoutUrl,
+    previewMetrics,
+  }: {
+    data: typeof heatmapGrid;
+    title: string;
+    showPageLayout?: boolean;
+    layoutHtml?: string;
+    layoutLoading?: boolean;
+    layoutUrl?: string | null;
+    previewMetrics: { viewportWidth: number; pageHeight: number };
+  }) => {
     const hasHeatData = data.maxVal > 0;
+    const shouldShowRealLayout = showPageLayout && selectedPage !== "all" && !!layoutHtml;
+    const shouldShowFallbackLayout = showPageLayout && selectedPage !== "all" && !layoutHtml;
 
     return (
       <div className="space-y-2">
         {title && <p className="text-sm font-medium text-foreground">{title}</p>}
 
-        <div className="rounded-lg border bg-muted/40 overflow-hidden">
-          <div className="max-h-[55vh] overflow-auto overscroll-contain">
+        <div className="overflow-hidden rounded-lg border bg-muted/40">
+          <div className="max-h-[70vh] overflow-auto overscroll-contain">
             <div
-              className="relative min-w-[320px] sm:min-w-0"
-              style={{ minHeight: "clamp(30rem, 95vw, 56rem)" }}
+              className="relative min-w-[280px]"
+              style={selectedPage !== "all"
+                ? {
+                    aspectRatio: `${previewMetrics.viewportWidth}/${previewMetrics.pageHeight}`,
+                    minHeight: "clamp(28rem, 92vw, 64rem)",
+                  }
+                : {
+                    minHeight: "clamp(24rem, 72vw, 42rem)",
+                  }}
             >
               {showPageLayout && (
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-background via-muted/60 to-background">
-                  <div className="mx-[5%] mt-[4%] space-y-[3.5%]">
-                    <div className="flex items-center justify-between gap-[4%]">
-                      <div className="h-[2.8rem] w-[26%] rounded-xl bg-foreground/15" />
-                      <div className="flex w-[44%] gap-[3%]">
-                        <div className="h-[1rem] flex-1 rounded-full bg-foreground/10" />
-                        <div className="h-[1rem] flex-1 rounded-full bg-foreground/10" />
-                        <div className="h-[1rem] flex-1 rounded-full bg-foreground/10" />
-                      </div>
-                    </div>
-
-                    <div className="rounded-[1.5rem] border border-border/60 bg-card/70 p-[5%] shadow-sm">
-                      <div className="h-[1.1rem] w-[22%] rounded-full bg-primary/15" />
-                      <div className="mt-[4%] h-[3.8rem] w-[72%] rounded-2xl bg-foreground/14" />
-                      <div className="mt-[3%] space-y-[2%]">
-                        <div className="h-[0.8rem] w-[88%] rounded-full bg-foreground/10" />
-                        <div className="h-[0.8rem] w-[64%] rounded-full bg-foreground/10" />
-                      </div>
-                      <div className="mt-[4%] flex gap-[3%]">
-                        <div className="h-[2.4rem] w-[28%] rounded-full bg-primary/20" />
-                        <div className="h-[2.4rem] w-[22%] rounded-full bg-foreground/10" />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-[3%] sm:grid-cols-3">
-                      {Array.from({ length: 6 }).map((_, index) => (
-                        <div key={index} className="rounded-2xl border border-border/50 bg-card/60 p-[7%]">
-                          <div className="h-[3.2rem] rounded-xl bg-foreground/8" />
-                          <div className="mt-[10%] h-[0.9rem] w-[75%] rounded-full bg-foreground/10" />
-                          <div className="mt-[6%] h-[0.7rem] w-[48%] rounded-full bg-foreground/8" />
+                <div className="absolute inset-0 overflow-hidden bg-background">
+                  {shouldShowRealLayout ? (
+                    <iframe
+                      title={`Layout real de ${layoutUrl ?? selectedPage}`}
+                      srcDoc={layoutHtml}
+                      sandbox="allow-scripts"
+                      loading="lazy"
+                      className="h-full w-full border-0 pointer-events-none bg-background"
+                    />
+                  ) : shouldShowFallbackLayout ? (
+                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-background via-muted/60 to-background">
+                      <div className="mx-[5%] mt-[4%] space-y-[3.5%]">
+                        <div className="flex items-center justify-between gap-[4%]">
+                          <div className="h-[2.8rem] w-[26%] rounded-xl bg-foreground/15" />
+                          <div className="flex w-[44%] gap-[3%]">
+                            <div className="h-[1rem] flex-1 rounded-full bg-foreground/10" />
+                            <div className="h-[1rem] flex-1 rounded-full bg-foreground/10" />
+                            <div className="h-[1rem] flex-1 rounded-full bg-foreground/10" />
+                          </div>
                         </div>
-                      ))}
-                    </div>
 
-                    <div className="rounded-[1.5rem] border border-border/50 bg-card/60 p-[5%]">
-                      <div className="h-[1rem] w-[30%] rounded-full bg-foreground/12" />
-                      <div className="mt-[4%] space-y-[2.4%]">
-                        {Array.from({ length: 8 }).map((_, index) => (
-                          <div key={index} className="h-[0.75rem] rounded-full bg-foreground/8" style={{ width: `${94 - index * 7}%` }} />
-                        ))}
-                      </div>
-                    </div>
+                        <div className="rounded-[1.5rem] border border-border/60 bg-card/70 p-[5%] shadow-sm">
+                          <div className="h-[1.1rem] w-[22%] rounded-full bg-primary/15" />
+                          <div className="mt-[4%] h-[3.8rem] w-[72%] rounded-2xl bg-foreground/14" />
+                          <div className="mt-[3%] space-y-[2%]">
+                            <div className="h-[0.8rem] w-[88%] rounded-full bg-foreground/10" />
+                            <div className="h-[0.8rem] w-[64%] rounded-full bg-foreground/10" />
+                          </div>
+                          <div className="mt-[4%] flex gap-[3%]">
+                            <div className="h-[2.4rem] w-[28%] rounded-full bg-primary/20" />
+                            <div className="h-[2.4rem] w-[22%] rounded-full bg-foreground/10" />
+                          </div>
+                        </div>
 
-                    <div className="grid grid-cols-1 gap-[3%] md:grid-cols-[1.35fr_0.65fr]">
-                      <div className="rounded-[1.5rem] border border-border/50 bg-card/60 p-[5%]">
-                        <div className="h-[11rem] rounded-2xl bg-foreground/8" />
-                        <div className="mt-[4%] h-[0.9rem] w-[58%] rounded-full bg-foreground/10" />
-                      </div>
-                      <div className="rounded-[1.5rem] border border-border/50 bg-card/60 p-[5%]">
-                        <div className="space-y-[8%]">
-                          {Array.from({ length: 4 }).map((_, index) => (
-                            <div key={index} className="space-y-[5%]">
-                              <div className="h-[0.8rem] w-[66%] rounded-full bg-foreground/10" />
-                              <div className="h-[3.5rem] rounded-xl bg-foreground/8" />
+                        <div className="grid grid-cols-2 gap-[3%] sm:grid-cols-3">
+                          {Array.from({ length: 6 }).map((_, index) => (
+                            <div key={index} className="rounded-2xl border border-border/50 bg-card/60 p-[7%]">
+                              <div className="h-[3.2rem] rounded-xl bg-foreground/8" />
+                              <div className="mt-[10%] h-[0.9rem] w-[75%] rounded-full bg-foreground/10" />
+                              <div className="mt-[6%] h-[0.7rem] w-[48%] rounded-full bg-foreground/8" />
                             </div>
                           ))}
                         </div>
+
+                        <div className="rounded-[1.5rem] border border-border/50 bg-card/60 p-[5%]">
+                          <div className="h-[1rem] w-[30%] rounded-full bg-foreground/12" />
+                          <div className="mt-[4%] space-y-[2.4%]">
+                            {Array.from({ length: 8 }).map((_, index) => (
+                              <div key={index} className="h-[0.75rem] rounded-full bg-foreground/8" style={{ width: `${94 - index * 7}%` }} />
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-[3%] md:grid-cols-[1.35fr_0.65fr]">
+                          <div className="rounded-[1.5rem] border border-border/50 bg-card/60 p-[5%]">
+                            <div className="h-[11rem] rounded-2xl bg-foreground/8" />
+                            <div className="mt-[4%] h-[0.9rem] w-[58%] rounded-full bg-foreground/10" />
+                          </div>
+                          <div className="rounded-[1.5rem] border border-border/50 bg-card/60 p-[5%]">
+                            <div className="space-y-[8%]">
+                              {Array.from({ length: 4 }).map((_, index) => (
+                                <div key={index} className="space-y-[5%]">
+                                  <div className="h-[0.8rem] w-[66%] rounded-full bg-foreground/10" />
+                                  <div className="h-[3.5rem] rounded-xl bg-foreground/8" />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-background via-muted/60 to-background px-6 text-center">
+                      <div className="max-w-sm space-y-2">
+                        <p className="text-sm font-medium text-foreground">Selecione uma página rastreada</p>
+                        <p className="text-xs text-muted-foreground">O layout real aparece quando você filtra uma página específica acima.</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="absolute inset-0 bg-background/10" />
                 </div>
               )}
 
@@ -325,13 +473,32 @@ export default function BehaviorAnalytics() {
                 ))}
               </div>
 
-              {!hasHeatData && (
-                <div className="absolute inset-x-4 top-4 z-10 rounded-md border border-border/80 bg-background/90 px-3 py-2 text-xs text-muted-foreground backdrop-blur-sm sm:inset-x-auto sm:left-4 sm:max-w-[260px]">
-                  Sem dados suficientes para intensidade ainda, mas o layout da página continua visível para contexto.
+              {showPageLayout && selectedPage !== "all" && (
+                <div className="absolute left-2 top-2 z-10 flex max-w-[calc(100%-1rem)] items-center gap-1 rounded bg-background/85 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur-sm">
+                  <Layout className="h-3 w-3 shrink-0" />
+                  <span className="truncate max-w-[220px]">{layoutUrl ?? selectedPage}</span>
                 </div>
               )}
 
-              <div className="sticky bottom-2 left-full mr-2 mt-auto flex w-max items-center gap-1 rounded bg-background/85 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur-sm">
+              {layoutLoading && selectedPage !== "all" && (
+                <div className="absolute inset-x-4 top-10 z-10 rounded-md border border-border/80 bg-background/90 px-3 py-2 text-xs text-muted-foreground backdrop-blur-sm sm:inset-x-auto sm:left-4 sm:max-w-[260px]">
+                  Carregando o layout real da página rastreada...
+                </div>
+              )}
+
+              {!layoutLoading && shouldShowFallbackLayout && selectedPage !== "all" && (
+                <div className="absolute inset-x-4 top-10 z-10 rounded-md border border-border/80 bg-background/90 px-3 py-2 text-xs text-muted-foreground backdrop-blur-sm sm:inset-x-auto sm:left-4 sm:max-w-[280px]">
+                  Não foi possível reconstruir o HTML real desta URL; exibindo um fallback visual para manter o contexto.
+                </div>
+              )}
+
+              {!hasHeatData && (
+                <div className="absolute inset-x-4 bottom-12 z-10 rounded-md border border-border/80 bg-background/90 px-3 py-2 text-xs text-muted-foreground backdrop-blur-sm sm:inset-x-auto sm:left-4 sm:max-w-[260px]">
+                  Sem dados suficientes de intensidade ainda para esta visualização.
+                </div>
+              )}
+
+              <div className="absolute bottom-2 right-2 z-10 flex w-max items-center gap-1 rounded bg-background/85 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur-sm">
                 <span>Baixo</span>
                 <div className="flex gap-0.5">
                   {[0.1, 0.3, 0.5, 0.7, 0.9].map((v) => (
@@ -340,13 +507,6 @@ export default function BehaviorAnalytics() {
                 </div>
                 <span>Alto</span>
               </div>
-
-              {showPageLayout && selectedPage !== "all" && (
-                <div className="sticky top-2 left-2 z-10 ml-2 mt-2 flex w-max max-w-[calc(100%-1rem)] items-center gap-1 rounded bg-background/85 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur-sm">
-                  <Layout className="h-3 w-3 shrink-0" />
-                  <span className="truncate max-w-[220px]">{selectedPage}</span>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -533,7 +693,7 @@ export default function BehaviorAnalytics() {
               </Badge>
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <AnimatedCard index={0}>
               <Card>
                 <CardHeader className="pb-2">
@@ -541,7 +701,17 @@ export default function BehaviorAnalytics() {
                     <Flame className="h-4 w-4 text-destructive" /> Mapa de Calor — Mouse
                   </CardTitle>
                 </CardHeader>
-                <CardContent><HeatGrid data={heatmapGrid} title="" showPageLayout={true} /></CardContent>
+                <CardContent>
+                  <HeatGrid
+                    data={heatmapGrid}
+                    title=""
+                    showPageLayout={true}
+                    layoutHtml={pagePreview?.html}
+                    layoutLoading={isPagePreviewLoading}
+                    layoutUrl={pagePreview?.finalUrl ?? selectedPageUrl}
+                    previewMetrics={pagePreviewMetrics}
+                  />
+                </CardContent>
               </Card>
             </AnimatedCard>
             <AnimatedCard index={1}>
@@ -551,7 +721,17 @@ export default function BehaviorAnalytics() {
                     <MousePointer2 className="h-4 w-4 text-primary" /> Mapa de Calor — Cliques
                   </CardTitle>
                 </CardHeader>
-                <CardContent><HeatGrid data={clickHeatmap} title="" showPageLayout={true} /></CardContent>
+                <CardContent>
+                  <HeatGrid
+                    data={clickHeatmap}
+                    title=""
+                    showPageLayout={true}
+                    layoutHtml={pagePreview?.html}
+                    layoutLoading={isPagePreviewLoading}
+                    layoutUrl={pagePreview?.finalUrl ?? selectedPageUrl}
+                    previewMetrics={pagePreviewMetrics}
+                  />
+                </CardContent>
               </Card>
             </AnimatedCard>
           </div>
