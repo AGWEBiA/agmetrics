@@ -47,6 +47,14 @@ const STEPS: OnboardingStep[] = [
     route: "config",
   },
   {
+    id: "pixel",
+    title: "Ativar Pixel de Rastreamento",
+    description: "Instale o pixel no seu site para rastrear visitantes e conversões",
+    icon: <Code className="h-5 w-5" />,
+    action: "Instalar",
+    route: "config",
+  },
+  {
     id: "goals",
     title: "Definir Metas",
     description: "Estabeleça metas de receita, vendas e ROI",
