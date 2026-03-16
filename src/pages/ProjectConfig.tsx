@@ -1741,8 +1741,36 @@ function CustomApiTab({ projectId }: { projectId: string }) {
             onChange={(e) => setApiUrl(e.target.value)}
             placeholder="https://sua-api.com/functions/v1/public-api"
           />
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label>Endpoints</Label>
+            <Button type="button" variant="outline" size="sm" onClick={addEndpoint}>
+              <Plus className="h-3 w-3 mr-1" /> Adicionar
+            </Button>
+          </div>
+          {endpoints.map((ep, i) => (
+            <div key={i} className="flex gap-2 items-center">
+              <Input
+                value={ep.label}
+                onChange={(e) => updateEndpoint(i, "label", e.target.value)}
+                placeholder="Label (ex: overview)"
+                className="w-1/3"
+              />
+              <Input
+                value={ep.path}
+                onChange={(e) => updateEndpoint(i, "path", e.target.value)}
+                placeholder="/metrics/overview?period=30d"
+                className="flex-1"
+              />
+              <Button type="button" variant="ghost" size="icon" onClick={() => removeEndpoint(i)} disabled={endpoints.length <= 1}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+          ))}
           <p className="text-xs text-muted-foreground">
-            O sistema buscará dados nos endpoints: /metrics/overview, /metrics/campaigns, /metrics/contacts, /metrics/automations
+            Defina os paths relativos à Base URL. Ex: /metrics/overview?period=30d
           </p>
         </div>
         <div className="space-y-2">
