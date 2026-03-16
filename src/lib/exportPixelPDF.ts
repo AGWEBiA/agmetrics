@@ -115,8 +115,10 @@ export function exportPixelPDF(data: PixelExportData) {
     "3. Na página de obrigado/confirmação de compra, substitua o snippet completo pelo snippet de \"Página de Obrigado\" (seção 3). NÃO use os dois juntos.",
     "4. O pixel é carregado de forma assíncrona e não impacta a performance do site.",
     "5. Após a instalação, os dados começam a aparecer no painel AGMetrics em até 1 minuto.",
-    "6. Para disparar eventos customizados (ex: clique em CTA específico), use: AGMetrics.track(\"nome_evento\", { chave: \"valor\" });",
-    "7. Teste a instalação acessando o site e verificando no painel AGMetrics se os eventos estão sendo registrados.",
+    "6. Para eventos customizados, SEMPRE use addEventListener ou onclick. Exemplo:",
+    "   document.getElementById(\"meuBotao\").addEventListener(\"click\", function() { window.AGMetrics?.track(\"nome_evento\", { chave: \"valor\" }); });",
+    "7. SEMPRE use window.AGMetrics?.track() (com ?.) em vez de AGMetrics.track() para evitar erros caso o pixel não carregue (ex: AdBlocker).",
+    "8. Teste a instalação acessando o site e verificando no painel AGMetrics se os eventos estão sendo registrados.",
   ];
 
   steps.forEach((step) => {

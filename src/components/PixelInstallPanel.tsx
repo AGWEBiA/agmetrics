@@ -35,15 +35,21 @@ export function PixelInstallPanel({ projectId, projectName = "Projeto" }: PixelI
   // ✓ Profundidade de scroll (25%, 50%, 75%, 100%)
   // ✓ Movimentos do mouse (mapa de calor)
   //
-  // Eventos customizados:
-  // AGMetrics.track("compra", { valor: 297 });
-  // AGMetrics.track("lead", { form: "newsletter" });
+  // Eventos customizados (use dentro de addEventListener):
+  // document.getElementById("meuBotao").addEventListener("click", function() {
+  //   window.AGMetrics?.track("button_click", { button: "comprar" });
+  // });
+  //
+  // Ou via atributo onclick no HTML:
+  // <button onclick="window.AGMetrics?.track('lead', { form: 'newsletter' })">Enviar</button>
 </script>`;
 
   const thankYouSnippet = `<!-- AGMetrics - Página de Obrigado -->
 <script src="${pixelUrl}&track=all"></script>
 <script>
-  AGMetrics.track("thank_you_page", {
+  // Dispara o evento de conversão quando a página carregar
+  // (seguro mesmo se o pixel falhar ao carregar)
+  window.AGMetrics?.track("thank_you_page", {
     page: window.location.pathname,
     referrer: document.referrer
   });
