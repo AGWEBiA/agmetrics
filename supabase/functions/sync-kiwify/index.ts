@@ -60,19 +60,14 @@ Deno.serve(async (req) => {
         { global: { headers: { Authorization: authHeader } } }
       );
 
-      const claimsResult = await anonClient.auth.getClaims(token);
-      if (claimsResult.data?.claims) {
-        userId = claimsResult.data.claims.sub;
-      } else {
-        const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
-        if (authError || !user) {
-          return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        userId = user.id;
+      const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
+      userId = user.id;
     }
 
     const { project_id } = await req.json();
