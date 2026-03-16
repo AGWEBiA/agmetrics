@@ -35,6 +35,13 @@ export function useOnboardingStatus(projectId: string | undefined) {
         .eq("project_id", projectId!);
       if (productCount && productCount > 0) completed.add("products");
 
+      // Check pixel (tracking events exist)
+      const { count: pixelCount } = await supabase
+        .from("tracking_events")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", projectId!);
+      if (pixelCount && pixelCount > 0) completed.add("pixel");
+
       // Check goals
       const { count: goalCount } = await supabase
         .from("project_goals")

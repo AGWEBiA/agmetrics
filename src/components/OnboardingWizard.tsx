@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle, ArrowRight, BarChart3, Settings, Webhook, Target, ShoppingCart } from "lucide-react";
+import { CheckCircle2, Circle, ArrowRight, BarChart3, Settings, Webhook, Target, ShoppingCart, Code } from "lucide-react";
 
 interface OnboardingStep {
   id: string;
@@ -44,6 +44,14 @@ const STEPS: OnboardingStep[] = [
     description: "Adicione seus produtos para rastrear vendas por produto",
     icon: <ShoppingCart className="h-5 w-5" />,
     action: "Adicionar",
+    route: "config",
+  },
+  {
+    id: "pixel",
+    title: "Ativar Pixel de Rastreamento",
+    description: "Instale o pixel no seu site para rastrear visitantes e conversões",
+    icon: <Code className="h-5 w-5" />,
+    action: "Instalar",
     route: "config",
   },
   {
