@@ -100,27 +100,15 @@ function PixelStatusBadge({ projectId }: { projectId: string }) {
 
   if (pixelStatus.isActive) {
     return (
-      <Badge variant="outline" className="text-[10px] border-success/30 text-success gap-1 py-0 px-1.5">
-        <Activity className="h-3 w-3" /> Ativo · {pixelStatus.total} evento{pixelStatus.total !== 1 ? "s" : ""}
-        {pixelStatus.lastEvent && (
-          <> · {formatDistanceToNow(new Date(pixelStatus.lastEvent), { locale: ptBR, addSuffix: true })}</>
-        )}
-      </Badge>
-    );
-  }
-
-  if (pixelStatus.total > 0) {
-    return (
-      <Badge variant="outline" className="text-[10px] border-warning/30 text-warning gap-1 py-0 px-1.5">
-        <AlertCircle className="h-3 w-3" /> Inativo · último{" "}
-        {pixelStatus.lastEvent && formatDistanceToNow(new Date(pixelStatus.lastEvent), { locale: ptBR, addSuffix: true })}
+      <Badge variant="outline" className="text-[10px] border-success/30 text-success gap-1 py-0 px-1.5 animate-pulse">
+        <Activity className="h-3 w-3" /> Pixel Ativo · Aguardando dados
       </Badge>
     );
   }
 
   return (
-    <Badge variant="outline" className="text-[10px] gap-1 py-0 px-1.5">
-      Aguardando dados
+    <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive gap-1 py-0 px-1.5">
+      <AlertCircle className="h-3 w-3" /> Pixel Inativo · Instalar pixel
     </Badge>
   );
 }
