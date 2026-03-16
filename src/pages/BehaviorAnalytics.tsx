@@ -181,6 +181,27 @@ export default function BehaviorAnalytics() {
     return events.filter((e) => getPathname(e.page_url) === selectedPage);
   }, [events, selectedPage]);
 
+  const selectedPageUrl = useMemo(() => getRepresentativePageUrl(events, selectedPage), [events, selectedPage]);
+  const pagePreviewMetrics = useMemo(
+    () => getPagePreviewMetrics(selectedPage === "all" ? [] : filtered),
+    [filtered, selectedPage],
+  );
+
+  const { data: pagePreview, isFetching: isPagePreviewLoading } = useQuery({
+    queryKey: ["page_layout_preview", projectId, selectedPageUrl],
+    enabled: !!projectId && !!selectedPageUrl,
+    staleTime: 1000 * 60 * 5,
+    retry: 1,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("page-layout-preview", {
+        body: { projectId, url: selectedPageUrl },
+      });
+
+      if (error) throw error;
+      return data as PagePreviewResponse;
+    },
+  });
+
   // Per-page metrics for page selector cards
   const pageMetrics = useMemo(() => {
     const map = new Map<string, { views: number; clicks: number; visitors: Set<string> }>();
