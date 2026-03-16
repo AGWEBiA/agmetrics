@@ -526,9 +526,197 @@ const sections: GuideSection[] = [
     tip: "A sincronização automática roda **a cada 15 minutos** para Meta Ads, Google Ads e WhatsApp. Vendas via webhook são capturadas **instantaneamente**.",
   },
   {
+    id: "api-customizada",
+    icon: Plug,
+    title: "15. API Customizada",
+    badge: "Integração",
+    intro: "Conecte qualquer plataforma de BI, automação ou e-mail marketing via API REST personalizada.",
+    content: [
+      "**Passo 1:** Vá em **Configurações** → aba **API Customizada**.",
+      "**Passo 2:** Preencha os campos de conexão:",
+    ],
+    subsections: [
+      {
+        title: "Configuração da API",
+        steps: [
+          "**Nome da API** → Um nome descritivo (ex: \"ActiveCampaign\", \"RD Station\").",
+          "**Base URL** → O endereço base da API (ex: `https://api.seuservico.com/v1`).",
+          "**API Key** → Chave de autenticação que será enviada no header `X-API-Key`.",
+        ],
+      },
+      {
+        title: "Endpoints Personalizados",
+        steps: [
+          "Você pode definir **endpoints customizados** além dos padrões.",
+          "Clique em **Adicionar Endpoint** para criar um novo.",
+          "Preencha o **Label** (nome de exibição) e o **Path** (caminho da API, ex: `/metrics/overview?period=30d`).",
+          "Use o botão de **lixeira** para remover endpoints que não precisa.",
+          "Se nenhum endpoint personalizado for definido, o sistema usa 4 padrões: overview, campaigns, contacts e automations.",
+        ],
+        tip: "Cada endpoint será sincronizado individualmente e os dados ficam armazenados separados por tipo no banco de dados.",
+      },
+      {
+        title: "Sincronização",
+        steps: [
+          "Clique em **Sincronizar Agora** para importar os dados manualmente.",
+          "A sincronização automática ocorre **a cada 15 minutos** junto com as demais integrações.",
+          "O status da última sincronização de cada endpoint é exibido na interface.",
+        ],
+      },
+    ],
+    tip: "A API deve responder em formato **JSON** via método **GET**. O sistema envia a autenticação via header `X-API-Key`.",
+  },
+  {
+    id: "pixel",
+    icon: MonitorSmartphone,
+    title: "16. Pixel de Tracking",
+    badge: "Rastreamento",
+    intro: "Instale um pixel de rastreamento nas suas páginas para capturar visitas, UTMs e eventos de comportamento.",
+    content: [
+      "**Passo 1:** Vá em **Pixel Analytics** no menu lateral.",
+      "**Passo 2:** Copie o **código do pixel** gerado automaticamente para o seu projeto.",
+      "**Passo 3:** Cole o código no **<head>** de todas as páginas que deseja rastrear (landing pages, páginas de vendas, etc.).",
+    ],
+    subsections: [
+      {
+        title: "O que o Pixel captura",
+        steps: [
+          "**Page Views** → Cada visita à página é registrada com URL, referrer e user agent.",
+          "**UTMs** → Parâmetros utm_source, utm_medium, utm_campaign, utm_content e utm_term.",
+          "**Visitor ID** → Identificador único do visitante para rastrear jornadas.",
+          "**IP e Localização** → Dados de origem do visitante.",
+        ],
+      },
+      {
+        title: "Domínios Autorizados",
+        steps: [
+          "Configure os **domínios autorizados** onde o pixel pode operar.",
+          "Apenas domínios cadastrados poderão enviar eventos de tracking.",
+          "Isso evita uso indevido do seu pixel em sites não autorizados.",
+        ],
+      },
+    ],
+    tip: "O pixel funciona em qualquer página HTML. Não precisa de framework específico — basta colar o script no <head>.",
+  },
+  {
+    id: "comportamental",
+    icon: Eye,
+    title: "17. Análise Comportamental",
+    badge: "Avançado",
+    intro: "Visualize o comportamento dos visitantes nas suas páginas com mapas de calor e métricas de engajamento.",
+    content: [
+      "**Passo 1:** Acesse **Análise Comportamental** no menu lateral.",
+      "**Passo 2:** Selecione o projeto e a página que deseja analisar.",
+      "**Passo 3:** Visualize os dados de interação dos visitantes:",
+    ],
+    subsections: [
+      {
+        title: "Métricas Disponíveis",
+        steps: [
+          "**Mapa de Calor** → Visualize as áreas mais clicadas/interagidas da página.",
+          "**Tempo Médio na Página** → Quanto tempo os visitantes permanecem.",
+          "**Taxa de Scroll** → Até onde os visitantes rolam a página.",
+          "**Sessões** → Quantidade de visitas únicas.",
+        ],
+        tip: "Para ter dados comportamentais, é necessário ter o **Pixel de Tracking** instalado nas páginas.",
+      },
+    ],
+  },
+  {
+    id: "jornada-lead",
+    icon: Users,
+    title: "18. Jornada do Lead",
+    badge: "Funil",
+    intro: "Acompanhe o caminho completo do lead: do primeiro clique no anúncio até a compra.",
+    content: [
+      "**Passo 1:** Acesse **Jornada do Lead** no menu lateral.",
+      "**Passo 2:** O sistema cruza dados de anúncios, tracking e vendas para reconstruir a jornada.",
+      "**Passo 3:** Analise cada etapa do funil:",
+    ],
+    subsections: [
+      {
+        title: "Etapas da Jornada",
+        steps: [
+          "**Impressão** → O lead viu o anúncio.",
+          "**Clique** → Clicou no anúncio e foi para a página.",
+          "**Page View** → Visitou a landing page.",
+          "**Lead** → Se cadastrou (captura de e-mail, WhatsApp, etc.).",
+          "**Checkout** → Iniciou o processo de compra.",
+          "**Compra** → Finalizou a compra com sucesso.",
+        ],
+      },
+      {
+        title: "Análise por Fonte",
+        steps: [
+          "Veja quais **fontes de tráfego** (UTM Source) geram mais conversões.",
+          "Compare a **taxa de conversão** entre diferentes campanhas.",
+          "Identifique gargalos no funil onde leads estão sendo perdidos.",
+        ],
+      },
+    ],
+    tip: "Para dados completos de jornada, é necessário ter o **Pixel** instalado e os **webhooks** de vendas configurados.",
+  },
+  {
+    id: "relatorios-whatsapp",
+    icon: MessageSquare,
+    title: "19. Relatórios via WhatsApp",
+    badge: "Automação",
+    intro: "Receba relatórios automáticos de performance diretamente no seu WhatsApp.",
+    content: [
+      "**Passo 1:** Acesse **Relatórios WhatsApp** no menu lateral.",
+      "**Passo 2:** Clique em **Novo Relatório**.",
+      "**Passo 3:** Configure:",
+    ],
+    subsections: [
+      {
+        title: "Configuração do Relatório",
+        steps: [
+          "**Nome** → Identificação do relatório (ex: \"Resumo Diário\").",
+          "**Número** → Seu WhatsApp com DDI (ex: +5511999999999).",
+          "**Frequência** → Diário, Semanal ou Mensal.",
+          "**Horário** → A hora do dia em que o relatório será enviado.",
+          "**Métricas** → Selecione quais métricas incluir (receita, vendas, ROI, investimento, etc.).",
+        ],
+      },
+      {
+        title: "Gerenciamento",
+        steps: [
+          "Use o **toggle** para ativar/desativar relatórios sem excluí-los.",
+          "Clique em **Enviar Agora** para testar o recebimento.",
+          "Edite ou exclua relatórios a qualquer momento.",
+        ],
+        tip: "Os relatórios são enviados via Evolution API. Certifique-se de que a integração WhatsApp está configurada no projeto.",
+      },
+    ],
+  },
+  {
+    id: "orcamento",
+    icon: DollarSign,
+    title: "20. Orçamento e Provisionamento",
+    badge: "Financeiro",
+    intro: "Configure um orçamento total para o projeto e acompanhe o burn rate em tempo real.",
+    content: [
+      "**Passo 1:** Ao editar o projeto, defina o campo **Orçamento** com o valor total planejado.",
+      "**Passo 2:** No dashboard, a seção **Orçamento** mostra:",
+    ],
+    subsections: [
+      {
+        title: "Métricas de Orçamento",
+        steps: [
+          "**Orçamento Total** → Valor planejado para o projeto.",
+          "**Gasto Atual** → Soma de Meta Ads + Google Ads + investimentos manuais.",
+          "**Saldo Restante** → Quanto ainda pode gastar.",
+          "**Burn Rate** → Taxa diária média de gasto.",
+          "**Projeção** → Estimativa de quando o orçamento será consumido.",
+        ],
+        tip: "Configure um orçamento para receber alertas visuais quando atingir 80% e 100% do valor planejado.",
+      },
+    ],
+  },
+  {
     id: "usuarios",
     icon: Shield,
-    title: "15. Gestão de Usuários (Admin)",
+    title: "21. Gestão de Usuários (Admin)",
     badge: "Admin",
     intro: "Gerencie contas de usuários e permissões. Disponível apenas para administradores.",
     content: [
