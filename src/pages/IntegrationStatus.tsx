@@ -245,16 +245,6 @@ export default function IntegrationStatus() {
         ))}
       </div>
 
-      {projectId && (
-        <>
-          <AnimatedCard index={4}>
-            <PixelInstallPanel projectId={projectId} />
-          </AnimatedCard>
-      <AnimatedCard index={6}>
-            <PixelDomainSelector projectId={projectId} />
-          </AnimatedCard>
-        </>
-      )}
 
       <AnimatedCard index={5}>
         <Card className="border-primary/20 bg-primary/5">
