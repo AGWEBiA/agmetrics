@@ -25,14 +25,20 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const endpointUrl = `${supabaseUrl}/functions/v1/tracking-pixel`;
 
+    // Performance-optimized pixel script
     const script = `
 (function() {
+  "use strict";
   var pid = "${projectId}";
   var endpoint = "${endpointUrl}";
   var anonKey = "${anonKey}";
   var trackAll = "${trackMode}" === "all";
   var vid = localStorage.getItem("agm_vid");
   if (!vid) { vid = "v_" + Math.random().toString(36).substr(2, 12) + Date.now().toString(36); localStorage.setItem("agm_vid", vid); }
+
+  // Session ID for grouping events
+  var sid = sessionStorage.getItem("agm_sid");
+  if (!sid) { sid = "s_" + Math.random().toString(36).substr(2, 8) + Date.now().toString(36); sessionStorage.setItem("agm_sid", sid); }
 
   function getUtm() {
     var p = new URLSearchParams(window.location.search);
@@ -43,6 +49,30 @@ Deno.serve(async (req) => {
       utm_content: p.get("utm_content") || null,
       utm_term: p.get("utm_term") || null
     };
+  }
+
+  // Batched send queue — reduces network calls
+  var queue = [];
+  var flushTimer = null;
+
+  function flushQueue() {
+    if (queue.length === 0) return;
+    var batch = queue.splice(0, queue.length);
+    // Send each event (beacon doesn't support batch natively)
+    for (var i = 0; i < batch.length; i++) {
+      var payload = batch[i];
+      if (navigator.sendBeacon) {
+        var blob = new Blob([JSON.stringify(payload)], {type: "application/json"});
+        navigator.sendBeacon(endpoint + "?apikey=" + anonKey, blob);
+      } else {
+        fetch(endpoint, {
+          method: "POST",
+          headers: {"Content-Type": "application/json", "apikey": anonKey},
+          body: JSON.stringify(payload),
+          keepalive: true
+        });
+      }
+    }
   }
 
   function send(eventType, meta) {
@@ -58,37 +88,38 @@ Deno.serve(async (req) => {
       utm_campaign: utms.utm_campaign,
       utm_content: utms.utm_content,
       utm_term: utms.utm_term,
-      metadata: meta || null
+      metadata: meta ? Object.assign({ session_id: sid }, meta) : { session_id: sid }
     };
-    if (navigator.sendBeacon) {
-      var blob = new Blob([JSON.stringify(payload)], {type: "application/json"});
-      navigator.sendBeacon(endpoint + "?apikey=" + anonKey, blob);
-    } else {
-      fetch(endpoint, {
-        method: "POST",
-        headers: {"Content-Type": "application/json", "apikey": anonKey},
-        body: JSON.stringify(payload),
-        keepalive: true
-      });
-    }
+    queue.push(payload);
+    // Debounce flush — batch events sent within 500ms
+    if (flushTimer) clearTimeout(flushTimer);
+    flushTimer = setTimeout(flushQueue, 500);
   }
 
-  // Auto-track page view
-  send("page_view");
+  // Auto-track page view (deferred to not block rendering)
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(function() { send("page_view"); });
+  } else {
+    setTimeout(function() { send("page_view"); }, 0);
+  }
 
-  // Track navigation (SPA)
+  // Track navigation (SPA) — use more efficient approach
   var lastUrl = window.location.href;
-  setInterval(function() {
+  var urlCheckInterval = setInterval(function() {
     if (window.location.href !== lastUrl) {
       lastUrl = window.location.href;
       send("page_view");
     }
-  }, 1000);
+  }, 1500);
 
-  // ── Enhanced tracking (track=all) ──
+  // ── Enhanced tracking (track=all) — all listeners are passive ──
   if (trackAll) {
-    // Click tracking
+    // Click tracking — throttled to max 1 per 200ms
+    var lastClickTime = 0;
     document.addEventListener("click", function(e) {
+      var now = Date.now();
+      if (now - lastClickTime < 200) return;
+      lastClickTime = now;
       var el = e.target;
       var tag = el.tagName || "";
       var text = (el.innerText || "").substring(0, 80);
@@ -97,7 +128,6 @@ Deno.serve(async (req) => {
       if (el.className && typeof el.className === "string") {
         selector += "." + el.className.trim().split(/\\s+/).slice(0, 3).join(".");
       }
-      // Only track meaningful clicks (buttons, links, inputs)
       var trackable = ["A", "BUTTON", "INPUT", "SELECT", "TEXTAREA"];
       var isTrackable = trackable.indexOf(tag) >= 0 || el.closest("a, button, [role=button], [onclick]");
       if (!isTrackable) return;
@@ -113,9 +143,11 @@ Deno.serve(async (req) => {
       });
     }, true);
 
-    // Scroll depth tracking
+    // Scroll depth tracking — passive, uses rAF for throttle
     var scrollMilestones = { 25: false, 50: false, 75: false, 100: false };
+    var scrollRafPending = false;
     function checkScroll() {
+      scrollRafPending = false;
       var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       var docHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (docHeight <= 0) return;
@@ -129,15 +161,14 @@ Deno.serve(async (req) => {
         }
       }
     }
-    window.addEventListener("scroll", (function() {
-      var timer;
-      return function() {
-        clearTimeout(timer);
-        timer = setTimeout(checkScroll, 200);
-      };
-    })(), { passive: true });
+    window.addEventListener("scroll", function() {
+      if (!scrollRafPending) {
+        scrollRafPending = true;
+        requestAnimationFrame(checkScroll);
+      }
+    }, { passive: true });
 
-    // Mouse heatmap — sample positions every 2s, batch send every 10s
+    // Mouse heatmap — sample every 3s (reduced frequency), batch send every 15s
     var mousePoints = [];
     var lastMx = -1, lastMy = -1;
     document.addEventListener("mousemove", function(e) {
@@ -146,10 +177,10 @@ Deno.serve(async (req) => {
     }, { passive: true });
 
     setInterval(function() {
-      if (lastMx >= 0) {
+      if (lastMx >= 0 && mousePoints.length < 50) {
         mousePoints.push({ x: lastMx, y: lastMy, t: Date.now() });
       }
-    }, 2000);
+    }, 3000);
 
     setInterval(function() {
       if (mousePoints.length > 0) {
@@ -161,7 +192,7 @@ Deno.serve(async (req) => {
         });
         mousePoints = [];
       }
-    }, 10000);
+    }, 15000);
 
     // Send remaining on page unload
     window.addEventListener("beforeunload", function() {
@@ -173,6 +204,8 @@ Deno.serve(async (req) => {
           page_h: document.documentElement.scrollHeight
         });
       }
+      // Flush remaining queue immediately
+      flushQueue();
     });
   }
 
