@@ -5,16 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, Code, CheckCircle2, AlertCircle, Activity } from "lucide-react";
+import { Copy, Check, Code, CheckCircle2, AlertCircle, Activity, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { exportPixelPDF } from "@/lib/exportPixelPDF";
 
 interface PixelInstallPanelProps {
   projectId: string;
+  projectName?: string;
 }
 
-export function PixelInstallPanel({ projectId }: PixelInstallPanelProps) {
+export function PixelInstallPanel({ projectId, projectName = "Projeto" }: PixelInstallPanelProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -180,6 +182,24 @@ export function PixelInstallPanel({ projectId }: PixelInstallPanelProps) {
             <li>Os dados aparecem em <strong>Analytics do Pixel</strong> e <strong>Mapa de Calor</strong> em até 1 minuto</li>
           </ul>
         </div>
+
+        <Button
+          variant="outline"
+          className="w-full gap-2"
+          onClick={() =>
+            exportPixelPDF({
+              projectName,
+              projectId,
+              pixelUrl,
+              basicSnippet,
+              fullSnippet,
+              thankYouSnippet,
+            })
+          }
+        >
+          <FileDown className="h-4 w-4" />
+          Exportar PDF com instruções para o webdesigner
+        </Button>
       </CardContent>
     </Card>
   );

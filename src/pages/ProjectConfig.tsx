@@ -84,7 +84,7 @@ export default function ProjectConfig() {
         </TabsContent>
         <TabsContent value="pixel">
           <div className="space-y-4">
-            <PixelInstallPanel projectId={projectId!} />
+            <PixelInstallPanel projectId={projectId!} projectName={project?.name || "Projeto"} />
             <PixelDomainSelector projectId={projectId!} />
           </div>
         </TabsContent>
