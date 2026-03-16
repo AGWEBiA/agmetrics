@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
     for (const endpoint of endpoints) {
       try {
         const url = `${custom_api_url.replace(/\/$/, "")}${endpoint.path}`;
-        console.log(`[sync-custom-api] Fetching ${endpoint.type}: ${url}`);
+        console.log(`[sync-custom-api] Fetching ${endpoint.label}: ${url}`);
 
         const res = await fetch(url, {
           method: "GET",
@@ -143,23 +143,21 @@ Deno.serve(async (req) => {
 
         if (!res.ok) {
           const errText = await res.text();
-          console.warn(`[sync-custom-api] ${endpoint.type} failed (${res.status}): ${errText.slice(0, 200)}`);
-          // Don't treat 404 as fatal - endpoint may not exist yet
+          console.warn(`[sync-custom-api] ${endpoint.label} failed (${res.status}): ${errText.slice(0, 200)}`);
           if (res.status !== 404) {
-            errors.push(`${endpoint.type}: ${res.status}`);
+            errors.push(`${endpoint.label}: ${res.status}`);
           }
           continue;
         }
 
         const data = await res.json();
 
-        // Upsert into custom_api_metrics
         const { error: upsertError } = await supabase
           .from("custom_api_metrics")
           .upsert(
             {
               project_id,
-              metric_type: endpoint.type,
+              metric_type: endpoint.label,
               data,
               period: "30d",
               synced_at: new Date().toISOString(),
@@ -168,37 +166,35 @@ Deno.serve(async (req) => {
           );
 
         if (upsertError) {
-          console.error(`[sync-custom-api] Upsert error for ${endpoint.type}:`, upsertError);
-          // Try insert instead (no unique constraint yet)
-          // Delete old and insert new
+          console.error(`[sync-custom-api] Upsert error for ${endpoint.label}:`, upsertError);
           await supabase
             .from("custom_api_metrics")
             .delete()
             .eq("project_id", project_id)
-            .eq("metric_type", endpoint.type);
+            .eq("metric_type", endpoint.label);
 
           const { error: insertError } = await supabase
             .from("custom_api_metrics")
             .insert({
               project_id,
-              metric_type: endpoint.type,
+              metric_type: endpoint.label,
               data,
               period: "30d",
               synced_at: new Date().toISOString(),
             });
 
           if (insertError) {
-            console.error(`[sync-custom-api] Insert error for ${endpoint.type}:`, insertError);
-            errors.push(`${endpoint.type}: db error`);
+            console.error(`[sync-custom-api] Insert error for ${endpoint.label}:`, insertError);
+            errors.push(`${endpoint.label}: db error`);
             continue;
           }
         }
 
         synced++;
-        console.log(`[sync-custom-api] ✅ ${endpoint.type} synced`);
+        console.log(`[sync-custom-api] ✅ ${endpoint.label} synced`);
       } catch (err) {
-        console.error(`[sync-custom-api] Error fetching ${endpoint.type}:`, err);
-        errors.push(`${endpoint.type}: ${String(err).slice(0, 100)}`);
+        console.error(`[sync-custom-api] Error fetching ${endpoint.label}:`, err);
+        errors.push(`${endpoint.label}: ${String(err).slice(0, 100)}`);
       }
     }
 
