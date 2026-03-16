@@ -68,6 +68,9 @@ Deno.serve(async (req) => {
         if (project.evolution_api_url && project.evolution_api_key && project.evolution_instance_name) {
           syncs.push({ fn: "sync-whatsapp", label: "WhatsApp" });
         }
+        if (project.custom_api_url && project.custom_api_key) {
+          syncs.push({ fn: "sync-custom-api", label: "API Customizada" });
+        }
 
         return { projectId, projectName: project.name, syncs };
       })
