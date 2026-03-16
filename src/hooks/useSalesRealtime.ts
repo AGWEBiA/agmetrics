@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { createNotification } from "@/hooks/useNotifications";
+import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
 
 export function useSalesRealtime(projectId: string | undefined) {
   const queryClient = useQueryClient();
