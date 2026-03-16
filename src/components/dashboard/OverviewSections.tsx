@@ -23,7 +23,7 @@ interface OverviewProps {
   leadJourney?: { totalLeads: number; totalPurchases: number; conversionRate: number; totalRevenue: number; topSource: string; sourceChart: { source: string; purchases: number; clicks: number }[] } | null;
 }
 
-export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress }: OverviewProps): Record<string, React.ReactNode> {
+export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress, leadJourney }: OverviewProps): Record<string, React.ReactNode> {
   return {
     budget_provisioning: budgetData ? <BudgetSection budgetData={budgetData} /> : null,
 
