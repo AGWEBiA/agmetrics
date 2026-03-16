@@ -72,6 +72,18 @@ export function AppSidebar() {
           visible: can("sales.view"),
         },
         {
+          title: "Jornada do Lead",
+          url: `/admin/projects/${projectId}/lead-journey`,
+          icon: Route,
+          visible: can("projects.view"),
+        },
+        {
+          title: "Relatórios WhatsApp",
+          url: `/admin/projects/${projectId}/whatsapp-reports`,
+          icon: MessageSquare,
+          visible: can("projects.edit"),
+        },
+        {
           title: "Configurações",
           url: `/admin/projects/${projectId}/config`,
           icon: Settings,
