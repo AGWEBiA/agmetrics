@@ -51,6 +51,7 @@ const App = () => (
             <Route path="projects/:projectId/whatsapp-reports" element={<PermissionGuard permission="projects.edit"><WhatsAppReports /></PermissionGuard>} />
             <Route path="projects/:projectId/lead-journey" element={<PermissionGuard permission="projects.view"><LeadJourney /></PermissionGuard>} />
             <Route path="projects/:projectId/pixel-analytics" element={<PermissionGuard permission="projects.view"><PixelAnalytics /></PermissionGuard>} />
+            <Route path="projects/:projectId/behavior" element={<PermissionGuard permission="projects.view"><BehaviorAnalytics /></PermissionGuard>} />
             <Route path="users" element={<PermissionGuard adminOnly><UserManagement /></PermissionGuard>} />
             <Route path="guide" element={<Guide />} />
           </Route>
