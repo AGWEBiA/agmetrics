@@ -44,6 +44,29 @@ export function PixelInstallPanel({ projectId, projectName = "Projeto" }: PixelI
   // <button onclick="window.AGMetrics?.track('lead', { form: 'newsletter' })">Enviar</button>
 </script>`;
 
+  const checkoutSnippet = `<!-- AGMetrics - Checkout Kiwify / Hotmart -->
+<!-- Cole no campo de "Scripts personalizados" ou "Pixel/Tracking" -->
+<!-- da sua plataforma de vendas (Kiwify ou Hotmart). -->
+
+<script src="${pixelUrl}&track=all"></script>
+<script>
+  // Rastreia automaticamente a visita ao checkout.
+  // Eventos customizados opcionais:
+  //
+  // Quando o usuário iniciar o preenchimento do formulário:
+  // window.AGMetrics?.track("checkout_start", {
+  //   product: "Nome do Produto"
+  // });
+  //
+  // ─── Kiwify ───
+  // No painel Kiwify: Produto → Configurações → Checkout → Scripts
+  // Cole este snippet inteiro no campo de scripts do checkout.
+  //
+  // ─── Hotmart ───
+  // No painel Hotmart: Produto → Editar → Checkout → Pixel de rastreamento
+  // Cole este snippet inteiro no campo de scripts personalizados.
+</script>`;
+
   const thankYouSnippet = `<!-- AGMetrics - Página de Obrigado -->
 <script src="${pixelUrl}&track=all"></script>
 <script>
@@ -157,6 +180,7 @@ export function PixelInstallPanel({ projectId, projectName = "Projeto" }: PixelI
           <TabsList className="w-full">
             <TabsTrigger value="basic" className="text-xs flex-1">Básico</TabsTrigger>
             <TabsTrigger value="full" className="text-xs flex-1">Completo</TabsTrigger>
+            <TabsTrigger value="checkout" className="text-xs flex-1">Checkout</TabsTrigger>
             <TabsTrigger value="thankyou" className="text-xs flex-1">Obrigado</TabsTrigger>
           </TabsList>
 
@@ -172,6 +196,13 @@ export function PixelInstallPanel({ projectId, projectName = "Projeto" }: PixelI
             <SnippetBlock code={fullSnippet} id="full" label="Completo" />
           </TabsContent>
 
+          <TabsContent value="checkout" className="mt-3">
+            <p className="text-xs text-muted-foreground mb-2">
+              Cole no campo de <strong>scripts personalizados</strong> do checkout na Kiwify ou Hotmart.
+            </p>
+            <SnippetBlock code={checkoutSnippet} id="checkout" label="Checkout" />
+          </TabsContent>
+
           <TabsContent value="thankyou" className="mt-3">
             <p className="text-xs text-muted-foreground mb-2">
               Use <strong>apenas</strong> na página de obrigado/confirmação. Já inclui o rastreamento completo.
@@ -184,6 +215,7 @@ export function PixelInstallPanel({ projectId, projectName = "Projeto" }: PixelI
           <p className="font-medium text-foreground">📌 Como instalar:</p>
           <ul className="list-disc list-inside space-y-0.5">
             <li>Cole o snippet <strong>Completo</strong> em todas as páginas antes do <code className="bg-muted px-1 rounded">&lt;/body&gt;</code></li>
+            <li>No checkout da Kiwify/Hotmart, use o snippet <strong>Checkout</strong></li>
             <li>Na página de obrigado, use o snippet <strong>Obrigado</strong> no lugar</li>
             <li>Os dados aparecem em <strong>Analytics do Pixel</strong> e <strong>Mapa de Calor</strong> em até 1 minuto</li>
           </ul>
@@ -199,6 +231,7 @@ export function PixelInstallPanel({ projectId, projectName = "Projeto" }: PixelI
               pixelUrl,
               basicSnippet,
               fullSnippet,
+              checkoutSnippet,
               thankYouSnippet,
             })
           }

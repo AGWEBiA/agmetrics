@@ -6,6 +6,7 @@ interface PixelExportData {
   pixelUrl: string;
   basicSnippet: string;
   fullSnippet: string;
+  checkoutSnippet: string;
   thankYouSnippet: string;
 }
 
@@ -89,8 +90,21 @@ export function exportPixelPDF(data: PixelExportData) {
   addCode(data.fullSnippet);
   addSpacer();
 
-  // ── Section 3: Thank You ──
-  addText("3. Pixel de Página de Obrigado / Conversão", 13, { bold: true });
+  // ── Section 3: Checkout ──
+  addText("3. Pixel de Checkout (Kiwify / Hotmart)", 13, { bold: true });
+  addText(
+    "Use este snippet no campo de scripts personalizados do checkout da sua plataforma de vendas. " +
+    "Ele rastreia a visita ao checkout e permite eventos customizados como início de preenchimento.",
+    10
+  );
+  addText("Kiwify: Produto → Configurações → Checkout → Scripts", 9, { color: [100, 100, 100] });
+  addText("Hotmart: Produto → Editar → Checkout → Pixel de rastreamento", 9, { color: [100, 100, 100] });
+  addSpacer(2);
+  addCode(data.checkoutSnippet);
+  addSpacer();
+
+  // ── Section 4: Thank You ──
+  addText("4. Pixel de Página de Obrigado / Conversão", 13, { bold: true });
   addText(
     "Use APENAS na página de obrigado ou confirmação de compra. Já inclui todo o rastreamento completo " +
     "e dispara automaticamente o evento 'thank_you_page' para medir conversões.",
