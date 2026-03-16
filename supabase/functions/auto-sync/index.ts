@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     // Fetch all active projects
     const { data: projects, error: projectsError } = await supabaseAdmin
       .from("projects")
-      .select("id, name, kiwify_client_id, hotmart_webhook_token, evolution_api_url, evolution_api_key, evolution_instance_name")
+      .select("id, name, kiwify_client_id, hotmart_webhook_token, evolution_api_url, evolution_api_key, evolution_instance_name, custom_api_url, custom_api_key")
       .eq("is_active", true);
 
     if (projectsError) throw projectsError;
@@ -67,6 +67,9 @@ Deno.serve(async (req) => {
         if (project.hotmart_webhook_token) syncs.push({ fn: "sync-hotmart", label: "Hotmart" });
         if (project.evolution_api_url && project.evolution_api_key && project.evolution_instance_name) {
           syncs.push({ fn: "sync-whatsapp", label: "WhatsApp" });
+        }
+        if (project.custom_api_url && project.custom_api_key) {
+          syncs.push({ fn: "sync-custom-api", label: "API Customizada" });
         }
 
         return { projectId, projectName: project.name, syncs };
