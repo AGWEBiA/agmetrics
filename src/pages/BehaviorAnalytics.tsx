@@ -600,11 +600,14 @@ export default function BehaviorAnalytics() {
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                          <div className="hidden sm:flex items-center gap-3 text-[10px] text-muted-foreground">
                             <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{session.pagesVisited} pág</span>
                             <span className="flex items-center gap-1"><MousePointer2 className="h-3 w-3" />{session.totalClicks} cliques</span>
                             <span className="flex items-center gap-1"><ScrollText className="h-3 w-3" />{session.maxScroll}%</span>
                             <Badge variant="outline" className="text-[10px]">{session.eventCount} eventos</Badge>
+                          </div>
+                          <div className="sm:hidden flex items-center gap-2 text-[10px] text-muted-foreground">
+                            <Badge variant="outline" className="text-[10px]">{session.eventCount} evt</Badge>
                           </div>
                         </button>
 
