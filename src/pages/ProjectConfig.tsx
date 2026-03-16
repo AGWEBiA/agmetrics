@@ -1639,14 +1639,32 @@ function CustomApiTab({ projectId }: { projectId: string }) {
   const [apiName, setApiName] = useState("");
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [endpoints, setEndpoints] = useState<{ path: string; label: string }[]>([
+    { path: "/metrics/overview?period=30d", label: "overview" },
+    { path: "/metrics/campaigns?period=30d", label: "campaigns" },
+    { path: "/metrics/contacts", label: "contacts" },
+    { path: "/metrics/automations", label: "automations" },
+  ]);
 
   useEffect(() => {
     if (project) {
       setApiUrl((project as any).custom_api_url || "");
       setApiKey((project as any).custom_api_key || "");
       setApiName((project as any).custom_api_name || "");
+      const saved = (project as any).custom_api_endpoints;
+      if (saved && Array.isArray(saved) && saved.length > 0) {
+        setEndpoints(saved);
+      }
     }
   }, [project]);
+
+  const addEndpoint = () => setEndpoints([...endpoints, { path: "", label: "" }]);
+  const removeEndpoint = (i: number) => setEndpoints(endpoints.filter((_, idx) => idx !== i));
+  const updateEndpoint = (i: number, field: "path" | "label", value: string) => {
+    const updated = [...endpoints];
+    updated[i] = { ...updated[i], [field]: value };
+    setEndpoints(updated);
+  };
 
   const handleSave = async () => {
     setSaving(true);
