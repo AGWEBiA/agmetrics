@@ -6,6 +6,7 @@ interface PixelExportData {
   pixelUrl: string;
   basicSnippet: string;
   fullSnippet: string;
+  checkoutSnippet: string;
   thankYouSnippet: string;
 }
 

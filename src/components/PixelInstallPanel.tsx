@@ -231,6 +231,7 @@ export function PixelInstallPanel({ projectId, projectName = "Projeto" }: PixelI
               pixelUrl,
               basicSnippet,
               fullSnippet,
+              checkoutSnippet,
               thankYouSnippet,
             })
           }
