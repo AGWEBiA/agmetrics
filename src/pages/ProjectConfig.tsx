@@ -1283,6 +1283,7 @@ function ProductsTab({ projectId }: { projectId: string }) {
         {!products?.length ? (
           <p className="py-8 text-center text-muted-foreground">Nenhum produto cadastrado</p>
         ) : (
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
