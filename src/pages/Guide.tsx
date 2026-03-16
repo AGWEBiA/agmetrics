@@ -760,7 +760,7 @@ export default function Guide() {
         <CardContent className="text-sm text-muted-foreground space-y-2">
           <p>
             O AGMetrics é uma plataforma de <strong className="text-foreground">acompanhamento centralizado</strong> de lançamentos e projetos digitais.
-            Ele consolida dados de anúncios (Meta Ads e Google Ads), vendas (Kiwify e Hotmart) e grupos de WhatsApp em um único dashboard com métricas em tempo real.
+            Ele consolida dados de anúncios (Meta Ads e Google Ads), vendas (Kiwify e Hotmart), grupos de WhatsApp, pixel de tracking e APIs customizadas em um único dashboard com métricas em tempo real.
           </p>
           <div className="flex flex-wrap gap-2 pt-2">
             <Badge variant="outline" className="text-xs">📊 Dashboard em Tempo Real</Badge>
@@ -769,6 +769,9 @@ export default function Guide() {
             <Badge variant="outline" className="text-xs">🛒 Kiwify & Hotmart</Badge>
             <Badge variant="outline" className="text-xs">📱 WhatsApp</Badge>
             <Badge variant="outline" className="text-xs">🔗 Dashboard Público</Badge>
+            <Badge variant="outline" className="text-xs">🔌 API Customizada</Badge>
+            <Badge variant="outline" className="text-xs">👁️ Pixel & Tracking</Badge>
+            <Badge variant="outline" className="text-xs">🗺️ Jornada do Lead</Badge>
           </div>
         </CardContent>
       </Card>
