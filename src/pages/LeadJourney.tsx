@@ -389,7 +389,7 @@ export default function LeadJourney() {
                 />
               </div>
               <Select value={filterSource} onValueChange={setFilterSource}>
-                <SelectTrigger className="w-[160px]"><SelectValue placeholder="Fonte" /></SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[160px]"><SelectValue placeholder="Fonte" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas fontes</SelectItem>
                   {uniqueSources.map(s => (
