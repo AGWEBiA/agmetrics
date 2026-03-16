@@ -107,8 +107,8 @@ export default function PublicDashboard() {
   });
 
   const overviewSections = useMemo(() => {
-    return buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress });
-  }, [m, budgetData, whatsappGroups, whatsappHistory, goalsProgress]);
+    return buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress, leadJourney });
+  }, [m, budgetData, whatsappGroups, whatsappHistory, goalsProgress, leadJourney]);
 
   const DEFAULT_PUBLIC_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "sales_chart", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "whatsapp", "products", "platform_pie", "goals"];
 
