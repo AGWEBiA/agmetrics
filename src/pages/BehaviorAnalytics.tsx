@@ -258,7 +258,7 @@ export default function BehaviorAnalytics() {
   // Heatmap data
   const heatmapGrid = useMemo(() => {
     const mouseEvents = filtered.filter((e) => e.event_type === "mouse_move");
-    const gridCols = 20, gridRows = 30;
+    const gridCols = 30, gridRows = 20;
     const grid = Array.from({ length: gridRows }, () => Array(gridCols).fill(0));
     let maxVal = 0;
     mouseEvents.forEach((e) => {
@@ -275,7 +275,7 @@ export default function BehaviorAnalytics() {
 
   const clickHeatmap = useMemo(() => {
     const clicks = filtered.filter((e) => e.event_type === "click");
-    const gridCols = 20, gridRows = 30;
+    const gridCols = 30, gridRows = 20;
     const grid = Array.from({ length: gridRows }, () => Array(gridCols).fill(0));
     let maxVal = 0;
     clicks.forEach((e) => {
