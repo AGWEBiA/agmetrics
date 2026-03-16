@@ -262,31 +262,38 @@ export default function BehaviorAnalytics() {
           Sem dados suficientes para gerar o mapa
         </div>
       ) : (
-        <div className="relative rounded-lg overflow-hidden border bg-muted" style={{ aspectRatio: `${data.gridCols}/${data.gridRows}` }}>
-          {/* Page layout iframe as background */}
-          {showPageLayout && resolvedPageUrl && (
-            <div className="absolute inset-0 overflow-hidden">
-              <iframe
-                src={resolvedPageUrl}
-                title="Page layout preview"
-                className="w-full border-0 pointer-events-none origin-top-left"
-                style={{
-                  height: "300%",
-                  transform: "scale(1)",
-                  transformOrigin: "top left",
-                  opacity: 0.35,
-                }}
-                sandbox="allow-same-origin"
-                loading="lazy"
-                tabIndex={-1}
-              />
-            </div>
-          )}
-          {/* Show placeholder when no page layout available */}
-          {showPageLayout && !resolvedPageUrl && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground/40 gap-1">
-              <Layout className="h-8 w-8" />
-              <span className="text-[10px]">Selecione uma página para ver o layout</span>
+        <div className="relative rounded-lg overflow-y-auto overflow-x-hidden border bg-muted max-h-[500px] sm:max-h-[600px]" style={{ aspectRatio: `${data.gridCols}/${data.gridRows}` }}>
+          {/* Wireframe page layout as background */}
+          {showPageLayout && (
+            <div className="absolute inset-0 pointer-events-none opacity-20">
+              {/* Header skeleton */}
+              <div className="mx-[8%] mt-[3%] h-[4%] rounded bg-foreground/30" />
+              {/* Nav bar */}
+              <div className="mx-[15%] mt-[2%] h-[2%] rounded bg-foreground/20 flex gap-[2%]" />
+              {/* Hero section */}
+              <div className="mx-[10%] mt-[4%] h-[12%] rounded bg-foreground/15" />
+              {/* Content blocks */}
+              <div className="mx-[8%] mt-[3%] flex gap-[3%]">
+                <div className="flex-1 h-[60px] rounded bg-foreground/10" />
+                <div className="flex-1 h-[60px] rounded bg-foreground/10" />
+                <div className="flex-1 h-[60px] rounded bg-foreground/10" />
+              </div>
+              {/* Text lines */}
+              <div className="mx-[8%] mt-[4%] space-y-[6px]">
+                <div className="h-[6px] w-[70%] rounded bg-foreground/10" />
+                <div className="h-[6px] w-[90%] rounded bg-foreground/10" />
+                <div className="h-[6px] w-[55%] rounded bg-foreground/10" />
+                <div className="h-[6px] w-[80%] rounded bg-foreground/10" />
+              </div>
+              {/* CTA */}
+              <div className="mx-[30%] mt-[4%] h-[3%] rounded-full bg-foreground/20" />
+              {/* More content */}
+              <div className="mx-[8%] mt-[5%] flex gap-[3%]">
+                <div className="flex-1 h-[80px] rounded bg-foreground/8" />
+                <div className="flex-1 h-[80px] rounded bg-foreground/8" />
+              </div>
+              {/* Footer */}
+              <div className="absolute bottom-0 left-0 right-0 h-[6%] bg-foreground/10" />
             </div>
           )}
           {/* Heatmap overlay */}
@@ -305,10 +312,10 @@ export default function BehaviorAnalytics() {
             <span>Alto</span>
           </div>
           {/* Page URL indicator */}
-          {showPageLayout && resolvedPageUrl && (
+          {showPageLayout && selectedPage !== "all" && (
             <div className="absolute top-2 left-2 text-[10px] text-muted-foreground bg-background/80 backdrop-blur-sm rounded px-2 py-1 z-10 flex items-center gap-1">
               <Layout className="h-3 w-3" />
-              <span className="truncate max-w-[200px]">{selectedPage}</span>
+              <span className="truncate max-w-[150px] sm:max-w-[200px]">{selectedPage}</span>
             </div>
           )}
         </div>
