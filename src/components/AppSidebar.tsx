@@ -11,6 +11,7 @@ import {
   BookOpen,
   MessageSquare,
   Route,
+  Activity,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
@@ -75,6 +76,12 @@ export function AppSidebar() {
           title: "Jornada do Lead",
           url: `/admin/projects/${projectId}/lead-journey`,
           icon: Route,
+          visible: can("projects.view"),
+        },
+        {
+          title: "Analytics do Pixel",
+          url: `/admin/projects/${projectId}/pixel-analytics`,
+          icon: Activity,
           visible: can("projects.view"),
         },
         {

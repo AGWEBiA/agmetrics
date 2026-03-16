@@ -3,10 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { createNotification } from "@/hooks/useNotifications";
+import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
 
 export function useSalesRealtime(projectId: string | undefined) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { showNotification } = useBrowserNotifications();
 
   useEffect(() => {
     if (!projectId) return;
@@ -39,6 +41,9 @@ export function useSalesRealtime(projectId: string | undefined) {
             title: "🎉 Nova venda!",
             description: saleMsg,
           });
+
+          // Browser push notification
+          showNotification("🎉 Nova venda!", { body: saleMsg, tag: `sale-${sale.id}` });
 
           // Create in-app notification
           const { data: { user } } = await supabase.auth.getUser();
@@ -80,6 +85,8 @@ export function useSalesRealtime(projectId: string | undefined) {
               title: "🔄 Status de venda atualizado",
               description: msg,
             });
+
+            showNotification("🔄 Status atualizado", { body: msg, tag: `status-${newSale.id}` });
 
             // Create notification for refunds
             if (newSale.status === "refunded") {
