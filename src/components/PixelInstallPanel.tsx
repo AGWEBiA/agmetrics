@@ -215,6 +215,7 @@ export function PixelInstallPanel({ projectId, projectName = "Projeto" }: PixelI
           <p className="font-medium text-foreground">📌 Como instalar:</p>
           <ul className="list-disc list-inside space-y-0.5">
             <li>Cole o snippet <strong>Completo</strong> em todas as páginas antes do <code className="bg-muted px-1 rounded">&lt;/body&gt;</code></li>
+            <li>No checkout da Kiwify/Hotmart, use o snippet <strong>Checkout</strong></li>
             <li>Na página de obrigado, use o snippet <strong>Obrigado</strong> no lugar</li>
             <li>Os dados aparecem em <strong>Analytics do Pixel</strong> e <strong>Mapa de Calor</strong> em até 1 minuto</li>
           </ul>
