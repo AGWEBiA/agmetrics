@@ -1,21 +1,42 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface OnboardingStepStatus {
+  completed: boolean;
+  detail?: string;
+}
+
+export type OnboardingStatusMap = Record<string, OnboardingStepStatus>;
+
 export function useOnboardingStatus(projectId: string | undefined) {
   return useQuery({
     queryKey: ["onboarding_status", projectId],
     enabled: !!projectId,
+    refetchInterval: 30000,
     queryFn: async () => {
-      const completed = new Set<string>();
+      const status: OnboardingStatusMap = {};
 
-      // Check webhooks (sales_events exist)
+      // Check webhooks — project has kiwify or hotmart credentials configured
+      const { data: project } = await supabase
+        .from("projects")
+        .select("kiwify_webhook_token, hotmart_webhook_token, kiwify_client_id, hotmart_client_id")
+        .eq("id", projectId!)
+        .single();
+      
+      const hasWebhookConfig = !!(project?.kiwify_webhook_token || project?.hotmart_webhook_token || project?.kiwify_client_id || project?.hotmart_client_id);
       const { count: salesCount } = await supabase
         .from("sales_events")
         .select("id", { count: "exact", head: true })
         .eq("project_id", projectId!);
-      if (salesCount && salesCount > 0) completed.add("webhook");
+      
+      status.webhook = {
+        completed: hasWebhookConfig,
+        detail: hasWebhookConfig
+          ? `${salesCount || 0} venda${(salesCount || 0) !== 1 ? "s" : ""} recebida${(salesCount || 0) !== 1 ? "s" : ""}`
+          : "Nenhum webhook configurado",
+      };
 
-      // Check ads (meta or google credentials)
+      // Check ads
       const { data: metaCreds } = await supabase
         .from("meta_credentials")
         .select("id")
@@ -26,34 +47,65 @@ export function useOnboardingStatus(projectId: string | undefined) {
         .select("id")
         .eq("project_id", projectId!)
         .maybeSingle();
-      if (metaCreds || googleCreds) completed.add("ads");
+      const platforms = [metaCreds ? "Meta" : null, googleCreds ? "Google" : null].filter(Boolean);
+      status.ads = {
+        completed: platforms.length > 0,
+        detail: platforms.length > 0 ? platforms.join(" + ") + " conectado" : "Nenhuma plataforma conectada",
+      };
 
       // Check products
       const { count: productCount } = await supabase
         .from("products")
         .select("id", { count: "exact", head: true })
         .eq("project_id", projectId!);
-      if (productCount && productCount > 0) completed.add("products");
+      status.products = {
+        completed: (productCount || 0) > 0,
+        detail: (productCount || 0) > 0
+          ? `${productCount} produto${productCount !== 1 ? "s" : ""}`
+          : "Nenhum produto cadastrado",
+      };
 
-      // Check pixel (tracking events exist)
-      const { count: pixelCount } = await supabase
+      // Check pixel
+      const { data: pixelData, count: pixelCount } = await supabase
         .from("tracking_events")
-        .select("id", { count: "exact", head: true })
-        .eq("project_id", projectId!);
-      if (pixelCount && pixelCount > 0) completed.add("pixel");
+        .select("created_at", { count: "exact" })
+        .eq("project_id", projectId!)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      const lastPixelEvent = pixelData?.[0]?.created_at || null;
+      const pixelActive = lastPixelEvent
+        ? Date.now() - new Date(lastPixelEvent).getTime() < 24 * 60 * 60 * 1000
+        : false;
+      status.pixel = {
+        completed: (pixelCount || 0) > 0,
+        detail: pixelActive
+          ? `Pixel Ativo · ${pixelCount} evento${(pixelCount || 0) !== 1 ? "s" : ""}`
+          : (pixelCount || 0) > 0
+            ? "Pixel Inativo"
+            : "Pixel Inativo · Instalar pixel",
+      };
 
       // Check goals
       const { count: goalCount } = await supabase
         .from("project_goals")
         .select("id", { count: "exact", head: true })
         .eq("project_id", projectId!);
-      if (goalCount && goalCount > 0) completed.add("goals");
+      status.goals = {
+        completed: (goalCount || 0) > 0,
+        detail: (goalCount || 0) > 0
+          ? `${goalCount} meta${(goalCount || 0) !== 1 ? "s" : ""} definida${(goalCount || 0) !== 1 ? "s" : ""}`
+          : "Nenhuma meta definida",
+      };
 
-      // Dashboard is always "done" if they've visited
-      if (completed.size >= 2) completed.add("dashboard");
+      // Dashboard
+      const completedCount = Object.values(status).filter((s) => s.completed).length;
+      status.dashboard = {
+        completed: completedCount >= 2,
+        detail: completedCount >= 2 ? "Pronto para usar" : "Complete mais passos",
+      };
 
-      return completed;
+      return status;
     },
-    staleTime: 60000,
+    staleTime: 15000,
   });
 }

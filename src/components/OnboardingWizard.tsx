@@ -1,14 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Circle, ArrowRight, BarChart3, Webhook, Target, ShoppingCart, Code, Activity, AlertCircle } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import type { OnboardingStatusMap } from "@/hooks/useOnboardingStatus";
 
 interface OnboardingStep {
   id: string;
@@ -22,7 +19,7 @@ interface OnboardingStep {
 interface OnboardingWizardProps {
   projectId: string;
   projectName: string;
-  completedSteps: Set<string>;
+  completedSteps: OnboardingStatusMap;
 }
 
 const STEPS: OnboardingStep[] = [
@@ -76,39 +73,38 @@ const STEPS: OnboardingStep[] = [
   },
 ];
 
-function PixelStatusBadge({ projectId }: { projectId: string }) {
-  const { data: pixelStatus } = useQuery({
-    queryKey: ["pixel_onboarding_status", projectId],
-    refetchInterval: 30000,
-    queryFn: async () => {
-      const { data, count } = await supabase
-        .from("tracking_events")
-        .select("created_at", { count: "exact" })
-        .eq("project_id", projectId)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      const lastEvent = data?.[0]?.created_at || null;
-      const total = count || 0;
-      const isActive = lastEvent
-        ? Date.now() - new Date(lastEvent).getTime() < 24 * 60 * 60 * 1000
-        : false;
-      return { lastEvent, total, isActive };
-    },
-  });
+function StepStatusBadge({ stepId, status }: { stepId: string; status: OnboardingStatusMap }) {
+  const step = status[stepId];
+  if (!step) return null;
 
-  if (!pixelStatus) return null;
-
-  if (pixelStatus.isActive) {
+  if (step.completed) {
+    // Pixel has special active/inactive logic
+    if (stepId === "pixel" && step.detail?.includes("Ativo")) {
+      return (
+        <Badge variant="outline" className="text-[10px] border-success/30 text-success gap-1 py-0 px-1.5 animate-pulse">
+          <Activity className="h-3 w-3" /> {step.detail}
+        </Badge>
+      );
+    }
     return (
-      <Badge variant="outline" className="text-[10px] border-success/30 text-success gap-1 py-0 px-1.5 animate-pulse">
-        <Activity className="h-3 w-3" /> Pixel Ativo · Aguardando dados
+      <Badge variant="outline" className="text-[10px] border-success/30 text-success gap-1 py-0 px-1.5">
+        <CheckCircle2 className="h-3 w-3" /> {step.detail}
+      </Badge>
+    );
+  }
+
+  // Special styling for pixel inativo
+  if (stepId === "pixel") {
+    return (
+      <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive gap-1 py-0 px-1.5">
+        <AlertCircle className="h-3 w-3" /> {step.detail}
       </Badge>
     );
   }
 
   return (
-    <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive gap-1 py-0 px-1.5">
-      <AlertCircle className="h-3 w-3" /> Pixel Inativo · Instalar pixel
+    <Badge variant="outline" className="text-[10px] text-muted-foreground gap-1 py-0 px-1.5">
+      {step.detail}
     </Badge>
   );
 }
@@ -117,8 +113,9 @@ export function OnboardingWizard({ projectId, projectName, completedSteps }: Onb
   const navigate = useNavigate();
   const [dismissed, setDismissed] = useState(false);
 
-  const progress = (completedSteps.size / STEPS.length) * 100;
-  const allDone = completedSteps.size >= STEPS.length;
+  const completedCount = Object.values(completedSteps).filter((s) => s.completed).length;
+  const progress = (completedCount / STEPS.length) * 100;
+  const allDone = completedCount >= STEPS.length;
 
   if (dismissed || allDone) return null;
 
@@ -138,7 +135,7 @@ export function OnboardingWizard({ projectId, projectName, completedSteps }: Onb
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-xs">
-                  {completedSteps.size}/{STEPS.length}
+                  {completedCount}/{STEPS.length}
                 </Badge>
                 <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setDismissed(true)}>
                   Fechar
@@ -157,7 +154,7 @@ export function OnboardingWizard({ projectId, projectName, completedSteps }: Onb
           <CardContent>
             <div className="space-y-2">
               {STEPS.map((step, i) => {
-                const done = completedSteps.has(step.id);
+                const done = completedSteps[step.id]?.completed ?? false;
                 return (
                   <motion.div
                     key={step.id}
@@ -175,7 +172,7 @@ export function OnboardingWizard({ projectId, projectName, completedSteps }: Onb
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className={`text-sm font-medium ${done ? "line-through text-muted-foreground" : ""}`}>{step.title}</p>
-                        {step.id === "pixel" && <PixelStatusBadge projectId={projectId} />}
+                        <StepStatusBadge stepId={step.id} status={completedSteps} />
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{step.description}</p>
                     </div>
