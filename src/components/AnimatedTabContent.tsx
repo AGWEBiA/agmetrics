@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { TabsContent } from "@/components/ui/tabs";
 import { ReactNode } from "react";
 
@@ -10,11 +10,10 @@ interface AnimatedTabContentProps {
 
 export function AnimatedTabContent({ value, children, className = "" }: AnimatedTabContentProps) {
   return (
-    <TabsContent value={value} className={className} forceMount>
+    <TabsContent value={value} className={className}>
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
       >
         {children}
