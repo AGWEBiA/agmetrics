@@ -49,7 +49,7 @@ export default function WhatsAppReports() {
     queryKey: ["whatsapp_report_configs", projectId],
     enabled: !!projectId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("whatsapp_report_configs")
         .select("*")
         .eq("project_id", projectId!)
