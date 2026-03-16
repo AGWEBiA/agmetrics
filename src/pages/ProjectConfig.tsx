@@ -1310,6 +1310,7 @@ function ProductsTab({ projectId }: { projectId: string }) {
               ))}
             </TableBody>
           </Table>
+          </div>
         )}
       </CardContent>
     </Card>
