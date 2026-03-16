@@ -905,6 +905,7 @@ export type Database = {
           budget: number | null
           cart_open_date: string | null
           created_at: string
+          custom_api_endpoints: Json | null
           custom_api_key: string | null
           custom_api_name: string | null
           custom_api_url: string | null
@@ -938,6 +939,7 @@ export type Database = {
           budget?: number | null
           cart_open_date?: string | null
           created_at?: string
+          custom_api_endpoints?: Json | null
           custom_api_key?: string | null
           custom_api_name?: string | null
           custom_api_url?: string | null
@@ -971,6 +973,7 @@ export type Database = {
           budget?: number | null
           cart_open_date?: string | null
           created_at?: string
+          custom_api_endpoints?: Json | null
           custom_api_key?: string | null
           custom_api_name?: string | null
           custom_api_url?: string | null
