@@ -378,8 +378,8 @@ export default function LeadJourney() {
           {/* Journeys Tab */}
           <TabsContent value="journeys" className="space-y-4">
             {/* Filters */}
-            <div className="flex flex-wrap gap-3">
-              <div className="relative flex-1 min-w-[200px]">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3">
+              <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por e-mail ou nome..."
@@ -389,7 +389,7 @@ export default function LeadJourney() {
                 />
               </div>
               <Select value={filterSource} onValueChange={setFilterSource}>
-                <SelectTrigger className="w-[160px]"><SelectValue placeholder="Fonte" /></SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[160px]"><SelectValue placeholder="Fonte" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas fontes</SelectItem>
                   {uniqueSources.map(s => (
@@ -398,7 +398,7 @@ export default function LeadJourney() {
                 </SelectContent>
               </Select>
               <Select value={filterEventType} onValueChange={setFilterEventType}>
-                <SelectTrigger className="w-[160px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[160px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos tipos</SelectItem>
                   {Object.entries(EVENT_LABELS).map(([k, v]) => (

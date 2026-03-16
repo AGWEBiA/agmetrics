@@ -840,9 +840,9 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
       <CardContent className="space-y-5">
         <div className="space-y-2">
           <Label>URL do Webhook</Label>
-          <div className="flex gap-2">
-            <Input value={webhookUrl} readOnly className="font-mono text-xs" />
-            <Button variant="outline" onClick={handleCopy}>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input value={webhookUrl} readOnly className="font-mono text-xs min-w-0" />
+            <Button variant="outline" onClick={handleCopy} className="shrink-0">
               {copied ? <Check className="mr-1 h-4 w-4" /> : <Copy className="mr-1 h-4 w-4" />}
               Copiar
             </Button>
@@ -856,13 +856,14 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
           <Label>
             {platform === "hotmart" ? "Token de Validação (X-Hotmart-Hottok)" : "Token de Validação (x-webhook-token)"}
           </Label>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Input
               placeholder={platform === "hotmart" ? "Digite o token da Hotmart" : "Digite o token da Kiwify"}
               value={webhookToken}
               onChange={(e) => setWebhookToken(e.target.value)}
+              className="min-w-0"
             />
-            <Button onClick={handleSaveToken} disabled={updateProject.isPending}>
+            <Button onClick={handleSaveToken} disabled={updateProject.isPending} className="shrink-0">
               <Save className="mr-1 h-4 w-4" />
               Salvar
             </Button>
@@ -1163,6 +1164,7 @@ function WhatsAppTab({ projectId }: { projectId: string }) {
           {!groups?.length ? (
             <p className="py-8 text-center text-muted-foreground">Nenhum grupo cadastrado</p>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -1194,6 +1196,7 @@ function WhatsAppTab({ projectId }: { projectId: string }) {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -1280,6 +1283,7 @@ function ProductsTab({ projectId }: { projectId: string }) {
         {!products?.length ? (
           <p className="py-8 text-center text-muted-foreground">Nenhum produto cadastrado</p>
         ) : (
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -1306,6 +1310,7 @@ function ProductsTab({ projectId }: { projectId: string }) {
               ))}
             </TableBody>
           </Table>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -1587,6 +1592,7 @@ function InvestmentsTab({ projectId }: { projectId: string }) {
         {!investments?.length ? (
           <p className="py-8 text-center text-muted-foreground">Nenhum investimento cadastrado</p>
         ) : (
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -1611,6 +1617,7 @@ function InvestmentsTab({ projectId }: { projectId: string }) {
               ))}
             </TableBody>
           </Table>
+          </div>
         )}
       </CardContent>
     </Card>
