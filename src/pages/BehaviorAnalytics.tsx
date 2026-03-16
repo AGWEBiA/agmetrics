@@ -513,7 +513,7 @@ export default function BehaviorAnalytics() {
                     <MousePointer2 className="h-4 w-4 text-primary" /> Mapa de Calor — Cliques
                   </CardTitle>
                 </CardHeader>
-                <CardContent><HeatGrid data={clickHeatmap} title="" /></CardContent>
+                <CardContent><HeatGrid data={clickHeatmap} title="" showPageLayout={true} /></CardContent>
               </Card>
             </AnimatedCard>
           </div>
