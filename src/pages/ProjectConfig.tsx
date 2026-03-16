@@ -89,6 +89,9 @@ export default function ProjectConfig() {
             <PixelDomainSelector projectId={projectId!} />
           </div>
         </TabsContent>
+        <TabsContent value="custom-api">
+          <CustomApiTab projectId={projectId!} />
+        </TabsContent>
       </Tabs>
     </div>
   );
