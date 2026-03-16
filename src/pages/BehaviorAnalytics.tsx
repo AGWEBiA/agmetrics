@@ -419,6 +419,7 @@ export default function BehaviorAnalytics() {
                         ))}
                       </TableBody>
                     </Table>
+                    </div>
                   </>
                 )}
               </CardContent>

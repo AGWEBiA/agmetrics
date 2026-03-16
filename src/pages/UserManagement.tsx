@@ -142,17 +142,18 @@ export default function UserManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Users className="h-7 w-7" />
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Users className="h-6 w-6 sm:h-7 sm:w-7" />
             Gestão de Usuários
           </h1>
-          <p className="text-muted-foreground">Gerencie os usuários, papéis e permissões do sistema</p>
+          <p className="text-muted-foreground text-sm">Gerencie os usuários, papéis e permissões do sistema</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button size="sm" onClick={() => setCreateOpen(true)}>
           <UserPlus className="mr-2 h-4 w-4" />
-          Novo Usuário
+          <span className="hidden sm:inline">Novo Usuário</span>
+          <span className="sm:hidden">Novo</span>
         </Button>
       </div>
 
