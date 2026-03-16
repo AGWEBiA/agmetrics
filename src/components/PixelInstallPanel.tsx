@@ -182,6 +182,24 @@ export function PixelInstallPanel({ projectId, projectName = "Projeto" }: PixelI
             <li>Os dados aparecem em <strong>Analytics do Pixel</strong> e <strong>Mapa de Calor</strong> em até 1 minuto</li>
           </ul>
         </div>
+
+        <Button
+          variant="outline"
+          className="w-full gap-2"
+          onClick={() =>
+            exportPixelPDF({
+              projectName,
+              projectId,
+              pixelUrl,
+              basicSnippet,
+              fullSnippet,
+              thankYouSnippet,
+            })
+          }
+        >
+          <FileDown className="h-4 w-4" />
+          Exportar PDF com instruções para o webdesigner
+        </Button>
       </CardContent>
     </Card>
   );
