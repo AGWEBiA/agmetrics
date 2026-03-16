@@ -238,7 +238,23 @@ export default function BehaviorAnalytics() {
     return `hsla(220, 80%, 56%, ${intensity * 0.3})`;
   };
 
-  const HeatGrid = ({ data, title }: { data: typeof heatmapGrid; title: string }) => (
+  // Resolve the full page URL for iframe background
+  const resolvedPageUrl = useMemo(() => {
+    if (selectedPage === "all" || !selectedPage) return null;
+    // Try to find a full URL from events matching the selected page
+    const match = events.find((e) => e.page_url && getPathname(e.page_url) === selectedPage);
+    if (match?.page_url) {
+      try {
+        const url = new URL(match.page_url);
+        return url.origin + url.pathname;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }, [events, selectedPage]);
+
+  const HeatGrid = ({ data, title, showPageLayout = false }: { data: typeof heatmapGrid; title: string; showPageLayout?: boolean }) => (
     <div className="space-y-2">
       {title && <p className="text-sm font-medium text-foreground">{title}</p>}
       {data.maxVal === 0 ? (
@@ -246,13 +262,40 @@ export default function BehaviorAnalytics() {
           Sem dados suficientes para gerar o mapa
         </div>
       ) : (
-        <div className="relative rounded-lg overflow-hidden border" style={{ aspectRatio: `${data.gridCols}/${data.gridRows}` }}>
-          <div className="grid w-full h-full" style={{ gridTemplateColumns: `repeat(${data.gridCols}, 1fr)`, gridTemplateRows: `repeat(${data.gridRows}, 1fr)` }}>
+        <div className="relative rounded-lg overflow-hidden border bg-muted" style={{ aspectRatio: `${data.gridCols}/${data.gridRows}` }}>
+          {/* Page layout iframe as background */}
+          {showPageLayout && resolvedPageUrl && (
+            <div className="absolute inset-0 overflow-hidden">
+              <iframe
+                src={resolvedPageUrl}
+                title="Page layout preview"
+                className="w-full border-0 pointer-events-none origin-top-left"
+                style={{
+                  height: "300%",
+                  transform: "scale(1)",
+                  transformOrigin: "top left",
+                  opacity: 0.35,
+                }}
+                sandbox="allow-same-origin"
+                loading="lazy"
+                tabIndex={-1}
+              />
+            </div>
+          )}
+          {/* Show placeholder when no page layout available */}
+          {showPageLayout && !resolvedPageUrl && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground/40 gap-1">
+              <Layout className="h-8 w-8" />
+              <span className="text-[10px]">Selecione uma página para ver o layout</span>
+            </div>
+          )}
+          {/* Heatmap overlay */}
+          <div className="absolute inset-0 grid w-full h-full" style={{ gridTemplateColumns: `repeat(${data.gridCols}, 1fr)`, gridTemplateRows: `repeat(${data.gridRows}, 1fr)` }}>
             {data.grid.flat().map((val, i) => (
               <div key={i} style={{ backgroundColor: getHeatColor(val, data.maxVal) }} />
             ))}
           </div>
-          <div className="absolute bottom-2 right-2 flex items-center gap-1 text-[10px] text-muted-foreground bg-background/80 backdrop-blur-sm rounded px-2 py-1">
+          <div className="absolute bottom-2 right-2 flex items-center gap-1 text-[10px] text-muted-foreground bg-background/80 backdrop-blur-sm rounded px-2 py-1 z-10">
             <span>Baixo</span>
             <div className="flex gap-0.5">
               {[0.1, 0.3, 0.5, 0.7, 0.9].map((v) => (
@@ -261,6 +304,13 @@ export default function BehaviorAnalytics() {
             </div>
             <span>Alto</span>
           </div>
+          {/* Page URL indicator */}
+          {showPageLayout && resolvedPageUrl && (
+            <div className="absolute top-2 left-2 text-[10px] text-muted-foreground bg-background/80 backdrop-blur-sm rounded px-2 py-1 z-10 flex items-center gap-1">
+              <Layout className="h-3 w-3" />
+              <span className="truncate max-w-[200px]">{selectedPage}</span>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -453,7 +503,7 @@ export default function BehaviorAnalytics() {
                     <Flame className="h-4 w-4 text-destructive" /> Mapa de Calor — Mouse
                   </CardTitle>
                 </CardHeader>
-                <CardContent><HeatGrid data={heatmapGrid} title="" /></CardContent>
+                <CardContent><HeatGrid data={heatmapGrid} title="" showPageLayout={true} /></CardContent>
               </Card>
             </AnimatedCard>
             <AnimatedCard index={1}>
@@ -463,7 +513,7 @@ export default function BehaviorAnalytics() {
                     <MousePointer2 className="h-4 w-4 text-primary" /> Mapa de Calor — Cliques
                   </CardTitle>
                 </CardHeader>
-                <CardContent><HeatGrid data={clickHeatmap} title="" /></CardContent>
+                <CardContent><HeatGrid data={clickHeatmap} title="" showPageLayout={true} /></CardContent>
               </Card>
             </AnimatedCard>
           </div>
