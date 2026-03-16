@@ -269,11 +269,15 @@ export default function PixelAnalytics() {
 
   // Funnel data
   const funnelData = useMemo(() => {
-    return [
+    const steps = [
       { stage: "Visitantes", value: stats.uniqueVisitors, color: COLORS[0] },
       { stage: "Page Views", value: stats.pageViews, color: COLORS[1] },
-      { stage: "Vendas", value: salesCount, color: COLORS[2] },
     ];
+    if (stats.thankYouPages > 0) {
+      steps.push({ stage: "Obrigado (LP)", value: stats.thankYouPages, color: COLORS[3] || "#f59e0b" });
+    }
+    steps.push({ stage: "Vendas", value: salesCount, color: COLORS[2] });
+    return steps;
   }, [stats, salesCount]);
 
   const VariationBadge = ({ current, previous }: { current: number; previous: number }) => {
