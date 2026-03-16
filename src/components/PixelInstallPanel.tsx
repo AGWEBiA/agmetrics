@@ -30,6 +30,15 @@ export function PixelInstallPanel({ projectId }: PixelInstallPanelProps) {
   // AGMetrics.track("form_submit", { form: "lead" });
 </script>`;
 
+  const thankYouSnippet = `<!-- AGMetrics - LP de Obrigado -->
+<script src="${pixelUrl}"></script>
+<script>
+  AGMetrics.track("thank_you_page", {
+    page: window.location.pathname,
+    referrer: document.referrer
+  });
+</script>`;
+
   // Real-time pixel status
   const { data: pixelStatus } = useQuery({
     queryKey: ["pixel_status", projectId],
