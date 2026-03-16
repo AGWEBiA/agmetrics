@@ -2,6 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
+import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { Outlet } from "react-router-dom";
 
 export function DashboardLayout() {
