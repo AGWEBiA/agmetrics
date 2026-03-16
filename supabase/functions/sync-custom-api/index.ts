@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
     // Get custom API config from project
     const { data: projectData, error: projectError } = await supabase
       .from("projects")
-      .select("custom_api_url, custom_api_key, custom_api_name")
+      .select("custom_api_url, custom_api_key, custom_api_name, custom_api_endpoints")
       .eq("id", project_id)
       .single();
 
@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { custom_api_url, custom_api_key } = projectData;
+    const { custom_api_url, custom_api_key, custom_api_endpoints } = projectData;
 
     if (!custom_api_url || !custom_api_key) {
       return new Response(
@@ -111,13 +111,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Define endpoints to fetch
-    const endpoints = [
-      { path: "/metrics/overview?period=30d", type: "overview" },
-      { path: "/metrics/campaigns?period=30d", type: "campaigns" },
-      { path: "/metrics/contacts", type: "contacts" },
-      { path: "/metrics/automations", type: "automations" },
+    // Use custom endpoints if defined, otherwise fall back to defaults
+    const defaultEndpoints = [
+      { path: "/metrics/overview?period=30d", label: "overview" },
+      { path: "/metrics/campaigns?period=30d", label: "campaigns" },
+      { path: "/metrics/contacts", label: "contacts" },
+      { path: "/metrics/automations", label: "automations" },
     ];
+
+    const endpoints: { path: string; label: string }[] =
+      Array.isArray(custom_api_endpoints) && custom_api_endpoints.length > 0
+        ? custom_api_endpoints
+        : defaultEndpoints;
 
     let synced = 0;
     const errors: string[] = [];
