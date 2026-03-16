@@ -14,6 +14,7 @@ export function DashboardLayout() {
           <header className="sticky top-0 z-30 flex h-12 sm:h-14 items-center justify-between gap-4 border-b bg-background/80 backdrop-blur-sm px-4 sm:px-6">
             <SidebarTrigger />
             <div className="flex items-center gap-2">
+              <PushNotificationToggle />
               <NotificationBell />
               <ThemeToggle />
             </div>

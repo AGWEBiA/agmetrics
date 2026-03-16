@@ -86,6 +86,8 @@ export function useSalesRealtime(projectId: string | undefined) {
               description: msg,
             });
 
+            showNotification("🔄 Status atualizado", { body: msg, tag: `status-${newSale.id}` });
+
             // Create notification for refunds
             if (newSale.status === "refunded") {
               const { data: { user } } = await supabase.auth.getUser();
