@@ -84,7 +84,7 @@ export default function WhatsAppReports() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("whatsapp_report_configs").delete().eq("id", id);
+      const { error } = await (supabase as any).from("whatsapp_report_configs").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
