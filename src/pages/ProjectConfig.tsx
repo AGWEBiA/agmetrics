@@ -840,9 +840,9 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
       <CardContent className="space-y-5">
         <div className="space-y-2">
           <Label>URL do Webhook</Label>
-          <div className="flex gap-2">
-            <Input value={webhookUrl} readOnly className="font-mono text-xs" />
-            <Button variant="outline" onClick={handleCopy}>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input value={webhookUrl} readOnly className="font-mono text-xs min-w-0" />
+            <Button variant="outline" onClick={handleCopy} className="shrink-0">
               {copied ? <Check className="mr-1 h-4 w-4" /> : <Copy className="mr-1 h-4 w-4" />}
               Copiar
             </Button>
