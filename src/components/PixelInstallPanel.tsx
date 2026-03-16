@@ -180,6 +180,7 @@ export function PixelInstallPanel({ projectId, projectName = "Projeto" }: PixelI
           <TabsList className="w-full">
             <TabsTrigger value="basic" className="text-xs flex-1">Básico</TabsTrigger>
             <TabsTrigger value="full" className="text-xs flex-1">Completo</TabsTrigger>
+            <TabsTrigger value="checkout" className="text-xs flex-1">Checkout</TabsTrigger>
             <TabsTrigger value="thankyou" className="text-xs flex-1">Obrigado</TabsTrigger>
           </TabsList>
 
