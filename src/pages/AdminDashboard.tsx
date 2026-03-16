@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useProject } from "@/hooks/useProjects";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
+import { useLeadJourneyData } from "@/hooks/useLeadJourneyData";
 import { useSalesRealtime } from "@/hooks/useSalesRealtime";
 import { useGoalAlerts } from "@/hooks/useGoalAlerts";
 import { useQuery } from "@tanstack/react-query";
