@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle, ArrowRight, BarChart3, Settings, Webhook, Target, ShoppingCart } from "lucide-react";
+import { CheckCircle2, Circle, ArrowRight, BarChart3, Settings, Webhook, Target, ShoppingCart, Code } from "lucide-react";
 
 interface OnboardingStep {
   id: string;
