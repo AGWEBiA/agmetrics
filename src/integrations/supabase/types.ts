@@ -200,6 +200,93 @@ export type Database = {
           },
         ]
       }
+      lead_events: {
+        Row: {
+          ad_id: string | null
+          ad_name: string | null
+          amount: number | null
+          buyer_email: string | null
+          buyer_name: string | null
+          created_at: string
+          event_date: string
+          event_detail: string | null
+          event_source: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          project_id: string
+          sale_id: string | null
+          tracking_sck: string | null
+          tracking_src: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          ad_id?: string | null
+          ad_name?: string | null
+          amount?: number | null
+          buyer_email?: string | null
+          buyer_name?: string | null
+          created_at?: string
+          event_date?: string
+          event_detail?: string | null
+          event_source?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          project_id: string
+          sale_id?: string | null
+          tracking_sck?: string | null
+          tracking_src?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          ad_id?: string | null
+          ad_name?: string | null
+          amount?: number | null
+          buyer_email?: string | null
+          buyer_name?: string | null
+          created_at?: string
+          event_date?: string
+          event_detail?: string | null
+          event_source?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          project_id?: string
+          sale_id?: string | null
+          tracking_sck?: string | null
+          tracking_src?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       manual_investments: {
         Row: {
           amount: number
@@ -1081,6 +1168,63 @@ export type Database = {
           },
         ]
       }
+      whatsapp_report_configs: {
+        Row: {
+          created_at: string
+          frequency: Database["public"]["Enums"]["report_frequency"]
+          id: string
+          is_active: boolean
+          last_sent_at: string | null
+          metrics: Json
+          name: string
+          phone_number: string
+          project_id: string
+          send_hour: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          frequency?: Database["public"]["Enums"]["report_frequency"]
+          id?: string
+          is_active?: boolean
+          last_sent_at?: string | null
+          metrics?: Json
+          name?: string
+          phone_number: string
+          project_id: string
+          send_hour?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          frequency?: Database["public"]["Enums"]["report_frequency"]
+          id?: string
+          is_active?: boolean
+          last_sent_at?: string | null
+          metrics?: Json
+          name?: string
+          phone_number?: string
+          project_id?: string
+          send_hour?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_report_configs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_report_configs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       projects_public: {
@@ -1237,6 +1381,7 @@ export type Database = {
         | "lancamento_pago"
         | "funis"
         | "evento_presencial"
+      report_frequency: "daily" | "weekly" | "monthly"
       sale_status: "approved" | "pending" | "cancelled" | "refunded"
       sales_platform: "kiwify" | "hotmart"
     }
@@ -1386,6 +1531,7 @@ export const Constants = {
         "funis",
         "evento_presencial",
       ],
+      report_frequency: ["daily", "weekly", "monthly"],
       sale_status: ["approved", "pending", "cancelled", "refunded"],
       sales_platform: ["kiwify", "hotmart"],
     },
