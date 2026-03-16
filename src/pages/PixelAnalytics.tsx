@@ -467,7 +467,7 @@ export default function PixelAnalytics() {
           <TabsTrigger value="funnel">Funil</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
+        <AnimatedTabContent value="overview" className="space-y-4">
           <AnimatedCard index={0}>
             <Card>
               <CardHeader>
