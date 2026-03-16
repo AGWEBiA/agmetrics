@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, Check, Code, CheckCircle2, AlertCircle, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -20,18 +21,25 @@ export function PixelInstallPanel({ projectId }: PixelInstallPanelProps) {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const pixelUrl = `${supabaseUrl}/functions/v1/tracking-pixel?pid=${projectId}`;
 
-  const scriptSnippet = `<script src="${pixelUrl}"></script>`;
+  const basicSnippet = `<!-- AGMetrics Pixel - Cole antes do </body> -->
+<script src="${pixelUrl}"></script>`;
 
-  const advancedSnippet = `<!-- AGMetrics Tracking Pixel -->
-<script src="${pixelUrl}"></script>
+  const fullSnippet = `<!-- AGMetrics Pixel Completo -->
+<script src="${pixelUrl}&track=all"></script>
 <script>
-  // Rastrear eventos customizados:
-  // AGMetrics.track("button_click", { button: "comprar" });
-  // AGMetrics.track("form_submit", { form: "lead" });
+  // O pixel rastreia automaticamente:
+  // ✓ Page views e navegação SPA
+  // ✓ Cliques em botões e links
+  // ✓ Profundidade de scroll (25%, 50%, 75%, 100%)
+  // ✓ Movimentos do mouse (mapa de calor)
+  //
+  // Eventos customizados:
+  // AGMetrics.track("compra", { valor: 297 });
+  // AGMetrics.track("lead", { form: "newsletter" });
 </script>`;
 
-  const thankYouSnippet = `<!-- AGMetrics - LP de Obrigado -->
-<script src="${pixelUrl}"></script>
+  const thankYouSnippet = `<!-- AGMetrics - Página de Obrigado -->
+<script src="${pixelUrl}&track=all"></script>
 <script>
   AGMetrics.track("thank_you_page", {
     page: window.location.pathname,
@@ -42,7 +50,7 @@ export function PixelInstallPanel({ projectId }: PixelInstallPanelProps) {
   // Real-time pixel status
   const { data: pixelStatus } = useQuery({
     queryKey: ["pixel_status", projectId],
-    refetchInterval: 30000, // poll every 30s
+    refetchInterval: 30000,
     queryFn: async () => {
       const { data, error, count } = await supabase
         .from("tracking_events")
@@ -53,7 +61,6 @@ export function PixelInstallPanel({ projectId }: PixelInstallPanelProps) {
       if (error) throw error;
       const lastEvent = data?.[0]?.created_at || null;
       const total = count || 0;
-      // Consider "active" if received event in last 24h
       const isActive = lastEvent
         ? Date.now() - new Date(lastEvent).getTime() < 24 * 60 * 60 * 1000
         : false;
@@ -78,11 +85,27 @@ export function PixelInstallPanel({ projectId }: PixelInstallPanelProps) {
         <AlertCircle className="h-3 w-3" /> Inativo
       </Badge>
     ) : (
-      <Badge variant="outline" className="text-xs gap-1">
-        Aguardando dados
-      </Badge>
+      <Badge variant="outline" className="text-xs gap-1">Aguardando dados</Badge>
     )
   ) : null;
+
+  const SnippetBlock = ({ code, id, label }: { code: string; id: string; label: string }) => (
+    <div className="space-y-2">
+      <div className="relative">
+        <pre className="bg-muted rounded-lg p-3 text-xs overflow-x-auto font-mono border whitespace-pre-wrap">
+          {code}
+        </pre>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="absolute top-1.5 right-1.5 h-7 w-7 p-0"
+          onClick={() => handleCopy(code, id)}
+        >
+          {copied === id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <Card className="border-primary/20">
@@ -97,9 +120,7 @@ export function PixelInstallPanel({ projectId }: PixelInstallPanelProps) {
         {/* Status indicator */}
         {pixelStatus && pixelStatus.total > 0 && (
           <div className={`rounded-lg border p-3 text-sm flex items-center gap-3 ${
-            pixelStatus.isActive
-              ? "border-success/20 bg-success/5"
-              : "border-warning/20 bg-warning/5"
+            pixelStatus.isActive ? "border-success/20 bg-success/5" : "border-warning/20 bg-warning/5"
           }`}>
             {pixelStatus.isActive ? (
               <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
@@ -121,72 +142,42 @@ export function PixelInstallPanel({ projectId }: PixelInstallPanelProps) {
         )}
 
         <p className="text-sm text-muted-foreground">
-          Instale o pixel no seu site para rastrear visitantes, page views e UTMs automaticamente.
-          Os dados alimentam a Jornada do Lead e o funil de conversão.
+          Instale o pixel no seu site para rastrear visitantes, cliques, scroll e mapa de calor automaticamente.
         </p>
 
-        {/* Basic snippet */}
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Instalação básica</p>
-          <div className="relative">
-            <pre className="bg-muted rounded-lg p-3 text-xs overflow-x-auto font-mono border">
-              {scriptSnippet}
-            </pre>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="absolute top-1.5 right-1.5 h-7 w-7 p-0"
-              onClick={() => handleCopy(scriptSnippet, "basic")}
-            >
-              {copied === "basic" ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
-            </Button>
-          </div>
-        </div>
+        <Tabs defaultValue="full" className="w-full">
+          <TabsList className="w-full">
+            <TabsTrigger value="basic" className="text-xs flex-1">Básico</TabsTrigger>
+            <TabsTrigger value="full" className="text-xs flex-1">Completo</TabsTrigger>
+            <TabsTrigger value="thankyou" className="text-xs flex-1">Obrigado</TabsTrigger>
+          </TabsList>
 
-        {/* Advanced snippet */}
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Com eventos customizados</p>
-          <div className="relative">
-            <pre className="bg-muted rounded-lg p-3 text-xs overflow-x-auto font-mono border whitespace-pre-wrap">
-              {advancedSnippet}
-            </pre>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="absolute top-1.5 right-1.5 h-7 w-7 p-0"
-              onClick={() => handleCopy(advancedSnippet, "advanced")}
-            >
-              {copied === "advanced" ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
-            </Button>
-          </div>
-        </div>
+          <TabsContent value="basic" className="mt-3">
+            <p className="text-xs text-muted-foreground mb-2">Rastreia apenas page views e UTMs.</p>
+            <SnippetBlock code={basicSnippet} id="basic" label="Básico" />
+          </TabsContent>
 
-        {/* Thank You Page snippet */}
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">LP de Obrigado (Thank You Page)</p>
-          <div className="relative">
-            <pre className="bg-muted rounded-lg p-3 text-xs overflow-x-auto font-mono border whitespace-pre-wrap">
-              {thankYouSnippet}
-            </pre>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="absolute top-1.5 right-1.5 h-7 w-7 p-0"
-              onClick={() => handleCopy(thankYouSnippet, "thankyou")}
-            >
-              {copied === "thankyou" ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
-            </Button>
-          </div>
-        </div>
+          <TabsContent value="full" className="mt-3">
+            <p className="text-xs text-muted-foreground mb-2">
+              Rastreia page views, cliques, scroll depth e mapa de calor. <strong>Recomendado.</strong>
+            </p>
+            <SnippetBlock code={fullSnippet} id="full" label="Completo" />
+          </TabsContent>
+
+          <TabsContent value="thankyou" className="mt-3">
+            <p className="text-xs text-muted-foreground mb-2">
+              Use <strong>apenas</strong> na página de obrigado/confirmação. Já inclui o rastreamento completo.
+            </p>
+            <SnippetBlock code={thankYouSnippet} id="thankyou" label="Obrigado" />
+          </TabsContent>
+        </Tabs>
 
         <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
-          <p className="font-medium text-foreground">📌 Instruções:</p>
+          <p className="font-medium text-foreground">📌 Como instalar:</p>
           <ul className="list-disc list-inside space-y-0.5">
-            <li>Cole o snippet <strong>básico</strong> em todas as páginas antes do <code className="bg-muted px-1 rounded">&lt;/body&gt;</code></li>
-            <li>Cole o snippet <strong>LP de Obrigado</strong> apenas na página de obrigado/confirmação</li>
-            <li>O evento <code className="bg-muted px-1 rounded">thank_you_page</code> aparece automaticamente no funil</li>
-            <li>Use <code className="bg-muted px-1 rounded">AGMetrics.track()</code> para eventos customizados adicionais</li>
-            <li>Os dados aparecem em <strong>Analytics do Pixel</strong> em até 1 minuto</li>
+            <li>Cole o snippet <strong>Completo</strong> em todas as páginas antes do <code className="bg-muted px-1 rounded">&lt;/body&gt;</code></li>
+            <li>Na página de obrigado, use o snippet <strong>Obrigado</strong> no lugar</li>
+            <li>Os dados aparecem em <strong>Analytics do Pixel</strong> e <strong>Mapa de Calor</strong> em até 1 minuto</li>
           </ul>
         </div>
       </CardContent>
