@@ -545,7 +545,7 @@ export default function PixelAnalytics() {
               </CardContent>
             </Card>
           </AnimatedCard>
-        </TabsContent>
+        </AnimatedTabContent>
 
         <TabsContent value="campaigns">
           <AnimatedCard index={0}>
