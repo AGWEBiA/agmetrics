@@ -61,7 +61,7 @@ export default function WhatsAppReports() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("whatsapp_report_configs")
         .insert({
           project_id: projectId!,
