@@ -1164,6 +1164,7 @@ function WhatsAppTab({ projectId }: { projectId: string }) {
           {!groups?.length ? (
             <p className="py-8 text-center text-muted-foreground">Nenhum grupo cadastrado</p>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
