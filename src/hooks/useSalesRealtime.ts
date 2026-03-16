@@ -8,6 +8,7 @@ import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
 export function useSalesRealtime(projectId: string | undefined) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { showNotification } = useBrowserNotifications();
 
   useEffect(() => {
     if (!projectId) return;
