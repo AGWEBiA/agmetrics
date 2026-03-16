@@ -182,3 +182,13 @@
   font-size: 12px !important;
   font-family: 'JetBrains Mono', monospace !important;
 }
+
+/* Hide white cursor bar on chart hover */
+.recharts-cursor {
+  fill: transparent !important;
+  stroke: transparent !important;
+}
+
+.recharts-rectangle.recharts-tooltip-cursor {
+  fill: transparent !important;
+}
