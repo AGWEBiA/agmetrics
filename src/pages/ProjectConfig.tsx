@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { PixelInstallPanel } from "@/components/PixelInstallPanel";
+import { PixelDomainSelector } from "@/components/PixelDomainSelector";
 import { useParams } from "react-router-dom";
 import { useProject, useUpdateProject } from "@/hooks/useProjects";
 import { ProjectStrategyForm, type ProjectFormData } from "@/components/ProjectStrategyForm";
