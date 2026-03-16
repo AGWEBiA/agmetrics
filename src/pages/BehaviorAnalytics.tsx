@@ -400,7 +400,8 @@ export default function BehaviorAnalytics() {
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-                    <Table className="mt-4">
+                    <div className="overflow-x-auto mt-4">
+                    <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead className="text-xs">Elemento</TableHead>
