@@ -7,8 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AnimatedTabContent } from "@/components/AnimatedTabContent";
 import { AnimatedCard, AnimatedPage } from "@/components/AnimatedCard";
+import { MetricCardsSkeleton, ChartSkeleton } from "@/components/MobileLoadingSkeleton";
 import { formatNumber } from "@/lib/formatters";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {

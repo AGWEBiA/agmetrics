@@ -1,5 +1,6 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { AnimatedTabContent } from "@/components/AnimatedTabContent";
 import { AcquisitionTab } from "./AcquisitionTab";
 import { SalesTab } from "./SalesTab";
 import { TimelineTab } from "./TimelineTab";
@@ -49,7 +50,7 @@ export function DashboardTabs({ m, project, overviewContent }: DashboardTabsProp
         )}
       </TabsList>
 
-      <TabsContent value="overview" className="space-y-6 pt-4">
+      <AnimatedTabContent value="overview" className="space-y-6 pt-4">
         {overviewContent}
         {m.salesCount === 0 && m.totalInvestment === 0 && (
           <Card>
@@ -58,49 +59,49 @@ export function DashboardTabs({ m, project, overviewContent }: DashboardTabsProp
             </CardContent>
           </Card>
         )}
-      </TabsContent>
+      </AnimatedTabContent>
 
-      <TabsContent value="acquisition" className="space-y-6 pt-4">
+      <AnimatedTabContent value="acquisition" className="space-y-6 pt-4">
         <AcquisitionTab m={m} />
-      </TabsContent>
+      </AnimatedTabContent>
 
-      <TabsContent value="sales" className="space-y-6 pt-4">
+      <AnimatedTabContent value="sales" className="space-y-6 pt-4">
         <SalesTab m={m} />
-      </TabsContent>
+      </AnimatedTabContent>
 
-      <TabsContent value="timeline" className="space-y-6 pt-4">
+      <AnimatedTabContent value="timeline" className="space-y-6 pt-4">
         <TimelineTab salesChartData={m.salesChartData} />
-      </TabsContent>
+      </AnimatedTabContent>
 
-      <TabsContent value="tracking" className="space-y-6 pt-4">
+      <AnimatedTabContent value="tracking" className="space-y-6 pt-4">
         <TrackingTab m={m} project={project} />
-      </TabsContent>
+      </AnimatedTabContent>
 
-      <TabsContent value="ads-vendas" className="space-y-6 pt-4">
+      <AnimatedTabContent value="ads-vendas" className="space-y-6 pt-4">
         <AdsVendasCrossTab m={m} strategy={project?.strategy} />
-      </TabsContent>
+      </AnimatedTabContent>
 
-      <TabsContent value="sales-tracking" className="space-y-6 pt-4">
+      <AnimatedTabContent value="sales-tracking" className="space-y-6 pt-4">
         <SalesTrackingAnalysis
           sales={[...(m.kiwifySales || []), ...(m.hotmartSales || [])]}
           totalInvestment={m.totalInvestment}
         />
-      </TabsContent>
+      </AnimatedTabContent>
 
-      <TabsContent value="buyer-profile" className="space-y-6 pt-4">
+      <AnimatedTabContent value="buyer-profile" className="space-y-6 pt-4">
         <BuyerDemographicProfile
           sales={[...(m.kiwifySales || []), ...(m.hotmartSales || [])]}
           adDemographics={[...(m.metaDemographics || []), ...(m.googleDemographics || [])]}
         />
-      </TabsContent>
+      </AnimatedTabContent>
 
-      <TabsContent value="refunds" className="space-y-6 pt-4">
+      <AnimatedTabContent value="refunds" className="space-y-6 pt-4">
         <RefundsSection
           projectId={project?.id}
           totalRevenue={m.totalRevenue}
           totalSalesCount={m.totalSalesCount}
         />
-      </TabsContent>
+      </AnimatedTabContent>
     </Tabs>
   );
 }
