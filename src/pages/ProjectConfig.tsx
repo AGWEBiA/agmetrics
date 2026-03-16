@@ -1669,11 +1669,13 @@ function CustomApiTab({ projectId }: { projectId: string }) {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const validEndpoints = endpoints.filter(e => e.path && e.label);
       await updateProject.mutateAsync({
         id: projectId,
         custom_api_url: apiUrl || null,
         custom_api_key: apiKey || null,
         custom_api_name: apiName || null,
+        custom_api_endpoints: validEndpoints.length > 0 ? validEndpoints : null,
       } as any);
       toast({ title: "Configuração salva", description: "API customizada configurada com sucesso." });
     } catch {
