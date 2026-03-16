@@ -20,6 +20,7 @@ interface OverviewProps {
   whatsappGroups?: any[];
   whatsappHistory?: any[];
   goalsProgress?: any[];
+  leadJourney?: { totalLeads: number; totalPurchases: number; conversionRate: number; totalRevenue: number; topSource: string; sourceChart: { source: string; purchases: number; clicks: number }[] } | null;
 }
 
 export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress }: OverviewProps): Record<string, React.ReactNode> {
