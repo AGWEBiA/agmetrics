@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useProjectBySlug, useProjectByToken } from "@/hooks/useProjects";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
+import { useLeadJourneyData } from "@/hooks/useLeadJourneyData";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AnimatedPage } from "@/components/AnimatedCard";
