@@ -163,10 +163,15 @@ Deno.serve(async (req) => {
     }
 
     // Fetch sales from Kiwify API (last 30 days)
+    // Use São Paulo timezone to ensure today's sales are included
+    const spFormatter = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo" });
+    const todaySP = spFormatter.format(new Date());
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const startDate = thirtyDaysAgo.toISOString().split("T")[0];
-    const endDate = now.toISOString().split("T")[0];
+    const startDate = spFormatter.format(thirtyDaysAgo);
+    // Add 1 day to endDate to ensure the API includes all of today's sales
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const endDate = spFormatter.format(tomorrow);
 
     let page = 1;
     let imported = 0;
