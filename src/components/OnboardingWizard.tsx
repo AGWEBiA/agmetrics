@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle, ArrowRight, BarChart3, Settings, Webhook, Target, ShoppingCart, Code } from "lucide-react";
+import { CheckCircle2, Circle, ArrowRight, BarChart3, Webhook, Target, ShoppingCart, Code, Activity, AlertCircle } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface OnboardingStep {
   id: string;
@@ -72,6 +76,55 @@ const STEPS: OnboardingStep[] = [
   },
 ];
 
+function PixelStatusBadge({ projectId }: { projectId: string }) {
+  const { data: pixelStatus } = useQuery({
+    queryKey: ["pixel_onboarding_status", projectId],
+    refetchInterval: 30000,
+    queryFn: async () => {
+      const { data, count } = await supabase
+        .from("tracking_events")
+        .select("created_at", { count: "exact" })
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      const lastEvent = data?.[0]?.created_at || null;
+      const total = count || 0;
+      const isActive = lastEvent
+        ? Date.now() - new Date(lastEvent).getTime() < 24 * 60 * 60 * 1000
+        : false;
+      return { lastEvent, total, isActive };
+    },
+  });
+
+  if (!pixelStatus) return null;
+
+  if (pixelStatus.isActive) {
+    return (
+      <Badge variant="outline" className="text-[10px] border-success/30 text-success gap-1 py-0 px-1.5">
+        <Activity className="h-3 w-3" /> Ativo · {pixelStatus.total} evento{pixelStatus.total !== 1 ? "s" : ""}
+        {pixelStatus.lastEvent && (
+          <> · {formatDistanceToNow(new Date(pixelStatus.lastEvent), { locale: ptBR, addSuffix: true })}</>
+        )}
+      </Badge>
+    );
+  }
+
+  if (pixelStatus.total > 0) {
+    return (
+      <Badge variant="outline" className="text-[10px] border-warning/30 text-warning gap-1 py-0 px-1.5">
+        <AlertCircle className="h-3 w-3" /> Inativo · último{" "}
+        {pixelStatus.lastEvent && formatDistanceToNow(new Date(pixelStatus.lastEvent), { locale: ptBR, addSuffix: true })}
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge variant="outline" className="text-[10px] gap-1 py-0 px-1.5">
+      Aguardando dados
+    </Badge>
+  );
+}
+
 export function OnboardingWizard({ projectId, projectName, completedSteps }: OnboardingWizardProps) {
   const navigate = useNavigate();
   const [dismissed, setDismissed] = useState(false);
@@ -132,7 +185,10 @@ export function OnboardingWizard({ projectId, projectName, completedSteps }: Onb
                       {step.icon}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium ${done ? "line-through text-muted-foreground" : ""}`}>{step.title}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className={`text-sm font-medium ${done ? "line-through text-muted-foreground" : ""}`}>{step.title}</p>
+                        {step.id === "pixel" && <PixelStatusBadge projectId={projectId} />}
+                      </div>
                       <p className="text-xs text-muted-foreground truncate">{step.description}</p>
                     </div>
                     {!done && (
