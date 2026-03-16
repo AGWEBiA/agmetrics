@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { PixelInstallPanel } from "@/components/PixelInstallPanel";
+import { PixelDomainSelector } from "@/components/PixelDomainSelector";
 import { useParams } from "react-router-dom";
 import { useProject, useUpdateProject } from "@/hooks/useProjects";
 import { ProjectStrategyForm, type ProjectFormData } from "@/components/ProjectStrategyForm";
@@ -50,6 +52,7 @@ export default function ProjectConfig() {
           <TabsTrigger value="products" className="text-xs sm:text-sm whitespace-nowrap">Produtos</TabsTrigger>
           <TabsTrigger value="goals" className="text-xs sm:text-sm whitespace-nowrap">Metas</TabsTrigger>
           <TabsTrigger value="investments" className="text-xs sm:text-sm whitespace-nowrap">Investimentos</TabsTrigger>
+          <TabsTrigger value="pixel" className="text-xs sm:text-sm whitespace-nowrap">Pixel</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
@@ -78,6 +81,12 @@ export default function ProjectConfig() {
         </TabsContent>
         <TabsContent value="investments">
           <InvestmentsTab projectId={projectId!} />
+        </TabsContent>
+        <TabsContent value="pixel">
+          <div className="space-y-4">
+            <PixelInstallPanel projectId={projectId!} />
+            <PixelDomainSelector projectId={projectId!} />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

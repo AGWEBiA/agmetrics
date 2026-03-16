@@ -5,8 +5,6 @@ import { useMetaCredentialsList, useGoogleCredentials } from "@/hooks/useProject
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatedCard, AnimatedPage } from "@/components/AnimatedCard";
-import { PixelInstallPanel } from "@/components/PixelInstallPanel";
-import { PixelDomainSelector } from "@/components/PixelDomainSelector";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -247,16 +245,6 @@ export default function IntegrationStatus() {
         ))}
       </div>
 
-      {projectId && (
-        <>
-          <AnimatedCard index={4}>
-            <PixelInstallPanel projectId={projectId} />
-          </AnimatedCard>
-      <AnimatedCard index={6}>
-            <PixelDomainSelector projectId={projectId} />
-          </AnimatedCard>
-        </>
-      )}
 
       <AnimatedCard index={5}>
         <Card className="border-primary/20 bg-primary/5">
