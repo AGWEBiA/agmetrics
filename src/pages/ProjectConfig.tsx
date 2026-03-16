@@ -1196,6 +1196,7 @@ function WhatsAppTab({ projectId }: { projectId: string }) {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
