@@ -358,7 +358,7 @@ Deno.serve(async (req) => {
 
       // === Fetch and save ads ===
       try {
-        const insightFields = "id,name,status,preview_shareable_link,creative{thumbnail_url,effective_object_story_id}";
+        const insightFields = "id,name,status,preview_shareable_link,creative{id,thumbnail_url,effective_image_url,image_url,object_story_spec}";
         const insightMetrics = "spend,impressions,clicks,actions,video_play_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,ad_id,ad_name";
 
         const adsListUrl = `https://graph.facebook.com/v21.0/${adAccountId}/ads?fields=${insightFields}&limit=200&access_token=${creds.access_token}`;
@@ -368,8 +368,12 @@ Deno.serve(async (req) => {
           const adsListData = await adsListRes.json();
           const adsList = (adsListData.data || []) as any[];
 
-          // Build ad metadata map
+          // Build ad metadata map with multiple image fallbacks
           const adMeta = new Map<string, { name: string; status: string; preview_link: string | null; thumbnail_url: string | null }>();
+          // Collect creative IDs that need fallback image fetch
+          const creativeIdsNeedingImage: string[] = [];
+          const creativeIdToAdId = new Map<string, string>();
+
           for (const ad of adsList) {
             let previewLink: string | null = null;
             const rawLink = ad.preview_shareable_link || ad.ad_preview_shareable_link;
@@ -378,8 +382,54 @@ Deno.serve(async (req) => {
               const first = rawLink[0];
               previewLink = typeof first === "string" ? first : (first?.body || first?.share_link || null);
             }
-            const thumbnailUrl = ad.creative?.thumbnail_url || null;
+            // Try multiple image sources: thumbnail_url → effective_image_url → image_url → object_story_spec image
+            const creative = ad.creative || {};
+            let thumbnailUrl = creative.thumbnail_url
+              || creative.effective_image_url
+              || creative.image_url
+              || creative.object_story_spec?.link_data?.image_url
+              || creative.object_story_spec?.photo_data?.images?.[0]?.source
+              || null;
+
             adMeta.set(ad.id, { name: ad.name, status: ad.status, preview_link: previewLink, thumbnail_url: thumbnailUrl });
+
+            // If still no image, try fetching from adcreatives endpoint later
+            if (!thumbnailUrl && creative.id) {
+              creativeIdsNeedingImage.push(creative.id);
+              creativeIdToAdId.set(creative.id, ad.id);
+            }
+          }
+
+          // Fallback: batch fetch missing creative images via adcreatives endpoint
+          if (creativeIdsNeedingImage.length > 0) {
+            try {
+              const batchSize = 50;
+              for (let ci = 0; ci < creativeIdsNeedingImage.length; ci += batchSize) {
+                const ids = creativeIdsNeedingImage.slice(ci, ci + batchSize);
+                const idsParam = ids.join(",");
+                const creativesUrl = `https://graph.facebook.com/v21.0/?ids=${idsParam}&fields=thumbnail_url,image_url,effective_image_url,object_story_spec&access_token=${creds.access_token}`;
+                const creativesRes = await fetch(creativesUrl);
+                if (creativesRes.ok) {
+                  const creativesData = await creativesRes.json();
+                  for (const [cid, cdata] of Object.entries(creativesData) as [string, any][]) {
+                    const adId = creativeIdToAdId.get(cid);
+                    if (!adId) continue;
+                    const meta = adMeta.get(adId);
+                    if (!meta || meta.thumbnail_url) continue;
+                    const fallbackUrl = cdata.thumbnail_url
+                      || cdata.effective_image_url
+                      || cdata.image_url
+                      || cdata.object_story_spec?.link_data?.image_url
+                      || null;
+                    if (fallbackUrl) {
+                      meta.thumbnail_url = fallbackUrl;
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn("[sync-meta] Creative fallback fetch error:", e);
+            }
           }
 
           // Fetch ad-level insights
