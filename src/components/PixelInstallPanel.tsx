@@ -161,12 +161,31 @@ export function PixelInstallPanel({ projectId }: PixelInstallPanelProps) {
           </div>
         </div>
 
+        {/* Thank You Page snippet */}
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">LP de Obrigado (Thank You Page)</p>
+          <div className="relative">
+            <pre className="bg-muted rounded-lg p-3 text-xs overflow-x-auto font-mono border whitespace-pre-wrap">
+              {thankYouSnippet}
+            </pre>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="absolute top-1.5 right-1.5 h-7 w-7 p-0"
+              onClick={() => handleCopy(thankYouSnippet, "thankyou")}
+            >
+              {copied === "thankyou" ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
+        </div>
+
         <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
           <p className="font-medium text-foreground">📌 Instruções:</p>
           <ul className="list-disc list-inside space-y-0.5">
-            <li>Cole o snippet antes do <code className="bg-muted px-1 rounded">&lt;/body&gt;</code> do seu site</li>
-            <li>O pixel rastreia automaticamente page views e navegação SPA</li>
-            <li>Use <code className="bg-muted px-1 rounded">AGMetrics.track()</code> para eventos customizados</li>
+            <li>Cole o snippet <strong>básico</strong> em todas as páginas antes do <code className="bg-muted px-1 rounded">&lt;/body&gt;</code></li>
+            <li>Cole o snippet <strong>LP de Obrigado</strong> apenas na página de obrigado/confirmação</li>
+            <li>O evento <code className="bg-muted px-1 rounded">thank_you_page</code> aparece automaticamente no funil</li>
+            <li>Use <code className="bg-muted px-1 rounded">AGMetrics.track()</code> para eventos customizados adicionais</li>
             <li>Os dados aparecem em <strong>Analytics do Pixel</strong> em até 1 minuto</li>
           </ul>
         </div>
