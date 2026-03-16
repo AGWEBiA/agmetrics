@@ -49,7 +49,7 @@ export default function PublicDashboard() {
   const error = slugQuery.error && tokenQuery.error;
 
   const m = useDashboardMetrics(project?.id, undefined, project?.strategy);
-
+  const leadJourney = useLeadJourneyData(project?.id);
   const { data: whatsappGroups } = useQuery({
     queryKey: ["public_whatsapp_groups", project?.id],
     enabled: !!project?.id,
