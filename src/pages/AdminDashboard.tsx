@@ -142,7 +142,7 @@ export default function AdminDashboard() {
   }, [projectId, savePrefs]);
 
   const overviewSections = useMemo(() => {
-    const sections = buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory });
+    const sections = buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, leadJourney });
     // Add recent_sales (admin-only)
     return {
       ...sections,
@@ -152,7 +152,7 @@ export default function AdminDashboard() {
         </AnimatedCard>
       ),
     };
-  }, [m, budgetData, whatsappGroups, whatsappHistory, projectId]);
+  }, [m, budgetData, whatsappGroups, whatsappHistory, projectId, leadJourney]);
 
   const overviewContent = (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

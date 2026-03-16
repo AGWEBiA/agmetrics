@@ -110,7 +110,7 @@ export default function PublicDashboard() {
     return buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress, leadJourney });
   }, [m, budgetData, whatsappGroups, whatsappHistory, goalsProgress, leadJourney]);
 
-  const DEFAULT_PUBLIC_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "sales_chart", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "whatsapp", "products", "platform_pie", "goals"];
+  const DEFAULT_PUBLIC_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "sales_chart", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "lead_journey", "whatsapp", "products", "platform_pie", "goals"];
 
   const overviewContent = (
     <>
