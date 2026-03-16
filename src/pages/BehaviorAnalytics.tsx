@@ -693,7 +693,7 @@ export default function BehaviorAnalytics() {
               </Badge>
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <AnimatedCard index={0}>
               <Card>
                 <CardHeader className="pb-2">
@@ -701,7 +701,17 @@ export default function BehaviorAnalytics() {
                     <Flame className="h-4 w-4 text-destructive" /> Mapa de Calor — Mouse
                   </CardTitle>
                 </CardHeader>
-                <CardContent><HeatGrid data={heatmapGrid} title="" showPageLayout={true} /></CardContent>
+                <CardContent>
+                  <HeatGrid
+                    data={heatmapGrid}
+                    title=""
+                    showPageLayout={true}
+                    layoutHtml={pagePreview?.html}
+                    layoutLoading={isPagePreviewLoading}
+                    layoutUrl={pagePreview?.finalUrl ?? selectedPageUrl}
+                    previewMetrics={pagePreviewMetrics}
+                  />
+                </CardContent>
               </Card>
             </AnimatedCard>
             <AnimatedCard index={1}>
@@ -711,7 +721,17 @@ export default function BehaviorAnalytics() {
                     <MousePointer2 className="h-4 w-4 text-primary" /> Mapa de Calor — Cliques
                   </CardTitle>
                 </CardHeader>
-                <CardContent><HeatGrid data={clickHeatmap} title="" showPageLayout={true} /></CardContent>
+                <CardContent>
+                  <HeatGrid
+                    data={clickHeatmap}
+                    title=""
+                    showPageLayout={true}
+                    layoutHtml={pagePreview?.html}
+                    layoutLoading={isPagePreviewLoading}
+                    layoutUrl={pagePreview?.finalUrl ?? selectedPageUrl}
+                    previewMetrics={pagePreviewMetrics}
+                  />
+                </CardContent>
               </Card>
             </AnimatedCard>
           </div>
