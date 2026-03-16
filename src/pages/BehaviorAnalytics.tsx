@@ -238,21 +238,6 @@ export default function BehaviorAnalytics() {
     return `hsla(220, 80%, 56%, ${intensity * 0.3})`;
   };
 
-  // Resolve the full page URL for iframe background
-  const resolvedPageUrl = useMemo(() => {
-    if (selectedPage === "all" || !selectedPage) return null;
-    // Try to find a full URL from events matching the selected page
-    const match = events.find((e) => e.page_url && getPathname(e.page_url) === selectedPage);
-    if (match?.page_url) {
-      try {
-        const url = new URL(match.page_url);
-        return url.origin + url.pathname;
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  }, [events, selectedPage]);
 
   const HeatGrid = ({ data, title, showPageLayout = false }: { data: typeof heatmapGrid; title: string; showPageLayout?: boolean }) => (
     <div className="space-y-2">
