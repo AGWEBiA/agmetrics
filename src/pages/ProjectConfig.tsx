@@ -82,6 +82,12 @@ export default function ProjectConfig() {
         <TabsContent value="investments">
           <InvestmentsTab projectId={projectId!} />
         </TabsContent>
+        <TabsContent value="pixel">
+          <div className="space-y-4">
+            <PixelInstallPanel projectId={projectId!} />
+            <PixelDomainSelector projectId={projectId!} />
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   );
