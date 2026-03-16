@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Sankey, PieChart, Pie, Cell
+  PieChart, Pie, Cell
 } from "recharts";
 
 const EVENT_COLORS: Record<string, string> = {
