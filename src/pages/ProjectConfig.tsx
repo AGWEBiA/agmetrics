@@ -856,13 +856,14 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
           <Label>
             {platform === "hotmart" ? "Token de Validação (X-Hotmart-Hottok)" : "Token de Validação (x-webhook-token)"}
           </Label>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Input
               placeholder={platform === "hotmart" ? "Digite o token da Hotmart" : "Digite o token da Kiwify"}
               value={webhookToken}
               onChange={(e) => setWebhookToken(e.target.value)}
+              className="min-w-0"
             />
-            <Button onClick={handleSaveToken} disabled={updateProject.isPending}>
+            <Button onClick={handleSaveToken} disabled={updateProject.isPending} className="shrink-0">
               <Save className="mr-1 h-4 w-4" />
               Salvar
             </Button>
