@@ -62,7 +62,7 @@ export default function LeadJourney() {
     queryKey: ["lead_events", projectId],
     enabled: !!projectId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("lead_events")
         .select("*")
         .eq("project_id", projectId!)

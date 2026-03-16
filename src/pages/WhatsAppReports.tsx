@@ -95,7 +95,7 @@ export default function WhatsAppReports() {
 
   const toggleMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("whatsapp_report_configs")
         .update({ is_active })
         .eq("id", id);
