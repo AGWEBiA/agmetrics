@@ -398,7 +398,7 @@ export default function LeadJourney() {
                 </SelectContent>
               </Select>
               <Select value={filterEventType} onValueChange={setFilterEventType}>
-                <SelectTrigger className="w-[160px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[160px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos tipos</SelectItem>
                   {Object.entries(EVENT_LABELS).map(([k, v]) => (
