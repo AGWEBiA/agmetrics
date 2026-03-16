@@ -493,7 +493,7 @@ export default function PixelAnalytics() {
               </CardContent>
             </Card>
           </AnimatedCard>
-        </TabsContent>
+        </AnimatedTabContent>
 
         <TabsContent value="sources" className="grid gap-4 md:grid-cols-2">
           <AnimatedCard index={0}>
