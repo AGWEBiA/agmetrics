@@ -32,3 +32,9 @@ verify_jwt = false
 
 [functions.auto-sync]
 verify_jwt = false
+
+[functions.tracking-pixel]
+verify_jwt = false
+
+[functions.send-whatsapp-report]
+verify_jwt = false
