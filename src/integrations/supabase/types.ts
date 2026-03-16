@@ -86,6 +86,51 @@ export type Database = {
           },
         ]
       }
+      custom_api_metrics: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          metric_type: string
+          period: string | null
+          project_id: string
+          synced_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          metric_type: string
+          period?: string | null
+          project_id: string
+          synced_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          metric_type?: string
+          period?: string | null
+          project_id?: string
+          synced_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_api_metrics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_api_metrics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       google_credentials: {
         Row: {
           client_id: string
@@ -860,6 +905,9 @@ export type Database = {
           budget: number | null
           cart_open_date: string | null
           created_at: string
+          custom_api_key: string | null
+          custom_api_name: string | null
+          custom_api_url: string | null
           description: string | null
           end_date: string | null
           evolution_api_key: string | null
@@ -890,6 +938,9 @@ export type Database = {
           budget?: number | null
           cart_open_date?: string | null
           created_at?: string
+          custom_api_key?: string | null
+          custom_api_name?: string | null
+          custom_api_url?: string | null
           description?: string | null
           end_date?: string | null
           evolution_api_key?: string | null
@@ -920,6 +971,9 @@ export type Database = {
           budget?: number | null
           cart_open_date?: string | null
           created_at?: string
+          custom_api_key?: string | null
+          custom_api_name?: string | null
+          custom_api_url?: string | null
           description?: string | null
           end_date?: string | null
           evolution_api_key?: string | null
