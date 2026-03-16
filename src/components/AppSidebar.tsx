@@ -9,6 +9,8 @@ import {
   Plug,
   Users,
   BookOpen,
+  MessageSquare,
+  Route,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
@@ -68,6 +70,18 @@ export function AppSidebar() {
           url: `/admin/projects/${projectId}/sales`,
           icon: ShoppingCart,
           visible: can("sales.view"),
+        },
+        {
+          title: "Jornada do Lead",
+          url: `/admin/projects/${projectId}/lead-journey`,
+          icon: Route,
+          visible: can("projects.view"),
+        },
+        {
+          title: "Relatórios WhatsApp",
+          url: `/admin/projects/${projectId}/whatsapp-reports`,
+          icon: MessageSquare,
+          visible: can("projects.edit"),
         },
         {
           title: "Configurações",
