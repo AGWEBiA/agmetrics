@@ -16,6 +16,8 @@ import IntegrationStatus from "./pages/IntegrationStatus";
 import UserManagement from "./pages/UserManagement";
 import Guide from "./pages/Guide";
 import NotFound from "./pages/NotFound";
+import WhatsAppReports from "./pages/WhatsAppReports";
+import LeadJourney from "./pages/LeadJourney";
 import { PermissionGuard } from "./components/PermissionGuard";
 
 const queryClient = new QueryClient();
@@ -44,6 +46,8 @@ const App = () => (
             <Route path="projects/:projectId/sales" element={<PermissionGuard permission="sales.view"><SalesTable /></PermissionGuard>} />
             <Route path="projects/:projectId/config" element={<PermissionGuard permission="projects.edit"><ProjectConfig /></PermissionGuard>} />
             <Route path="projects/:projectId/integrations" element={<PermissionGuard permission="integrations.manage"><IntegrationStatus /></PermissionGuard>} />
+            <Route path="projects/:projectId/whatsapp-reports" element={<PermissionGuard permission="projects.edit"><WhatsAppReports /></PermissionGuard>} />
+            <Route path="projects/:projectId/lead-journey" element={<PermissionGuard permission="projects.view"><LeadJourney /></PermissionGuard>} />
             <Route path="users" element={<PermissionGuard adminOnly><UserManagement /></PermissionGuard>} />
             <Route path="guide" element={<Guide />} />
           </Route>

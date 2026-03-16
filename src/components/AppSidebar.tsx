@@ -9,6 +9,8 @@ import {
   Plug,
   Users,
   BookOpen,
+  MessageSquare,
+  Route,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
