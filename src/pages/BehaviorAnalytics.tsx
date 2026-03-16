@@ -31,9 +31,90 @@ interface TrackingEvent {
   created_at: string;
 }
 
+interface PagePreviewResponse {
+  html: string;
+  finalUrl: string;
+  title?: string;
+}
+
+const TRACKING_QUERY_PARAMS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "utm_id",
+  "fbclid",
+];
+
 function getPathname(url: string | null): string {
   if (!url) return "/";
   try { return new URL(url).pathname; } catch { return url; }
+}
+
+function normalizeTrackedPageUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    TRACKING_QUERY_PARAMS.forEach((param) => parsed.searchParams.delete(param));
+    parsed.hash = "";
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+function getRepresentativePageUrl(events: TrackingEvent[], selectedPage: string): string | null {
+  if (selectedPage === "all") return null;
+
+  const rankedUrls = new Map<string, { score: number; count: number }>();
+
+  events.forEach((event) => {
+    if (!event.page_url || getPathname(event.page_url) !== selectedPage) return;
+
+    const normalizedUrl = normalizeTrackedPageUrl(event.page_url);
+    const current = rankedUrls.get(normalizedUrl) ?? { score: 0, count: 0 };
+    let scoreBoost = event.event_type === "page_view" ? 4 : 1;
+
+    try {
+      const parsed = new URL(normalizedUrl);
+      if (!parsed.search) scoreBoost += 2;
+      if (!parsed.hash) scoreBoost += 1;
+    } catch {
+      // keep default score
+    }
+
+    rankedUrls.set(normalizedUrl, {
+      score: current.score + scoreBoost,
+      count: current.count + 1,
+    });
+  });
+
+  return Array.from(rankedUrls.entries())
+    .sort((a, b) => b[1].score - a[1].score || b[1].count - a[1].count || a[0].length - b[0].length)[0]?.[0] ?? null;
+}
+
+function getPagePreviewMetrics(events: TrackingEvent[]) {
+  const viewportWidths: number[] = [];
+  const pageHeights: number[] = [];
+
+  events.forEach((event) => {
+    const meta = event.metadata as any;
+    if (typeof meta?.vw === "number" && meta.vw > 0) viewportWidths.push(meta.vw);
+    if (typeof meta?.page_h === "number" && meta.page_h > 0) pageHeights.push(meta.page_h);
+  });
+
+  const sortedWidths = [...viewportWidths].sort((a, b) => a - b);
+  const viewportWidth = sortedWidths.length
+    ? sortedWidths[Math.floor(sortedWidths.length / 2)]
+    : 1440;
+  const pageHeight = pageHeights.length
+    ? Math.max(...pageHeights)
+    : Math.max(960, Math.round(viewportWidth * 1.8));
+
+  return {
+    viewportWidth,
+    pageHeight: Math.max(pageHeight, viewportWidth),
+  };
 }
 
 function computePageMetrics(events: TrackingEvent[]) {
