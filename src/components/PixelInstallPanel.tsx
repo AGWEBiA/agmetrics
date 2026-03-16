@@ -44,6 +44,29 @@ export function PixelInstallPanel({ projectId, projectName = "Projeto" }: PixelI
   // <button onclick="window.AGMetrics?.track('lead', { form: 'newsletter' })">Enviar</button>
 </script>`;
 
+  const checkoutSnippet = `<!-- AGMetrics - Checkout Kiwify / Hotmart -->
+<!-- Cole no campo de "Scripts personalizados" ou "Pixel/Tracking" -->
+<!-- da sua plataforma de vendas (Kiwify ou Hotmart). -->
+
+<script src="${pixelUrl}&track=all"></script>
+<script>
+  // Rastreia automaticamente a visita ao checkout.
+  // Eventos customizados opcionais:
+  //
+  // Quando o usuário iniciar o preenchimento do formulário:
+  // window.AGMetrics?.track("checkout_start", {
+  //   product: "Nome do Produto"
+  // });
+  //
+  // ─── Kiwify ───
+  // No painel Kiwify: Produto → Configurações → Checkout → Scripts
+  // Cole este snippet inteiro no campo de scripts do checkout.
+  //
+  // ─── Hotmart ───
+  // No painel Hotmart: Produto → Editar → Checkout → Pixel de rastreamento
+  // Cole este snippet inteiro no campo de scripts personalizados.
+</script>`;
+
   const thankYouSnippet = `<!-- AGMetrics - Página de Obrigado -->
 <script src="${pixelUrl}&track=all"></script>
 <script>
