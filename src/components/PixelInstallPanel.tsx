@@ -196,6 +196,13 @@ export function PixelInstallPanel({ projectId, projectName = "Projeto" }: PixelI
             <SnippetBlock code={fullSnippet} id="full" label="Completo" />
           </TabsContent>
 
+          <TabsContent value="checkout" className="mt-3">
+            <p className="text-xs text-muted-foreground mb-2">
+              Cole no campo de <strong>scripts personalizados</strong> do checkout na Kiwify ou Hotmart.
+            </p>
+            <SnippetBlock code={checkoutSnippet} id="checkout" label="Checkout" />
+          </TabsContent>
+
           <TabsContent value="thankyou" className="mt-3">
             <p className="text-xs text-muted-foreground mb-2">
               Use <strong>apenas</strong> na página de obrigado/confirmação. Já inclui o rastreamento completo.
