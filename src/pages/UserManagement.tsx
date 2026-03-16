@@ -163,98 +163,173 @@ export default function UserManagement() {
           ))}
         </div>
       ) : (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Usuário</TableHead>
-                <TableHead>E-mail</TableHead>
-                <TableHead>Papel</TableHead>
-                <TableHead>Permissões</TableHead>
-                <TableHead>Cadastro</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users?.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar_url || undefined} />
-                        <AvatarFallback className="text-xs">
-                          {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{user.name || "—"}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{user.email || "—"}</TableCell>
-                  <TableCell>
-                    <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                      {user.role === "admin" ? (
-                        <span className="flex items-center gap-1">
-                          <Shield className="h-3 w-3" /> Admin
-                        </span>
-                      ) : (
-                        "Usuário"
-                      )}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {user.role === "admin" ? (
-                        <Badge variant="outline" className="text-xs">Todas</Badge>
-                      ) : user.permissions.length === 0 ? (
-                        <span className="text-muted-foreground text-xs">Nenhuma</span>
-                      ) : (
-                        user.permissions.map((p) => (
-                          <Badge key={p} variant="outline" className="text-xs">
-                            {ALL_PERMISSIONS.find((ap) => ap.value === p)?.label || p}
-                          </Badge>
-                        ))
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {new Date(user.created_at).toLocaleDateString("pt-BR")}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(user)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Remover usuário?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta ação é irreversível. O usuário "{user.email}" será removido permanentemente.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDelete(user)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Remover
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Usuário</TableHead>
+                  <TableHead>E-mail</TableHead>
+                  <TableHead>Papel</TableHead>
+                  <TableHead>Permissões</TableHead>
+                  <TableHead>Cadastro</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {users?.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.avatar_url || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{user.name || "—"}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{user.email || "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+                        {user.role === "admin" ? (
+                          <span className="flex items-center gap-1">
+                            <Shield className="h-3 w-3" /> Admin
+                          </span>
+                        ) : (
+                          "Usuário"
+                        )}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {user.role === "admin" ? (
+                          <Badge variant="outline" className="text-xs">Todas</Badge>
+                        ) : user.permissions.length === 0 ? (
+                          <span className="text-muted-foreground text-xs">Nenhuma</span>
+                        ) : (
+                          user.permissions.map((p) => (
+                            <Badge key={p} variant="outline" className="text-xs">
+                              {ALL_PERMISSIONS.find((ap) => ap.value === p)?.label || p}
+                            </Badge>
+                          ))
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {new Date(user.created_at).toLocaleDateString("pt-BR")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => openEdit(user)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remover usuário?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação é irreversível. O usuário "{user.email}" será removido permanentemente.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(user)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Remover
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {users?.map((user) => (
+              <div key={user.id} className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={user.avatar_url || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium text-sm">{user.name || "—"}</p>
+                      <p className="text-xs text-muted-foreground">{user.email || "—"}</p>
+                    </div>
+                  </div>
+                  <Badge variant={user.role === "admin" ? "default" : "secondary"} className="text-xs">
+                    {user.role === "admin" ? "Admin" : "Usuário"}
+                  </Badge>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {user.role === "admin" ? (
+                    <Badge variant="outline" className="text-[10px]">Todas permissões</Badge>
+                  ) : user.permissions.length === 0 ? (
+                    <span className="text-muted-foreground text-[10px]">Sem permissões</span>
+                  ) : (
+                    user.permissions.map((p) => (
+                      <Badge key={p} variant="outline" className="text-[10px]">
+                        {ALL_PERMISSIONS.find((ap) => ap.value === p)?.label || p}
+                      </Badge>
+                    ))
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(user.created_at).toLocaleDateString("pt-BR")}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => openEdit(user)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Remover usuário?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta ação é irreversível. O usuário "{user.email}" será removido permanentemente.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(user)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Remover
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Edit User Dialog */}
