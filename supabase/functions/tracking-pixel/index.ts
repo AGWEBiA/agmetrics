@@ -61,17 +61,17 @@ Deno.serve(async (req) => {
     // Send each event (beacon doesn't support batch natively)
     for (var i = 0; i < batch.length; i++) {
       var payload = batch[i];
-      if (navigator.sendBeacon) {
-        var blob = new Blob([JSON.stringify(payload)], {type: "application/json"});
-        navigator.sendBeacon(endpoint + "?apikey=" + anonKey, blob);
-      } else {
-        fetch(endpoint, {
-          method: "POST",
-          headers: {"Content-Type": "application/json", "apikey": anonKey},
-          body: JSON.stringify(payload),
-          keepalive: true
-        });
-      }
+      // Always use fetch with proper headers (sendBeacon can't set Authorization)
+      fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": anonKey,
+          "Authorization": "Bearer " + anonKey
+        },
+        body: JSON.stringify(payload),
+        keepalive: true
+      }).catch(function() {});
     }
   }
 
