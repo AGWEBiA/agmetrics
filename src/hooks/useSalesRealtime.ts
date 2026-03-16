@@ -42,6 +42,9 @@ export function useSalesRealtime(projectId: string | undefined) {
             description: saleMsg,
           });
 
+          // Browser push notification
+          showNotification("🎉 Nova venda!", { body: saleMsg, tag: `sale-${sale.id}` });
+
           // Create in-app notification
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
