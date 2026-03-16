@@ -16,7 +16,7 @@ interface PixelInstallPanelProps {
   projectName?: string;
 }
 
-export function PixelInstallPanel({ projectId }: PixelInstallPanelProps) {
+export function PixelInstallPanel({ projectId, projectName = "Projeto" }: PixelInstallPanelProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState<string | null>(null);
 
