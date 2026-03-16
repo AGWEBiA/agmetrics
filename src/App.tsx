@@ -18,6 +18,7 @@ import Guide from "./pages/Guide";
 import NotFound from "./pages/NotFound";
 import WhatsAppReports from "./pages/WhatsAppReports";
 import LeadJourney from "./pages/LeadJourney";
+import PixelAnalytics from "./pages/PixelAnalytics";
 import { PermissionGuard } from "./components/PermissionGuard";
 
 const queryClient = new QueryClient();
