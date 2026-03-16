@@ -6,13 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AnimatedTabContent } from "@/components/AnimatedTabContent";
 import { AnimatedCard, AnimatedPage } from "@/components/AnimatedCard";
+import { MetricCardsSkeleton, HeatmapSkeleton } from "@/components/MobileLoadingSkeleton";
 import { formatNumber, formatPercent, formatDateTimeBR } from "@/lib/formatters";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
-import { MousePointer2, ScrollText, Flame, Eye, GitCompareArrows, Video, ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { MousePointer2, ScrollText, Flame, Eye, GitCompareArrows, Video, ArrowUp, ArrowDown, Minus, Layout } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const COLORS = [
   "hsl(220, 90%, 56%)", "hsl(265, 80%, 60%)", "hsl(152, 60%, 42%)",
@@ -61,7 +64,7 @@ export default function BehaviorAnalytics() {
     return d.toISOString();
   }, [period]);
 
-  const { data: events = [] } = useQuery({
+  const { data: events = [], isLoading } = useQuery({
     queryKey: ["behavior_events", projectId, period],
     enabled: !!projectId,
     queryFn: async () => {
@@ -96,6 +99,22 @@ export default function BehaviorAnalytics() {
     if (selectedPage === "all") return events;
     return events.filter((e) => getPathname(e.page_url) === selectedPage);
   }, [events, selectedPage]);
+
+  // Per-page metrics for page selector cards
+  const pageMetrics = useMemo(() => {
+    const map = new Map<string, { views: number; clicks: number; visitors: Set<string> }>();
+    events.forEach((e) => {
+      const path = getPathname(e.page_url);
+      if (!map.has(path)) map.set(path, { views: 0, clicks: 0, visitors: new Set() });
+      const entry = map.get(path)!;
+      if (e.event_type === "page_view") entry.views++;
+      if (e.event_type === "click") entry.clicks++;
+      if (e.visitor_id) entry.visitors.add(e.visitor_id);
+    });
+    return Array.from(map.entries())
+      .map(([path, d]) => ({ path, views: d.views, clicks: d.clicks, visitors: d.visitors.size }))
+      .sort((a, b) => b.views - a.views);
+  }, [events]);
 
   // Click analytics
   const clickData = useMemo(() => {
@@ -282,6 +301,22 @@ export default function BehaviorAnalytics() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <AnimatedPage className="space-y-6">
+        <div className="space-y-2">
+          <div className="h-8 w-48 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-64 bg-muted rounded animate-pulse" />
+        </div>
+        <MetricCardsSkeleton />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <HeatmapSkeleton />
+          <HeatmapSkeleton />
+        </div>
+      </AnimatedPage>
+    );
+  }
+
   return (
     <AnimatedPage className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -289,20 +324,9 @@ export default function BehaviorAnalytics() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Comportamento</h1>
           <p className="text-sm text-muted-foreground">Mapa de calor, cliques, scroll e sessões de visitantes</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Select value={selectedPage} onValueChange={setSelectedPage}>
-            <SelectTrigger className="w-48 text-xs h-8">
-              <SelectValue placeholder="Todas as páginas" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as páginas</SelectItem>
-              {pages.map((p) => (
-                <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-28 text-xs h-8">
+            <SelectTrigger className="w-full sm:w-28 text-xs h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -315,6 +339,67 @@ export default function BehaviorAnalytics() {
         </div>
       </div>
 
+      {/* ── Page Selector Cards ── */}
+      {pageMetrics.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Layout className="h-4 w-4 text-muted-foreground" />
+            <p className="text-sm font-medium text-foreground">Páginas Rastreadas</p>
+          </div>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            <button
+              onClick={() => setSelectedPage("all")}
+              className={cn(
+                "flex-shrink-0 rounded-lg border p-3 text-left transition-all min-w-[140px]",
+                selectedPage === "all"
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                  : "border-border hover:border-muted-foreground/30 hover:bg-muted/50"
+              )}
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
+                  <Eye className="h-3 w-3 text-primary" />
+                </div>
+                <span className="text-[11px] font-medium text-foreground truncate">Todas</span>
+              </div>
+              <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                <span>{formatNumber(events.filter(e => e.event_type === "page_view").length)} views</span>
+              </div>
+            </button>
+            {pageMetrics.map((pm) => (
+              <button
+                key={pm.path}
+                onClick={() => setSelectedPage(pm.path)}
+                className={cn(
+                  "flex-shrink-0 rounded-lg border p-3 text-left transition-all min-w-[140px] max-w-[200px]",
+                  selectedPage === pm.path
+                    ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                    : "border-border hover:border-muted-foreground/30 hover:bg-muted/50"
+                )}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className="h-6 w-6 rounded bg-muted flex items-center justify-center">
+                    <Layout className="h-3 w-3 text-muted-foreground" />
+                  </div>
+                  <span className="text-[11px] font-medium text-foreground truncate">{pm.path}</span>
+                </div>
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                  <span>{formatNumber(pm.views)} views</span>
+                  <span>{formatNumber(pm.clicks)} cliques</span>
+                </div>
+                {/* Mini heatmap preview bar */}
+                <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-primary/60"
+                    style={{ width: `${pageMetrics[0]?.views ? (pm.views / pageMetrics[0].views) * 100 : 0}%` }}
+                  />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
@@ -325,12 +410,12 @@ export default function BehaviorAnalytics() {
         ].map((card, i) => (
           <AnimatedCard key={card.label} index={i}>
             <Card>
-              <CardContent className="p-4">
+              <CardContent className="p-3 sm:p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <card.icon className={`h-4 w-4 ${card.color}`} />
-                  <span className="text-xs text-muted-foreground">{card.label}</span>
+                  <span className="text-[10px] sm:text-xs text-muted-foreground">{card.label}</span>
                 </div>
-                <p className="text-xl font-bold">{card.value}</p>
+                <p className="text-lg sm:text-xl font-bold">{card.value}</p>
               </CardContent>
             </Card>
           </AnimatedCard>
@@ -338,20 +423,28 @@ export default function BehaviorAnalytics() {
       </div>
 
       <Tabs defaultValue="heatmap">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="heatmap" className="text-xs">Mapa de Calor</TabsTrigger>
-          <TabsTrigger value="clicks" className="text-xs">Cliques</TabsTrigger>
-          <TabsTrigger value="scroll" className="text-xs">Scroll</TabsTrigger>
-          <TabsTrigger value="compare" className="text-xs gap-1">
+        <TabsList className="flex overflow-x-auto no-scrollbar">
+          <TabsTrigger value="heatmap" className="text-xs whitespace-nowrap">Mapa de Calor</TabsTrigger>
+          <TabsTrigger value="clicks" className="text-xs whitespace-nowrap">Cliques</TabsTrigger>
+          <TabsTrigger value="scroll" className="text-xs whitespace-nowrap">Scroll</TabsTrigger>
+          <TabsTrigger value="compare" className="text-xs gap-1 whitespace-nowrap">
             <GitCompareArrows className="h-3 w-3" /> Comparar
           </TabsTrigger>
-          <TabsTrigger value="sessions" className="text-xs gap-1">
+          <TabsTrigger value="sessions" className="text-xs gap-1 whitespace-nowrap">
             <Video className="h-3 w-3" /> Sessões
           </TabsTrigger>
         </TabsList>
 
         {/* ── Heatmap Tab ── */}
-        <TabsContent value="heatmap" className="mt-4">
+        <AnimatedTabContent value="heatmap" className="mt-4">
+          {selectedPage !== "all" && (
+            <div className="mb-3">
+              <Badge variant="outline" className="text-xs">
+                <Layout className="h-3 w-3 mr-1" />
+                Filtrando: {selectedPage}
+              </Badge>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <AnimatedCard index={0}>
               <Card>
@@ -374,10 +467,10 @@ export default function BehaviorAnalytics() {
               </Card>
             </AnimatedCard>
           </div>
-        </TabsContent>
+        </AnimatedTabContent>
 
         {/* ── Clicks Tab ── */}
-        <TabsContent value="clicks" className="mt-4 space-y-4">
+        <AnimatedTabContent value="clicks" className="mt-4 space-y-4">
           <AnimatedCard index={0}>
             <Card>
               <CardHeader className="pb-2">
@@ -425,10 +518,10 @@ export default function BehaviorAnalytics() {
               </CardContent>
             </Card>
           </AnimatedCard>
-        </TabsContent>
+        </AnimatedTabContent>
 
         {/* ── Scroll Tab ── */}
-        <TabsContent value="scroll" className="mt-4 space-y-4">
+        <AnimatedTabContent value="scroll" className="mt-4 space-y-4">
           <AnimatedCard index={0}>
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">Profundidade de Scroll</CardTitle></CardHeader>
@@ -438,7 +531,7 @@ export default function BehaviorAnalytics() {
                     <div key={s.depth} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium">{s.depth}</span>
-                        <span className="text-muted-foreground">{formatNumber(s.count)} visitantes · {formatPercent(s.pct)}</span>
+                        <span className="text-muted-foreground text-xs sm:text-sm">{formatNumber(s.count)} visitantes · {formatPercent(s.pct)}</span>
                       </div>
                       <div className="h-3 bg-muted rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, s.pct)}%`, backgroundColor: COLORS[i] }} />
@@ -461,10 +554,10 @@ export default function BehaviorAnalytics() {
               </CardContent>
             </Card>
           </AnimatedCard>
-        </TabsContent>
+        </AnimatedTabContent>
 
         {/* ── Compare Tab ── */}
-        <TabsContent value="compare" className="mt-4 space-y-4">
+        <AnimatedTabContent value="compare" className="mt-4 space-y-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
@@ -499,23 +592,24 @@ export default function BehaviorAnalytics() {
                 </div>
               ) : compareMetrics ? (
                 <div className="space-y-3">
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead className="text-xs">Métrica</TableHead>
                         <TableHead className="text-xs text-center">
-                          <Badge variant="outline" className="text-[10px]">A</Badge> {comparePage1}
+                          <Badge variant="outline" className="text-[10px]">A</Badge> <span className="hidden sm:inline">{comparePage1}</span>
                         </TableHead>
                         <TableHead className="text-xs text-center">
-                          <Badge variant="secondary" className="text-[10px]">B</Badge> {comparePage2}
+                          <Badge variant="secondary" className="text-[10px]">B</Badge> <span className="hidden sm:inline">{comparePage2}</span>
                         </TableHead>
-                        <TableHead className="text-xs text-center">Diferença</TableHead>
+                        <TableHead className="text-xs text-center">Dif.</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {[
                         { label: "Page Views", a: compareMetrics.page1.pageViews, b: compareMetrics.page2.pageViews },
-                        { label: "Visitantes Únicos", a: compareMetrics.page1.visitors, b: compareMetrics.page2.visitors },
+                        { label: "Visitantes", a: compareMetrics.page1.visitors, b: compareMetrics.page2.visitors },
                         { label: "Cliques", a: compareMetrics.page1.clicks, b: compareMetrics.page2.clicks },
                         { label: "Scroll Médio", a: Math.round(compareMetrics.page1.avgScroll), b: Math.round(compareMetrics.page2.avgScroll), suffix: "%" },
                       ].map((row) => (
@@ -528,6 +622,7 @@ export default function BehaviorAnalytics() {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
 
                   {/* Scroll depth comparison */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
@@ -538,7 +633,7 @@ export default function BehaviorAnalytics() {
                       <div key={page.label} className="space-y-2">
                         <p className="text-xs font-medium flex items-center gap-1">
                           <Badge variant={page.badge === "A" ? "outline" : "secondary"} className="text-[10px]">{page.badge}</Badge>
-                          Scroll — {page.label}
+                          Scroll — <span className="truncate max-w-[120px]">{page.label}</span>
                         </p>
                         {[25, 50, 75, 100].map((d, i) => {
                           const pct = (page.depths[d as keyof typeof page.depths] / page.total) * 100;
@@ -561,10 +656,10 @@ export default function BehaviorAnalytics() {
               ) : null}
             </CardContent>
           </Card>
-        </TabsContent>
+        </AnimatedTabContent>
 
         {/* ── Sessions Tab ── */}
-        <TabsContent value="sessions" className="mt-4 space-y-4">
+        <AnimatedTabContent value="sessions" className="mt-4 space-y-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
@@ -589,12 +684,12 @@ export default function BehaviorAnalytics() {
                           className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors text-left"
                           onClick={() => setExpandedSession(isExpanded ? null : session.vid)}
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                               <Eye className="h-4 w-4 text-primary" />
                             </div>
-                            <div>
-                              <p className="text-xs font-medium text-foreground">
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium text-foreground truncate">
                                 {session.vid.substring(0, 12)}…
                               </p>
                               <p className="text-[10px] text-muted-foreground">
@@ -602,13 +697,13 @@ export default function BehaviorAnalytics() {
                               </p>
                             </div>
                           </div>
-                          <div className="hidden sm:flex items-center gap-3 text-[10px] text-muted-foreground">
+                          <div className="hidden sm:flex items-center gap-3 text-[10px] text-muted-foreground flex-shrink-0">
                             <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{session.pagesVisited} pág</span>
                             <span className="flex items-center gap-1"><MousePointer2 className="h-3 w-3" />{session.totalClicks} cliques</span>
                             <span className="flex items-center gap-1"><ScrollText className="h-3 w-3" />{session.maxScroll}%</span>
                             <Badge variant="outline" className="text-[10px]">{session.eventCount} eventos</Badge>
                           </div>
-                          <div className="sm:hidden flex items-center gap-2 text-[10px] text-muted-foreground">
+                          <div className="sm:hidden flex items-center gap-2 text-[10px] text-muted-foreground flex-shrink-0">
                             <Badge variant="outline" className="text-[10px]">{session.eventCount} evt</Badge>
                           </div>
                         </button>
@@ -626,11 +721,11 @@ export default function BehaviorAnalytics() {
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-1.5">
                                         {eventIcon(e.event_type)}
-                                        <span className="text-xs text-foreground">{eventLabel(e)}</span>
+                                        <span className="text-xs text-foreground truncate">{eventLabel(e)}</span>
                                       </div>
                                       <p className="text-[10px] text-muted-foreground mt-0.5">
                                         {new Date(e.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                                        {e.page_url && <span className="ml-2">{getPathname(e.page_url)}</span>}
+                                        {e.page_url && <span className="ml-2 hidden sm:inline">{getPathname(e.page_url)}</span>}
                                       </p>
                                     </div>
                                   </div>
@@ -645,7 +740,7 @@ export default function BehaviorAnalytics() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        </AnimatedTabContent>
       </Tabs>
     </AnimatedPage>
   );

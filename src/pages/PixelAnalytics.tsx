@@ -7,8 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AnimatedTabContent } from "@/components/AnimatedTabContent";
 import { AnimatedCard, AnimatedPage } from "@/components/AnimatedCard";
+import { MetricCardsSkeleton, ChartSkeleton } from "@/components/MobileLoadingSkeleton";
 import { formatNumber } from "@/lib/formatters";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -465,7 +467,7 @@ export default function PixelAnalytics() {
           <TabsTrigger value="funnel">Funil</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
+        <AnimatedTabContent value="overview" className="space-y-4">
           <AnimatedCard index={0}>
             <Card>
               <CardHeader>
@@ -491,9 +493,9 @@ export default function PixelAnalytics() {
               </CardContent>
             </Card>
           </AnimatedCard>
-        </TabsContent>
+        </AnimatedTabContent>
 
-        <TabsContent value="sources" className="grid gap-4 md:grid-cols-2">
+        <AnimatedTabContent value="sources" className="grid gap-4 md:grid-cols-2">
           <AnimatedCard index={0}>
             <Card>
               <CardHeader>
@@ -543,9 +545,9 @@ export default function PixelAnalytics() {
               </CardContent>
             </Card>
           </AnimatedCard>
-        </TabsContent>
+        </AnimatedTabContent>
 
-        <TabsContent value="campaigns">
+        <AnimatedTabContent value="campaigns">
           <AnimatedCard index={0}>
             <Card>
               <CardHeader>
@@ -577,9 +579,9 @@ export default function PixelAnalytics() {
               </CardContent>
             </Card>
           </AnimatedCard>
-        </TabsContent>
+        </AnimatedTabContent>
 
-        <TabsContent value="pages">
+        <AnimatedTabContent value="pages">
           <AnimatedCard index={0}>
             <Card>
               <CardHeader>
@@ -611,9 +613,9 @@ export default function PixelAnalytics() {
               </CardContent>
             </Card>
           </AnimatedCard>
-        </TabsContent>
+        </AnimatedTabContent>
 
-        <TabsContent value="funnel">
+        <AnimatedTabContent value="funnel">
           <AnimatedCard index={0}>
             <Card>
               <CardHeader>
@@ -653,7 +655,7 @@ export default function PixelAnalytics() {
               </CardContent>
             </Card>
           </AnimatedCard>
-        </TabsContent>
+        </AnimatedTabContent>
       </Tabs>
     </AnimatedPage>
   );
