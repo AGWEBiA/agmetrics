@@ -655,7 +655,7 @@ export default function PixelAnalytics() {
               </CardContent>
             </Card>
           </AnimatedCard>
-        </TabsContent>
+        </AnimatedTabContent>
       </Tabs>
     </AnimatedPage>
   );
