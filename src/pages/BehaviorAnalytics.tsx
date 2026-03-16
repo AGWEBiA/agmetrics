@@ -503,7 +503,7 @@ export default function BehaviorAnalytics() {
                     <Flame className="h-4 w-4 text-destructive" /> Mapa de Calor — Mouse
                   </CardTitle>
                 </CardHeader>
-                <CardContent><HeatGrid data={heatmapGrid} title="" /></CardContent>
+                <CardContent><HeatGrid data={heatmapGrid} title="" showPageLayout={true} /></CardContent>
               </Card>
             </AnimatedCard>
             <AnimatedCard index={1}>
