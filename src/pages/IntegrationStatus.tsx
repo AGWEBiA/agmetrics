@@ -252,7 +252,7 @@ export default function IntegrationStatus() {
           <AnimatedCard index={4}>
             <PixelInstallPanel projectId={projectId} />
           </AnimatedCard>
-          <AnimatedCard index={5}>
+      <AnimatedCard index={6}>
             <PixelDomainSelector projectId={projectId} />
           </AnimatedCard>
         </>
