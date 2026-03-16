@@ -1639,23 +1639,43 @@ function CustomApiTab({ projectId }: { projectId: string }) {
   const [apiName, setApiName] = useState("");
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [endpoints, setEndpoints] = useState<{ path: string; label: string }[]>([
+    { path: "/metrics/overview?period=30d", label: "overview" },
+    { path: "/metrics/campaigns?period=30d", label: "campaigns" },
+    { path: "/metrics/contacts", label: "contacts" },
+    { path: "/metrics/automations", label: "automations" },
+  ]);
 
   useEffect(() => {
     if (project) {
       setApiUrl((project as any).custom_api_url || "");
       setApiKey((project as any).custom_api_key || "");
       setApiName((project as any).custom_api_name || "");
+      const saved = (project as any).custom_api_endpoints;
+      if (saved && Array.isArray(saved) && saved.length > 0) {
+        setEndpoints(saved);
+      }
     }
   }, [project]);
+
+  const addEndpoint = () => setEndpoints([...endpoints, { path: "", label: "" }]);
+  const removeEndpoint = (i: number) => setEndpoints(endpoints.filter((_, idx) => idx !== i));
+  const updateEndpoint = (i: number, field: "path" | "label", value: string) => {
+    const updated = [...endpoints];
+    updated[i] = { ...updated[i], [field]: value };
+    setEndpoints(updated);
+  };
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      const validEndpoints = endpoints.filter(e => e.path && e.label);
       await updateProject.mutateAsync({
         id: projectId,
         custom_api_url: apiUrl || null,
         custom_api_key: apiKey || null,
         custom_api_name: apiName || null,
+        custom_api_endpoints: validEndpoints.length > 0 ? validEndpoints : null,
       } as any);
       toast({ title: "Configuração salva", description: "API customizada configurada com sucesso." });
     } catch {
@@ -1721,8 +1741,36 @@ function CustomApiTab({ projectId }: { projectId: string }) {
             onChange={(e) => setApiUrl(e.target.value)}
             placeholder="https://sua-api.com/functions/v1/public-api"
           />
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label>Endpoints</Label>
+            <Button type="button" variant="outline" size="sm" onClick={addEndpoint}>
+              <Plus className="h-3 w-3 mr-1" /> Adicionar
+            </Button>
+          </div>
+          {endpoints.map((ep, i) => (
+            <div key={i} className="flex gap-2 items-center">
+              <Input
+                value={ep.label}
+                onChange={(e) => updateEndpoint(i, "label", e.target.value)}
+                placeholder="Label (ex: overview)"
+                className="w-1/3"
+              />
+              <Input
+                value={ep.path}
+                onChange={(e) => updateEndpoint(i, "path", e.target.value)}
+                placeholder="/metrics/overview?period=30d"
+                className="flex-1"
+              />
+              <Button type="button" variant="ghost" size="icon" onClick={() => removeEndpoint(i)} disabled={endpoints.length <= 1}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+          ))}
           <p className="text-xs text-muted-foreground">
-            O sistema buscará dados nos endpoints: /metrics/overview, /metrics/campaigns, /metrics/contacts, /metrics/automations
+            Defina os paths relativos à Base URL. Ex: /metrics/overview?period=30d
           </p>
         </div>
         <div className="space-y-2">

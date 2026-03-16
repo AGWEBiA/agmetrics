@@ -1,0 +1,1 @@
+ALTER TABLE public.projects ADD COLUMN custom_api_endpoints jsonb DEFAULT NULL;

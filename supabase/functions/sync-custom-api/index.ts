@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
     // Get custom API config from project
     const { data: projectData, error: projectError } = await supabase
       .from("projects")
-      .select("custom_api_url, custom_api_key, custom_api_name")
+      .select("custom_api_url, custom_api_key, custom_api_name, custom_api_endpoints")
       .eq("id", project_id)
       .single();
 
@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { custom_api_url, custom_api_key } = projectData;
+    const { custom_api_url, custom_api_key, custom_api_endpoints } = projectData;
 
     if (!custom_api_url || !custom_api_key) {
       return new Response(
@@ -111,13 +111,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Define endpoints to fetch
-    const endpoints = [
-      { path: "/metrics/overview?period=30d", type: "overview" },
-      { path: "/metrics/campaigns?period=30d", type: "campaigns" },
-      { path: "/metrics/contacts", type: "contacts" },
-      { path: "/metrics/automations", type: "automations" },
+    // Use custom endpoints if defined, otherwise fall back to defaults
+    const defaultEndpoints = [
+      { path: "/metrics/overview?period=30d", label: "overview" },
+      { path: "/metrics/campaigns?period=30d", label: "campaigns" },
+      { path: "/metrics/contacts", label: "contacts" },
+      { path: "/metrics/automations", label: "automations" },
     ];
+
+    const endpoints: { path: string; label: string }[] =
+      Array.isArray(custom_api_endpoints) && custom_api_endpoints.length > 0
+        ? custom_api_endpoints
+        : defaultEndpoints;
 
     let synced = 0;
     const errors: string[] = [];
@@ -125,7 +130,7 @@ Deno.serve(async (req) => {
     for (const endpoint of endpoints) {
       try {
         const url = `${custom_api_url.replace(/\/$/, "")}${endpoint.path}`;
-        console.log(`[sync-custom-api] Fetching ${endpoint.type}: ${url}`);
+        console.log(`[sync-custom-api] Fetching ${endpoint.label}: ${url}`);
 
         const res = await fetch(url, {
           method: "GET",
@@ -138,23 +143,21 @@ Deno.serve(async (req) => {
 
         if (!res.ok) {
           const errText = await res.text();
-          console.warn(`[sync-custom-api] ${endpoint.type} failed (${res.status}): ${errText.slice(0, 200)}`);
-          // Don't treat 404 as fatal - endpoint may not exist yet
+          console.warn(`[sync-custom-api] ${endpoint.label} failed (${res.status}): ${errText.slice(0, 200)}`);
           if (res.status !== 404) {
-            errors.push(`${endpoint.type}: ${res.status}`);
+            errors.push(`${endpoint.label}: ${res.status}`);
           }
           continue;
         }
 
         const data = await res.json();
 
-        // Upsert into custom_api_metrics
         const { error: upsertError } = await supabase
           .from("custom_api_metrics")
           .upsert(
             {
               project_id,
-              metric_type: endpoint.type,
+              metric_type: endpoint.label,
               data,
               period: "30d",
               synced_at: new Date().toISOString(),
@@ -163,37 +166,35 @@ Deno.serve(async (req) => {
           );
 
         if (upsertError) {
-          console.error(`[sync-custom-api] Upsert error for ${endpoint.type}:`, upsertError);
-          // Try insert instead (no unique constraint yet)
-          // Delete old and insert new
+          console.error(`[sync-custom-api] Upsert error for ${endpoint.label}:`, upsertError);
           await supabase
             .from("custom_api_metrics")
             .delete()
             .eq("project_id", project_id)
-            .eq("metric_type", endpoint.type);
+            .eq("metric_type", endpoint.label);
 
           const { error: insertError } = await supabase
             .from("custom_api_metrics")
             .insert({
               project_id,
-              metric_type: endpoint.type,
+              metric_type: endpoint.label,
               data,
               period: "30d",
               synced_at: new Date().toISOString(),
             });
 
           if (insertError) {
-            console.error(`[sync-custom-api] Insert error for ${endpoint.type}:`, insertError);
-            errors.push(`${endpoint.type}: db error`);
+            console.error(`[sync-custom-api] Insert error for ${endpoint.label}:`, insertError);
+            errors.push(`${endpoint.label}: db error`);
             continue;
           }
         }
 
         synced++;
-        console.log(`[sync-custom-api] ✅ ${endpoint.type} synced`);
+        console.log(`[sync-custom-api] ✅ ${endpoint.label} synced`);
       } catch (err) {
-        console.error(`[sync-custom-api] Error fetching ${endpoint.type}:`, err);
-        errors.push(`${endpoint.type}: ${String(err).slice(0, 100)}`);
+        console.error(`[sync-custom-api] Error fetching ${endpoint.label}:`, err);
+        errors.push(`${endpoint.label}: ${String(err).slice(0, 100)}`);
       }
     }
 
