@@ -52,6 +52,7 @@ export default function ProjectConfig() {
           <TabsTrigger value="products" className="text-xs sm:text-sm whitespace-nowrap">Produtos</TabsTrigger>
           <TabsTrigger value="goals" className="text-xs sm:text-sm whitespace-nowrap">Metas</TabsTrigger>
           <TabsTrigger value="investments" className="text-xs sm:text-sm whitespace-nowrap">Investimentos</TabsTrigger>
+          <TabsTrigger value="pixel" className="text-xs sm:text-sm whitespace-nowrap">Pixel</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
