@@ -168,8 +168,9 @@ export default function PixelAnalytics() {
     const pageViews = filteredEvents.filter((e) => e.event_type === "page_view").length;
     const uniqueVisitors = new Set(filteredEvents.map((e) => e.visitor_id).filter(Boolean)).size;
     const customEvents = filteredEvents.filter((e) => e.event_type !== "page_view").length;
+    const thankYouPages = filteredEvents.filter((e) => e.event_type === "thank_you_page").length;
     const conversionRate = uniqueVisitors > 0 ? ((salesCount / uniqueVisitors) * 100) : 0;
-    return { pageViews, uniqueVisitors, customEvents, conversionRate };
+    return { pageViews, uniqueVisitors, customEvents, thankYouPages, conversionRate };
   }, [filteredEvents, salesCount]);
 
   // Comparison with previous period
