@@ -1,9 +1,13 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, Code, ExternalLink } from "lucide-react";
+import { Copy, Check, Code, CheckCircle2, AlertCircle, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface PixelInstallPanelProps {
   projectId: string;
@@ -26,6 +30,28 @@ export function PixelInstallPanel({ projectId }: PixelInstallPanelProps) {
   // AGMetrics.track("form_submit", { form: "lead" });
 </script>`;
 
+  // Real-time pixel status
+  const { data: pixelStatus } = useQuery({
+    queryKey: ["pixel_status", projectId],
+    refetchInterval: 30000, // poll every 30s
+    queryFn: async () => {
+      const { data, error, count } = await supabase
+        .from("tracking_events")
+        .select("created_at", { count: "exact" })
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      const lastEvent = data?.[0]?.created_at || null;
+      const total = count || 0;
+      // Consider "active" if received event in last 24h
+      const isActive = lastEvent
+        ? Date.now() - new Date(lastEvent).getTime() < 24 * 60 * 60 * 1000
+        : false;
+      return { lastEvent, total, isActive };
+    },
+  });
+
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopied(id);
@@ -33,16 +59,58 @@ export function PixelInstallPanel({ projectId }: PixelInstallPanelProps) {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  const statusBadge = pixelStatus ? (
+    pixelStatus.isActive ? (
+      <Badge variant="outline" className="text-xs border-success/30 text-success gap-1">
+        <Activity className="h-3 w-3" /> Ativo
+      </Badge>
+    ) : pixelStatus.total > 0 ? (
+      <Badge variant="outline" className="text-xs border-warning/30 text-warning gap-1">
+        <AlertCircle className="h-3 w-3" /> Inativo
+      </Badge>
+    ) : (
+      <Badge variant="outline" className="text-xs gap-1">
+        Aguardando dados
+      </Badge>
+    )
+  ) : null;
+
   return (
     <Card className="border-primary/20">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
+        <CardTitle className="text-base flex items-center gap-2 flex-wrap">
           <Code className="h-4 w-4 text-primary" />
           Pixel de Rastreamento
-          <Badge variant="outline" className="text-xs">Novo</Badge>
+          {statusBadge}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Status indicator */}
+        {pixelStatus && pixelStatus.total > 0 && (
+          <div className={`rounded-lg border p-3 text-sm flex items-center gap-3 ${
+            pixelStatus.isActive
+              ? "border-success/20 bg-success/5"
+              : "border-warning/20 bg-warning/5"
+          }`}>
+            {pixelStatus.isActive ? (
+              <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+            ) : (
+              <AlertCircle className="h-5 w-5 text-warning shrink-0" />
+            )}
+            <div>
+              <p className="font-medium text-foreground">
+                {pixelStatus.isActive ? "Pixel recebendo dados" : "Pixel sem atividade recente"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {pixelStatus.total} evento{pixelStatus.total !== 1 ? "s" : ""} registrado{pixelStatus.total !== 1 ? "s" : ""}
+                {pixelStatus.lastEvent && (
+                  <> · Último há {formatDistanceToNow(new Date(pixelStatus.lastEvent), { locale: ptBR })}</>
+                )}
+              </p>
+            </div>
+          </div>
+        )}
+
         <p className="text-sm text-muted-foreground">
           Instale o pixel no seu site para rastrear visitantes, page views e UTMs automaticamente.
           Os dados alimentam a Jornada do Lead e o funil de conversão.
