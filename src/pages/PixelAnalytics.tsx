@@ -168,8 +168,9 @@ export default function PixelAnalytics() {
     const pageViews = filteredEvents.filter((e) => e.event_type === "page_view").length;
     const uniqueVisitors = new Set(filteredEvents.map((e) => e.visitor_id).filter(Boolean)).size;
     const customEvents = filteredEvents.filter((e) => e.event_type !== "page_view").length;
+    const thankYouPages = filteredEvents.filter((e) => e.event_type === "thank_you_page").length;
     const conversionRate = uniqueVisitors > 0 ? ((salesCount / uniqueVisitors) * 100) : 0;
-    return { pageViews, uniqueVisitors, customEvents, conversionRate };
+    return { pageViews, uniqueVisitors, customEvents, thankYouPages, conversionRate };
   }, [filteredEvents, salesCount]);
 
   // Comparison with previous period
@@ -268,11 +269,15 @@ export default function PixelAnalytics() {
 
   // Funnel data
   const funnelData = useMemo(() => {
-    return [
+    const steps = [
       { stage: "Visitantes", value: stats.uniqueVisitors, color: COLORS[0] },
       { stage: "Page Views", value: stats.pageViews, color: COLORS[1] },
-      { stage: "Vendas", value: salesCount, color: COLORS[2] },
     ];
+    if (stats.thankYouPages > 0) {
+      steps.push({ stage: "Obrigado (LP)", value: stats.thankYouPages, color: COLORS[3] || "#f59e0b" });
+    }
+    steps.push({ stage: "Vendas", value: salesCount, color: COLORS[2] });
+    return steps;
   }, [stats, salesCount]);
 
   const VariationBadge = ({ current, previous }: { current: number; previous: number }) => {
