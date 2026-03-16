@@ -61,6 +61,7 @@ export default function AdminDashboard() {
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const m = useDashboardMetrics(projectId, dateRange, project?.strategy);
   const { data: whatsappGroups } = useWhatsAppGroups(projectId);
+  const leadJourney = useLeadJourneyData(projectId);
   const { data: whatsappHistory } = useQuery({
     queryKey: ["whatsapp_member_history", projectId],
     enabled: !!projectId,
