@@ -1592,6 +1592,7 @@ function InvestmentsTab({ projectId }: { projectId: string }) {
         {!investments?.length ? (
           <p className="py-8 text-center text-muted-foreground">Nenhum investimento cadastrado</p>
         ) : (
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
