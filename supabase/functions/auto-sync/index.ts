@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     // Fetch all active projects
     const { data: projects, error: projectsError } = await supabaseAdmin
       .from("projects")
-      .select("id, name, kiwify_client_id, hotmart_webhook_token, evolution_api_url, evolution_api_key, evolution_instance_name")
+      .select("id, name, kiwify_client_id, hotmart_webhook_token, evolution_api_url, evolution_api_key, evolution_instance_name, custom_api_url, custom_api_key")
       .eq("is_active", true);
 
     if (projectsError) throw projectsError;

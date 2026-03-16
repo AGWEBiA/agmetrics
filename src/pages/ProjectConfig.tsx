@@ -1627,3 +1627,143 @@ function InvestmentsTab({ projectId }: { projectId: string }) {
     </Card>
   );
 }
+
+// ============ CUSTOM API TAB ============
+function CustomApiTab({ projectId }: { projectId: string }) {
+  const { data: project } = useProject(projectId);
+  const updateProject = useUpdateProject();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [apiUrl, setApiUrl] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [apiName, setApiName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    if (project) {
+      setApiUrl((project as any).custom_api_url || "");
+      setApiKey((project as any).custom_api_key || "");
+      setApiName((project as any).custom_api_name || "");
+    }
+  }, [project]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateProject.mutateAsync({
+        id: projectId,
+        custom_api_url: apiUrl || null,
+        custom_api_key: apiKey || null,
+        custom_api_name: apiName || null,
+      } as any);
+      toast({ title: "Configuração salva", description: "API customizada configurada com sucesso." });
+    } catch {
+      toast({ title: "Erro", description: "Falha ao salvar configuração.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-custom-api", {
+        body: { project_id: projectId },
+      });
+      if (error) throw error;
+      toast({
+        title: "Sincronização concluída",
+        description: `${data.synced || 0} endpoints sincronizados.${data.errors ? ` Erros: ${data.errors.join(", ")}` : ""}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["custom-api-metrics", projectId] });
+    } catch (err: any) {
+      toast({ title: "Erro na sincronização", description: err.message || "Falha ao sincronizar.", variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // Fetch last sync data
+  const { data: lastSync } = useQuery({
+    queryKey: ["custom-api-metrics", projectId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("custom_api_metrics" as any)
+        .select("metric_type, synced_at, data")
+        .eq("project_id", projectId)
+        .order("synced_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>API Customizada</CardTitle>
+        <CardDescription>
+          Conecte sua própria plataforma de e-mail, automação ou qualquer API REST para puxar dados automaticamente.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label>Nome da Plataforma</Label>
+          <Input
+            value={apiName}
+            onChange={(e) => setApiName(e.target.value)}
+            placeholder="Ex: Minha Plataforma de E-mail"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Base URL da API</Label>
+          <Input
+            value={apiUrl}
+            onChange={(e) => setApiUrl(e.target.value)}
+            placeholder="https://sua-api.com/functions/v1/public-api"
+          />
+          <p className="text-xs text-muted-foreground">
+            O sistema buscará dados nos endpoints: /metrics/overview, /metrics/campaigns, /metrics/contacts, /metrics/automations
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label>API Key</Label>
+          <Input
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder="Chave de autenticação (enviada como X-API-Key)"
+          />
+        </div>
+
+        <div className="flex gap-2">
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+            Salvar
+          </Button>
+          <Button variant="outline" onClick={handleSync} disabled={syncing || !apiUrl || !apiKey}>
+            {syncing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+            Sincronizar Agora
+          </Button>
+        </div>
+
+        {lastSync && lastSync.length > 0 && (
+          <div className="mt-6 space-y-2">
+            <h4 className="text-sm font-medium">Últimos dados sincronizados</h4>
+            <div className="grid gap-2">
+              {(lastSync as any[]).map((item: any) => (
+                <div key={item.metric_type} className="flex items-center justify-between rounded-md border p-3">
+                  <div>
+                    <Badge variant="secondary" className="capitalize">{item.metric_type}</Badge>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(item.synced_at).toLocaleString("pt-BR")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
