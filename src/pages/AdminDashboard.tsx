@@ -31,7 +31,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { AnimatedCard } from "@/components/AnimatedCard";
 
-const DEFAULT_OVERVIEW_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "sales_chart", "recent_sales", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "whatsapp", "products", "platform_pie"];
+const DEFAULT_OVERVIEW_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "sales_chart", "recent_sales", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "lead_journey", "whatsapp", "products", "platform_pie"];
 
 function SortableCard({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
