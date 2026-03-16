@@ -86,6 +86,11 @@ export function AppSidebar() {
           visible: can("projects.view"),
         },
         {
+          title: "Comportamento",
+          url: `/admin/projects/${projectId}/behavior`,
+          icon: MousePointer2,
+          visible: can("projects.view"),
+        },
           title: "Relatórios WhatsApp",
           url: `/admin/projects/${projectId}/whatsapp-reports`,
           icon: MessageSquare,
