@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Route,
   Activity,
+  MousePointer2,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
