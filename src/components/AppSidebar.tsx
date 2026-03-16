@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Route,
   Activity,
+  MousePointer2,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
@@ -82,6 +83,12 @@ export function AppSidebar() {
           title: "Analytics do Pixel",
           url: `/admin/projects/${projectId}/pixel-analytics`,
           icon: Activity,
+          visible: can("projects.view"),
+        },
+        {
+          title: "Comportamento",
+          url: `/admin/projects/${projectId}/behavior`,
+          icon: MousePointer2,
           visible: can("projects.view"),
         },
         {

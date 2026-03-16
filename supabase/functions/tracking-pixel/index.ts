@@ -16,6 +16,7 @@ Deno.serve(async (req) => {
   if (req.method === "GET") {
     const url = new URL(req.url);
     const projectId = url.searchParams.get("pid");
+    const trackMode = url.searchParams.get("track") || "basic";
     if (!projectId) {
       return new Response("// missing pid", { headers: { ...corsHeaders, "Content-Type": "application/javascript" } });
     }
@@ -29,6 +30,7 @@ Deno.serve(async (req) => {
   var pid = "${projectId}";
   var endpoint = "${endpointUrl}";
   var anonKey = "${anonKey}";
+  var trackAll = "${trackMode}" === "all";
   var vid = localStorage.getItem("agm_vid");
   if (!vid) { vid = "v_" + Math.random().toString(36).substr(2, 12) + Date.now().toString(36); localStorage.setItem("agm_vid", vid); }
 
@@ -83,6 +85,97 @@ Deno.serve(async (req) => {
     }
   }, 1000);
 
+  // ── Enhanced tracking (track=all) ──
+  if (trackAll) {
+    // Click tracking
+    document.addEventListener("click", function(e) {
+      var el = e.target;
+      var tag = el.tagName || "";
+      var text = (el.innerText || "").substring(0, 80);
+      var selector = tag.toLowerCase();
+      if (el.id) selector += "#" + el.id;
+      if (el.className && typeof el.className === "string") {
+        selector += "." + el.className.trim().split(/\\s+/).slice(0, 3).join(".");
+      }
+      // Only track meaningful clicks (buttons, links, inputs)
+      var trackable = ["A", "BUTTON", "INPUT", "SELECT", "TEXTAREA"];
+      var isTrackable = trackable.indexOf(tag) >= 0 || el.closest("a, button, [role=button], [onclick]");
+      if (!isTrackable) return;
+      send("click", {
+        selector: selector,
+        text: text,
+        tag: tag,
+        x: Math.round(e.pageX),
+        y: Math.round(e.pageY),
+        vw: window.innerWidth,
+        vh: window.innerHeight,
+        page_h: document.documentElement.scrollHeight
+      });
+    }, true);
+
+    // Scroll depth tracking
+    var scrollMilestones = { 25: false, 50: false, 75: false, 100: false };
+    function checkScroll() {
+      var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight <= 0) return;
+      var pct = Math.round((scrollTop / docHeight) * 100);
+      var milestones = [25, 50, 75, 100];
+      for (var i = 0; i < milestones.length; i++) {
+        var m = milestones[i];
+        if (pct >= m && !scrollMilestones[m]) {
+          scrollMilestones[m] = true;
+          send("scroll_depth", { depth: m, vw: window.innerWidth, vh: window.innerHeight, page_h: document.documentElement.scrollHeight });
+        }
+      }
+    }
+    window.addEventListener("scroll", (function() {
+      var timer;
+      return function() {
+        clearTimeout(timer);
+        timer = setTimeout(checkScroll, 200);
+      };
+    })(), { passive: true });
+
+    // Mouse heatmap — sample positions every 2s, batch send every 10s
+    var mousePoints = [];
+    var lastMx = -1, lastMy = -1;
+    document.addEventListener("mousemove", function(e) {
+      lastMx = e.pageX;
+      lastMy = e.pageY;
+    }, { passive: true });
+
+    setInterval(function() {
+      if (lastMx >= 0) {
+        mousePoints.push({ x: lastMx, y: lastMy, t: Date.now() });
+      }
+    }, 2000);
+
+    setInterval(function() {
+      if (mousePoints.length > 0) {
+        send("mouse_move", {
+          points: mousePoints.slice(),
+          vw: window.innerWidth,
+          vh: window.innerHeight,
+          page_h: document.documentElement.scrollHeight
+        });
+        mousePoints = [];
+      }
+    }, 10000);
+
+    // Send remaining on page unload
+    window.addEventListener("beforeunload", function() {
+      if (mousePoints.length > 0) {
+        send("mouse_move", {
+          points: mousePoints.slice(),
+          vw: window.innerWidth,
+          vh: window.innerHeight,
+          page_h: document.documentElement.scrollHeight
+        });
+      }
+    });
+  }
+
   // Expose global tracker
   window.AGMetrics = { track: send };
 })();
@@ -136,7 +229,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Return 1x1 transparent pixel for image-based fallback
     return new Response(JSON.stringify({ ok: true }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
