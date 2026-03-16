@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useProjectBySlug, useProjectByToken } from "@/hooks/useProjects";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
+import { useLeadJourneyData } from "@/hooks/useLeadJourneyData";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AnimatedPage } from "@/components/AnimatedCard";
@@ -48,7 +49,7 @@ export default function PublicDashboard() {
   const error = slugQuery.error && tokenQuery.error;
 
   const m = useDashboardMetrics(project?.id, undefined, project?.strategy);
-
+  const leadJourney = useLeadJourneyData(project?.id);
   const { data: whatsappGroups } = useQuery({
     queryKey: ["public_whatsapp_groups", project?.id],
     enabled: !!project?.id,
@@ -106,10 +107,10 @@ export default function PublicDashboard() {
   });
 
   const overviewSections = useMemo(() => {
-    return buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress });
-  }, [m, budgetData, whatsappGroups, whatsappHistory, goalsProgress]);
+    return buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress, leadJourney });
+  }, [m, budgetData, whatsappGroups, whatsappHistory, goalsProgress, leadJourney]);
 
-  const DEFAULT_PUBLIC_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "sales_chart", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "whatsapp", "products", "platform_pie", "goals"];
+  const DEFAULT_PUBLIC_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "sales_chart", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "lead_journey", "whatsapp", "products", "platform_pie", "goals"];
 
   const overviewContent = (
     <>

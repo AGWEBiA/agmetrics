@@ -20,9 +20,10 @@ interface OverviewProps {
   whatsappGroups?: any[];
   whatsappHistory?: any[];
   goalsProgress?: any[];
+  leadJourney?: { totalLeads: number; totalPurchases: number; conversionRate: number; totalRevenue: number; topSource: string; sourceChart: { source: string; purchases: number; clicks: number }[] } | null;
 }
 
-export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress }: OverviewProps): Record<string, React.ReactNode> {
+export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress, leadJourney }: OverviewProps): Record<string, React.ReactNode> {
   return {
     budget_provisioning: budgetData ? <BudgetSection budgetData={budgetData} /> : null,
 
@@ -516,6 +517,46 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
                 <Progress value={Math.min(g.pct, 100)} className="h-3" />
               </div>
             ))}
+          </CardContent>
+        </Card>
+      </AnimatedCard>
+    ) : null,
+
+    lead_journey: leadJourney && leadJourney.totalPurchases > 0 ? (
+      <AnimatedCard index={0}>
+        <Card>
+          <CardHeader className="pb-3"><CardTitle className="text-lg">🗺️ Jornada do Lead</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Cliques Rastreados</p>
+                <p className="text-xl font-bold mt-1">{formatNumber(leadJourney.totalLeads)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Compras</p>
+                <p className="text-xl font-bold mt-1 text-success">{formatNumber(leadJourney.totalPurchases)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Taxa de Conversão</p>
+                <p className="text-xl font-bold mt-1">{formatPercent(leadJourney.conversionRate)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Receita Atribuída</p>
+                <p className="text-xl font-bold mt-1">{formatBRL(leadJourney.totalRevenue)}</p>
+              </div>
+            </div>
+            {leadJourney.sourceChart.length > 0 && (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={leadJourney.sourceChart.slice(0, 8)} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                  <XAxis type="number" tick={{ fontSize: 10 }} />
+                  <YAxis dataKey="source" type="category" width={100} tick={{ fontSize: 10 }} />
+                  <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                  <Bar dataKey="purchases" fill="hsl(152, 60%, 42%)" name="Compras" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="clicks" fill="hsl(220, 90%, 56%)" name="Cliques" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </AnimatedCard>

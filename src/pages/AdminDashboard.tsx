@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useProject } from "@/hooks/useProjects";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
+import { useLeadJourneyData } from "@/hooks/useLeadJourneyData";
 import { useSalesRealtime } from "@/hooks/useSalesRealtime";
 import { useGoalAlerts } from "@/hooks/useGoalAlerts";
 import { useQuery } from "@tanstack/react-query";
@@ -30,7 +31,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { AnimatedCard } from "@/components/AnimatedCard";
 
-const DEFAULT_OVERVIEW_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "sales_chart", "recent_sales", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "whatsapp", "products", "platform_pie"];
+const DEFAULT_OVERVIEW_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "sales_chart", "recent_sales", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "lead_journey", "whatsapp", "products", "platform_pie"];
 
 function SortableCard({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -60,6 +61,7 @@ export default function AdminDashboard() {
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const m = useDashboardMetrics(projectId, dateRange, project?.strategy);
   const { data: whatsappGroups } = useWhatsAppGroups(projectId);
+  const leadJourney = useLeadJourneyData(projectId);
   const { data: whatsappHistory } = useQuery({
     queryKey: ["whatsapp_member_history", projectId],
     enabled: !!projectId,
@@ -140,7 +142,7 @@ export default function AdminDashboard() {
   }, [projectId, savePrefs]);
 
   const overviewSections = useMemo(() => {
-    const sections = buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory });
+    const sections = buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, leadJourney });
     // Add recent_sales (admin-only)
     return {
       ...sections,
@@ -150,7 +152,7 @@ export default function AdminDashboard() {
         </AnimatedCard>
       ),
     };
-  }, [m, budgetData, whatsappGroups, whatsappHistory, projectId]);
+  }, [m, budgetData, whatsappGroups, whatsappHistory, projectId, leadJourney]);
 
   const overviewContent = (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

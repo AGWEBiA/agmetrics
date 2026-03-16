@@ -58,17 +58,17 @@ export default function LeadJourney() {
   const [filterSource, setFilterSource] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
 
-  const { data: events, isLoading } = useQuery({
+  const { data: events, isLoading, refetch } = useQuery({
     queryKey: ["lead_events", projectId],
     enabled: !!projectId,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("lead_events")
         .select("*")
         .eq("project_id", projectId!)
         .order("event_date", { ascending: false });
       if (error) throw error;
-      return data as any[];
+      return data || [];
     },
   });
 
