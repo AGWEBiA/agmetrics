@@ -35,8 +35,8 @@ export function GlobalFiltersBar() {
 
       <div className="flex flex-wrap items-center gap-2">
         <DateRangeFilter
-          dateRange={filters.dateRange}
-          onDateRangeChange={(dateRange) => setFilters({ dateRange })}
+          dateRange={{ from: filters.dateRange.from, to: filters.dateRange.to }}
+          onDateRangeChange={(dateRange) => setFilters({ dateRange: { from: dateRange.from, to: dateRange.to } })}
         />
         <Select value={filters.platform} onValueChange={(v: any) => setFilters({ platform: v })}>
           <SelectTrigger className="w-[130px] h-8 text-xs">
