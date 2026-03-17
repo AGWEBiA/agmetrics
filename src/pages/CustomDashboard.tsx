@@ -24,7 +24,7 @@ import { useParams } from "react-router-dom";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import type { DateFilter } from "@/types/database";
 import { toast } from "@/hooks/use-toast";
-import { v4 as uuidv4 } from "crypto";
+import type { DateFilter } from "@/types/database";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 

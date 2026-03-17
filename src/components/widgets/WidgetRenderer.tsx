@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import type { WidgetType } from "@/types/widgets";
-import { formatCurrency, formatNumber, formatPercent } from "@/lib/formatters";
+import { formatBRL, formatNumber, formatPercent } from "@/lib/formatters";
 import {
   ResponsiveContainer,
   LineChart,
