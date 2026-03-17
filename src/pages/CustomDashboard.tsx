@@ -21,10 +21,8 @@ import { useDashboardLayouts } from "@/hooks/useDashboardLayouts";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useProject } from "@/hooks/useProjects";
 import { useParams } from "react-router-dom";
-import { DateRangeFilter } from "@/components/DateRangeFilter";
-import type { DateFilter } from "@/types/database";
+import { DateRangeFilter, type DateRange } from "@/components/DateRangeFilter";
 import { toast } from "@/hooks/use-toast";
-import type { DateFilter } from "@/types/database";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
