@@ -225,24 +225,36 @@ export default function ConnectorHub() {
           updates.evolution_instance_name = formData.instance_name || null;
           break;
         case "meta": {
-          const { error: metaErr } = await supabase.from("meta_credentials").upsert({
+          const metaPayload = {
             project_id: projectId,
             access_token: formData.access_token || "",
             ad_account_id: formData.ad_account_id || "",
-          }, { onConflict: "project_id" });
-          if (metaErr) throw metaErr;
+          };
+          if (metaCreds?.id) {
+            const { error: metaErr } = await supabase.from("meta_credentials").update(metaPayload).eq("id", metaCreds.id);
+            if (metaErr) throw metaErr;
+          } else {
+            const { error: metaErr } = await supabase.from("meta_credentials").insert(metaPayload);
+            if (metaErr) throw metaErr;
+          }
           refetchMeta();
           break;
         }
         case "google": {
-          const { error: googleErr } = await supabase.from("google_credentials").upsert({
+          const googlePayload = {
             project_id: projectId,
             client_id: formData.client_id || "",
             client_secret: formData.client_secret || "",
             refresh_token: formData.refresh_token || "",
             customer_id: formData.customer_id || "",
-          }, { onConflict: "project_id" });
-          if (googleErr) throw googleErr;
+          };
+          if (googleCreds?.id) {
+            const { error: googleErr } = await supabase.from("google_credentials").update(googlePayload).eq("id", googleCreds.id);
+            if (googleErr) throw googleErr;
+          } else {
+            const { error: googleErr } = await supabase.from("google_credentials").insert(googlePayload);
+            if (googleErr) throw googleErr;
+          }
           refetchGoogle();
           break;
         }
