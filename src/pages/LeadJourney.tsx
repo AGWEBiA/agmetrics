@@ -13,8 +13,9 @@ import { useToast } from "@/hooks/use-toast";
 import { formatBRL, formatNumber, formatPercent } from "@/lib/formatters";
 import {
   RefreshCw, Loader2, Search, Route, Users, TrendingUp, Target,
-  MousePointerClick, ShoppingCart, ArrowRight, Filter
+  MousePointerClick, ShoppingCart, ArrowRight, Filter, GitBranch
 } from "lucide-react";
+import { AttributionAnalysis } from "@/components/AttributionAnalysis";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
