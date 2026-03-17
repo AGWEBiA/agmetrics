@@ -13,6 +13,7 @@ import {
   Route,
   Activity,
   MousePointer2,
+  LayoutGrid,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
