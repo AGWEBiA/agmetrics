@@ -106,6 +106,12 @@ export function AppSidebar() {
           visible: can("projects.view"),
         },
         {
+          title: "Cohort & LTV",
+          url: `/admin/projects/${projectId}/cohort-ltv`,
+          icon: Users,
+          visible: can("projects.view"),
+        },
+        {
           title: "Relatórios WhatsApp",
           url: `/admin/projects/${projectId}/whatsapp-reports`,
           icon: MessageSquare,
