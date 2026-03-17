@@ -14,6 +14,8 @@ import {
   Activity,
   MousePointer2,
   LayoutGrid,
+  Brain,
+  Shield,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
@@ -96,6 +98,24 @@ export function AppSidebar() {
           title: "Dashboard Custom",
           url: `/admin/projects/${projectId}/custom-dashboard`,
           icon: LayoutGrid,
+          visible: can("projects.view"),
+        },
+        {
+          title: "Forecasting IA",
+          url: `/admin/projects/${projectId}/forecast`,
+          icon: Brain,
+          visible: can("projects.view"),
+        },
+        {
+          title: "Cohort & LTV",
+          url: `/admin/projects/${projectId}/cohort-ltv`,
+          icon: Users,
+          visible: can("projects.view"),
+        },
+        {
+          title: "Alertas Anomalia",
+          url: `/admin/projects/${projectId}/anomaly-alerts`,
+          icon: Shield,
           visible: can("projects.view"),
         },
         {

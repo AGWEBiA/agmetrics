@@ -13,8 +13,9 @@ import { useToast } from "@/hooks/use-toast";
 import { formatBRL, formatNumber, formatPercent } from "@/lib/formatters";
 import {
   RefreshCw, Loader2, Search, Route, Users, TrendingUp, Target,
-  MousePointerClick, ShoppingCart, ArrowRight, Filter
+  MousePointerClick, ShoppingCart, ArrowRight, Filter, GitBranch
 } from "lucide-react";
+import { AttributionAnalysis } from "@/components/AttributionAnalysis";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
@@ -281,6 +282,10 @@ export default function LeadJourney() {
         <Tabs defaultValue="attribution">
           <TabsList>
             <TabsTrigger value="attribution" className="text-xs">Atribuição</TabsTrigger>
+            <TabsTrigger value="multi-touch" className="text-xs">
+              <GitBranch className="h-3 w-3 mr-1" />
+              Multi-touch
+            </TabsTrigger>
             <TabsTrigger value="journeys" className="text-xs">Jornadas</TabsTrigger>
             <TabsTrigger value="campaigns" className="text-xs">Campanhas</TabsTrigger>
           </TabsList>
@@ -373,6 +378,11 @@ export default function LeadJourney() {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Multi-touch Attribution Tab */}
+          <TabsContent value="multi-touch" className="space-y-4">
+            <AttributionAnalysis events={events || []} />
           </TabsContent>
 
           {/* Journeys Tab */}
