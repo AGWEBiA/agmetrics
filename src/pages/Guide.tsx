@@ -843,8 +843,11 @@ export default function Guide() {
       <Separator />
 
       {/* All sections */}
-      <Accordion type="multiple" className="space-y-2">
-        {sections.map((section) => (
+      {filteredSections.length === 0 && search.trim() && (
+        <p className="text-center text-muted-foreground py-8">Nenhuma seção encontrada para "{search}"</p>
+      )}
+      <Accordion type="multiple" defaultValue={search.trim() ? filteredSections.map(s => s.id) : []} key={search} className="space-y-2">
+        {filteredSections.map((section) => (
           <AccordionItem key={section.id} value={section.id} className="border rounded-lg px-2 sm:px-4">
             <AccordionTrigger className="hover:no-underline py-4">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
