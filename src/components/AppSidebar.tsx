@@ -18,6 +18,8 @@ import {
   Shield,
   FileBarChart,
   GitCompare,
+  Paintbrush,
+  Zap,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
@@ -61,6 +63,7 @@ export function AppSidebar() {
   const mainItems = [
     { title: "Projetos", url: "/admin/projects", icon: FolderKanban, visible: can("projects.view") },
     { title: "Usuários", url: "/admin/users", icon: Users, visible: isAdmin },
+    { title: "Workspace", url: "/admin/settings", icon: Paintbrush, visible: isAdmin },
     { title: "Guia", url: "/admin/guide", icon: BookOpen, visible: true },
   ].filter((item) => item.visible);
 
@@ -148,6 +151,12 @@ export function AppSidebar() {
           title: "Integrações",
           url: `/admin/projects/${projectId}/integrations`,
           icon: Plug,
+          visible: can("integrations.manage"),
+        },
+        {
+          title: "Hub de Conectores",
+          url: `/admin/projects/${projectId}/connectors`,
+          icon: Zap,
           visible: can("integrations.manage"),
         },
       ].filter((item) => item.visible)
