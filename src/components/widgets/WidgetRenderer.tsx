@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import type { WidgetType } from "@/types/widgets";
 import { formatBRL, formatNumber, formatPercent } from "@/lib/formatters";
@@ -14,7 +13,6 @@ import {
   Cell,
   BarChart,
   Bar,
-  Legend,
 } from "recharts";
 
 const COLORS = [
@@ -54,7 +52,7 @@ export function WidgetRenderer({ type, metrics }: WidgetRendererProps) {
 
   switch (type) {
     case "kpi_revenue":
-      return <KpiWidget title="Receita" value={formatCurrency(m.totalRevenue || 0)} change={m.changes?.revenue} icon="💰" />;
+      return <KpiWidget title="Receita" value={formatBRL(m.totalRevenue || 0)} change={m.changes?.revenue} icon="💰" />;
     case "kpi_sales":
       return <KpiWidget title="Vendas" value={formatNumber(m.salesCount || 0)} change={m.changes?.sales} icon="🛒" />;
     case "kpi_roi":
@@ -62,17 +60,17 @@ export function WidgetRenderer({ type, metrics }: WidgetRendererProps) {
     case "kpi_roas":
       return <KpiWidget title="ROAS" value={`${(m.roas || 0).toFixed(2)}x`} icon="🎯" />;
     case "kpi_investment":
-      return <KpiWidget title="Investimento" value={formatCurrency(m.totalInvestment || 0)} change={m.changes?.investment} icon="💸" />;
+      return <KpiWidget title="Investimento" value={formatBRL(m.totalInvestment || 0)} change={m.changes?.investment} icon="💸" />;
     case "kpi_leads":
       return <KpiWidget title="Leads" value={formatNumber(m.totalLeads || 0)} change={m.changes?.leads} icon="👥" />;
     case "kpi_cpl":
-      return <KpiWidget title="CPL" value={formatCurrency(m.avgCpl || 0)} icon="📊" />;
+      return <KpiWidget title="CPL" value={formatBRL(m.avgCpl || 0)} icon="📊" />;
     case "kpi_ticket":
-      return <KpiWidget title="Ticket Médio" value={formatCurrency(m.avgTicket || 0)} icon="🎫" />;
+      return <KpiWidget title="Ticket Médio" value={formatBRL(m.avgTicket || 0)} icon="🎫" />;
     case "kpi_margin":
       return <KpiWidget title="Margem" value={formatPercent(m.margin || 0)} icon="📐" />;
     case "kpi_profit":
-      return <KpiWidget title="Lucro Líquido" value={formatCurrency(m.netProfit || 0)} icon="✅" />;
+      return <KpiWidget title="Lucro Líquido" value={formatBRL(m.netProfit || 0)} icon="✅" />;
 
     case "chart_sales_line":
       return (
@@ -95,7 +93,7 @@ export function WidgetRenderer({ type, metrics }: WidgetRendererProps) {
             <LineChart data={m.salesChartData || []}>
               <XAxis dataKey="date" tick={{ fontSize: 10 }} />
               <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(v: number) => formatCurrency(v)} />
+              <Tooltip formatter={(v: number) => formatBRL(v)} />
               <Line type="monotone" dataKey="receita" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
@@ -112,7 +110,7 @@ export function WidgetRenderer({ type, metrics }: WidgetRendererProps) {
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v: number) => formatCurrency(v)} />
+              <Tooltip formatter={(v: number) => formatBRL(v)} />
             </PieChart>
           </ResponsiveContainer>
         </ChartWrapper>
@@ -145,7 +143,7 @@ export function WidgetRenderer({ type, metrics }: WidgetRendererProps) {
             ].filter(d => d.value > 0)}>
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(v: number) => formatCurrency(v)} />
+              <Tooltip formatter={(v: number) => formatBRL(v)} />
               <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -174,7 +172,7 @@ export function WidgetRenderer({ type, metrics }: WidgetRendererProps) {
     }
 
     case "table_recent_sales": {
-      const recent = (m.approvedSales || []).slice(0, 8);
+      const sales = (m.kiwifySales || []).concat(m.hotmartSales || []).slice(0, 8);
       return (
         <ChartWrapper title="Vendas Recentes">
           <div className="overflow-auto h-full text-xs">
@@ -187,10 +185,10 @@ export function WidgetRenderer({ type, metrics }: WidgetRendererProps) {
                 </tr>
               </thead>
               <tbody>
-                {recent.map((s: any, i: number) => (
+                {sales.map((s: any, i: number) => (
                   <tr key={i} className="border-b border-border/50">
                     <td className="py-1.5 px-2 truncate max-w-[120px]">{s.buyer_name || s.buyer_email || "—"}</td>
-                    <td className="py-1.5 px-2 text-right font-medium">{formatCurrency(Number(s.amount))}</td>
+                    <td className="py-1.5 px-2 text-right font-medium">{formatBRL(Number(s.amount))}</td>
                     <td className="py-1.5 px-2 capitalize">{s.platform}</td>
                   </tr>
                 ))}
@@ -219,7 +217,7 @@ export function WidgetRenderer({ type, metrics }: WidgetRendererProps) {
                   <tr key={i} className="border-b border-border/50">
                     <td className="py-1.5 px-2 truncate max-w-[150px]">{p.name}</td>
                     <td className="py-1.5 px-2 text-right">{p.count}</td>
-                    <td className="py-1.5 px-2 text-right font-medium">{formatCurrency(p.revenue)}</td>
+                    <td className="py-1.5 px-2 text-right font-medium">{formatBRL(p.revenue)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -246,7 +244,7 @@ export function WidgetRenderer({ type, metrics }: WidgetRendererProps) {
                 {ads.map((a: any, i: number) => (
                   <tr key={i} className="border-b border-border/50">
                     <td className="py-1.5 px-2 truncate max-w-[150px]">{a.ad_name || a.ad_id}</td>
-                    <td className="py-1.5 px-2 text-right font-medium">{formatCurrency(Number(a.spend))}</td>
+                    <td className="py-1.5 px-2 text-right font-medium">{formatBRL(Number(a.spend))}</td>
                     <td className="py-1.5 px-2 text-right">{a.clicks || 0}</td>
                   </tr>
                 ))}
