@@ -34,7 +34,7 @@ export default function CustomDashboard() {
   const { projectId } = useParams();
   const { data: project } = useProject(projectId);
   const { tabs, isLoading, upsertTab, deleteTab } = useDashboardLayouts(projectId);
-  const [dateFilter, setDateFilter] = React.useState<DateFilter>({});
+  const [dateFilter, setDateFilter] = React.useState<DateRange>({ from: undefined, to: undefined });
   const metrics = useDashboardMetrics(projectId, dateFilter, project?.strategy);
 
   const [activeTab, setActiveTab] = React.useState<string>("");
