@@ -18,6 +18,8 @@ import {
   Shield,
   FileBarChart,
   GitCompare,
+  Paintbrush,
+  Zap,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
