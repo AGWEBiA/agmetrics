@@ -59,6 +59,7 @@ const App = () => (
             <Route path="projects/:projectId/custom-dashboard" element={<PermissionGuard permission="projects.view"><CustomDashboard /></PermissionGuard>} />
             <Route path="projects/:projectId/forecast" element={<PermissionGuard permission="projects.view"><ForecastPage /></PermissionGuard>} />
             <Route path="projects/:projectId/cohort-ltv" element={<PermissionGuard permission="projects.view"><CohortLTVPage /></PermissionGuard>} />
+            <Route path="projects/:projectId/anomaly-alerts" element={<PermissionGuard permission="projects.view"><AnomalyAlertsPage /></PermissionGuard>} />
             <Route path="users" element={<PermissionGuard adminOnly><UserManagement /></PermissionGuard>} />
             <Route path="guide" element={<Guide />} />
           </Route>

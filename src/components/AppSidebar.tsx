@@ -15,6 +15,7 @@ import {
   MousePointer2,
   LayoutGrid,
   Brain,
+  Shield,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
