@@ -16,6 +16,8 @@ import {
   LayoutGrid,
   Brain,
   Shield,
+  FileBarChart,
+  GitCompare,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
