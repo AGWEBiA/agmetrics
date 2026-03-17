@@ -22,6 +22,7 @@ import PixelAnalytics from "./pages/PixelAnalytics";
 import BehaviorAnalytics from "./pages/BehaviorAnalytics";
 import CustomDashboard from "./pages/CustomDashboard";
 import ForecastPage from "./pages/ForecastPage";
+import CohortLTVPage from "./pages/CohortLTVPage";
 import { PermissionGuard } from "./components/PermissionGuard";
 
 const queryClient = new QueryClient();
