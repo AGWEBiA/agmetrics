@@ -282,6 +282,10 @@ export default function LeadJourney() {
         <Tabs defaultValue="attribution">
           <TabsList>
             <TabsTrigger value="attribution" className="text-xs">Atribuição</TabsTrigger>
+            <TabsTrigger value="multi-touch" className="text-xs">
+              <GitBranch className="h-3 w-3 mr-1" />
+              Multi-touch
+            </TabsTrigger>
             <TabsTrigger value="journeys" className="text-xs">Jornadas</TabsTrigger>
             <TabsTrigger value="campaigns" className="text-xs">Campanhas</TabsTrigger>
           </TabsList>
