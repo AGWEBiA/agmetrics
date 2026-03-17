@@ -100,6 +100,12 @@ export function AppSidebar() {
           visible: can("projects.view"),
         },
         {
+          title: "Forecasting IA",
+          url: `/admin/projects/${projectId}/forecast`,
+          icon: Brain,
+          visible: can("projects.view"),
+        },
+        {
           title: "Relatórios WhatsApp",
           url: `/admin/projects/${projectId}/whatsapp-reports`,
           icon: MessageSquare,
