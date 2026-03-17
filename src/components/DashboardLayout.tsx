@@ -3,7 +3,8 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
-import { Outlet } from "react-router-dom";
+import { GlobalFiltersBar } from "@/components/GlobalFiltersBar";
+import { Outlet, useParams } from "react-router-dom";
 
 export function DashboardLayout() {
   return (
