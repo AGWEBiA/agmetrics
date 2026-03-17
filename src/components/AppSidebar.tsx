@@ -153,6 +153,12 @@ export function AppSidebar() {
           icon: Plug,
           visible: can("integrations.manage"),
         },
+        {
+          title: "Hub de Conectores",
+          url: `/admin/projects/${projectId}/connectors`,
+          icon: Zap,
+          visible: can("integrations.manage"),
+        },
       ].filter((item) => item.visible)
     : [];
 
