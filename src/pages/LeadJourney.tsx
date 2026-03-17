@@ -380,6 +380,11 @@ export default function LeadJourney() {
             </Card>
           </TabsContent>
 
+          {/* Multi-touch Attribution Tab */}
+          <TabsContent value="multi-touch" className="space-y-4">
+            <AttributionAnalysis events={events || []} />
+          </TabsContent>
+
           {/* Journeys Tab */}
           <TabsContent value="journeys" className="space-y-4">
             {/* Filters */}
