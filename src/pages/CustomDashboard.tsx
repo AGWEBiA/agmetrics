@@ -186,7 +186,7 @@ export default function CustomDashboard() {
           <p className="text-sm text-muted-foreground">{project?.name}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <DateRangeFilter value={dateFilter} onChange={setDateFilter} strategy={project?.strategy} project={project} />
+          <DateRangeFilter dateRange={dateFilter} onDateRangeChange={setDateFilter} />
           <Button
             variant={isEditing ? "default" : "outline"}
             size="sm"
