@@ -113,6 +113,12 @@ export function AppSidebar() {
           visible: can("projects.view"),
         },
         {
+          title: "Alertas Anomalia",
+          url: `/admin/projects/${projectId}/anomaly-alerts`,
+          icon: Shield,
+          visible: can("projects.view"),
+        },
+        {
           title: "Relatórios WhatsApp",
           url: `/admin/projects/${projectId}/whatsapp-reports`,
           icon: MessageSquare,
