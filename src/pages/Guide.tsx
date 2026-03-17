@@ -1,3 +1,4 @@
+import * as React from "react";
 import {
   Accordion,
   AccordionContent,
@@ -7,6 +8,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import {
   BookOpen,
   FolderKanban,
@@ -34,6 +36,7 @@ import {
   Globe,
   RefreshCw,
   Shield,
+  Search,
 } from "lucide-react";
 
 interface GuideSection {
@@ -736,7 +739,26 @@ function renderMarkdown(text: string) {
   return text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>');
 }
 
+function sectionMatchesSearch(section: GuideSection, query: string): boolean {
+  const q = query.toLowerCase();
+  if (section.title.toLowerCase().includes(q)) return true;
+  if (section.intro?.toLowerCase().includes(q)) return true;
+  if (section.content.some(c => c.toLowerCase().includes(q))) return true;
+  if (section.subsections?.some(sub =>
+    sub.title.toLowerCase().includes(q) ||
+    sub.steps.some(s => s.toLowerCase().includes(q))
+  )) return true;
+  if (section.tip?.toLowerCase().includes(q)) return true;
+  if (section.warning?.toLowerCase().includes(q)) return true;
+  return false;
+}
+
 export default function Guide() {
+  const [search, setSearch] = React.useState("");
+  const filteredSections = search.trim()
+    ? sections.filter(s => sectionMatchesSearch(s, search.trim()))
+    : sections;
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div>
@@ -747,6 +769,17 @@ export default function Guide() {
         <p className="text-muted-foreground mt-1">
           Aprenda passo a passo como configurar e utilizar todas as funcionalidades do sistema
         </p>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar no guia... ex: webhook, pixel, metas"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="pl-9"
+        />
       </div>
 
       {/* Quick overview card */}
@@ -810,8 +843,11 @@ export default function Guide() {
       <Separator />
 
       {/* All sections */}
-      <Accordion type="multiple" className="space-y-2">
-        {sections.map((section) => (
+      {filteredSections.length === 0 && search.trim() && (
+        <p className="text-center text-muted-foreground py-8">Nenhuma seção encontrada para "{search}"</p>
+      )}
+      <Accordion type="multiple" defaultValue={search.trim() ? filteredSections.map(s => s.id) : []} key={search} className="space-y-2">
+        {filteredSections.map((section) => (
           <AccordionItem key={section.id} value={section.id} className="border rounded-lg px-2 sm:px-4">
             <AccordionTrigger className="hover:no-underline py-4">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
