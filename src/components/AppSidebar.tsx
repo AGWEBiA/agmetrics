@@ -63,6 +63,7 @@ export function AppSidebar() {
   const mainItems = [
     { title: "Projetos", url: "/admin/projects", icon: FolderKanban, visible: can("projects.view") },
     { title: "Usuários", url: "/admin/users", icon: Users, visible: isAdmin },
+    { title: "Workspace", url: "/admin/settings", icon: Paintbrush, visible: isAdmin },
     { title: "Guia", url: "/admin/guide", icon: BookOpen, visible: true },
   ].filter((item) => item.visible);
 
