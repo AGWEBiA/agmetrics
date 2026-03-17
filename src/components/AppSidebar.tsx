@@ -93,6 +93,12 @@ export function AppSidebar() {
           visible: can("projects.view"),
         },
         {
+          title: "Dashboard Custom",
+          url: `/admin/projects/${projectId}/custom-dashboard`,
+          icon: LayoutGrid,
+          visible: can("projects.view"),
+        },
+        {
           title: "Relatórios WhatsApp",
           url: `/admin/projects/${projectId}/whatsapp-reports`,
           icon: MessageSquare,
