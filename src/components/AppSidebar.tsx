@@ -121,6 +121,18 @@ export function AppSidebar() {
           visible: can("projects.view"),
         },
         {
+          title: "Relatórios Agendados",
+          url: `/admin/projects/${projectId}/scheduled-reports`,
+          icon: FileBarChart,
+          visible: can("projects.edit"),
+        },
+        {
+          title: "Comparação Temporal",
+          url: `/admin/projects/${projectId}/temporal-comparison`,
+          icon: GitCompare,
+          visible: can("projects.view"),
+        },
+        {
           title: "Relatórios WhatsApp",
           url: `/admin/projects/${projectId}/whatsapp-reports`,
           icon: MessageSquare,
