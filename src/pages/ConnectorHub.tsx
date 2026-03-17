@@ -5,20 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useProject } from "@/hooks/useProjects";
+import { useMetaCredentials, useGoogleCredentials } from "@/hooks/useProjectData";
 import {
-  Plug,
+  Zap,
   CheckCircle2,
   XCircle,
   ExternalLink,
   RefreshCw,
   Plus,
   Settings2,
-  Zap,
 } from "lucide-react";
 import {
   Dialog,
@@ -28,22 +26,27 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
+interface ConnectorField {
+  key: string;
+  label: string;
+  type: "text" | "password";
+  placeholder: string;
+}
+
 interface ConnectorConfig {
   id: string;
   name: string;
   icon: string;
   description: string;
   category: "ads" | "analytics" | "crm" | "messaging";
-  fields: { key: string; label: string; type: "text" | "password"; placeholder: string }[];
+  fields: ConnectorField[];
   docsUrl: string;
   color: string;
 }
 
 const CONNECTORS: ConnectorConfig[] = [
   {
-    id: "meta",
-    name: "Meta Ads",
-    icon: "📘",
+    id: "meta", name: "Meta Ads", icon: "📘",
     description: "Facebook & Instagram Ads — importa métricas de campanhas, anúncios e demographics.",
     category: "ads",
     fields: [
@@ -54,9 +57,7 @@ const CONNECTORS: ConnectorConfig[] = [
     color: "hsl(221, 70%, 50%)",
   },
   {
-    id: "google",
-    name: "Google Ads",
-    icon: "🔵",
+    id: "google", name: "Google Ads", icon: "🔵",
     description: "Google Ads — importa cliques, impressões, conversões e investimento.",
     category: "ads",
     fields: [
@@ -69,9 +70,7 @@ const CONNECTORS: ConnectorConfig[] = [
     color: "hsl(210, 80%, 50%)",
   },
   {
-    id: "tiktok",
-    name: "TikTok Ads",
-    icon: "🎵",
+    id: "tiktok", name: "TikTok Ads", icon: "🎵",
     description: "TikTok For Business — importa métricas de campanhas e anúncios do TikTok.",
     category: "ads",
     fields: [
@@ -82,9 +81,7 @@ const CONNECTORS: ConnectorConfig[] = [
     color: "hsl(345, 80%, 50%)",
   },
   {
-    id: "ga4",
-    name: "Google Analytics 4",
-    icon: "📊",
+    id: "ga4", name: "Google Analytics 4", icon: "📊",
     description: "GA4 — importa sessões, usuários, eventos e conversões do seu site.",
     category: "analytics",
     fields: [
@@ -96,9 +93,7 @@ const CONNECTORS: ConnectorConfig[] = [
     color: "hsl(40, 90%, 50%)",
   },
   {
-    id: "kiwify",
-    name: "Kiwify",
-    icon: "🥝",
+    id: "kiwify", name: "Kiwify", icon: "🥝",
     description: "Plataforma de vendas — importa vendas, reembolsos e dados de compradores.",
     category: "crm",
     fields: [
@@ -110,9 +105,7 @@ const CONNECTORS: ConnectorConfig[] = [
     color: "hsl(120, 60%, 40%)",
   },
   {
-    id: "hotmart",
-    name: "Hotmart",
-    icon: "🔥",
+    id: "hotmart", name: "Hotmart", icon: "🔥",
     description: "Plataforma de infoprodutos — importa vendas, comissões e reembolsos.",
     category: "crm",
     fields: [
@@ -123,9 +116,7 @@ const CONNECTORS: ConnectorConfig[] = [
     color: "hsl(15, 90%, 50%)",
   },
   {
-    id: "whatsapp",
-    name: "WhatsApp (Evolution)",
-    icon: "💬",
+    id: "whatsapp", name: "WhatsApp (Evolution)", icon: "💬",
     description: "Evolution API — monitora grupos, membros e engajamento via WhatsApp.",
     category: "messaging",
     fields: [
@@ -138,20 +129,6 @@ const CONNECTORS: ConnectorConfig[] = [
   },
 ];
 
-function getConnectorStatus(project: any, connectorId: string): "connected" | "not_connected" {
-  if (!project) return "not_connected";
-  switch (connectorId) {
-    case "kiwify":
-      return project.kiwify_client_id ? "connected" : "not_connected";
-    case "hotmart":
-      return project.hotmart_client_id ? "connected" : "not_connected";
-    case "whatsapp":
-      return project.evolution_api_url ? "connected" : "not_connected";
-    default:
-      return "not_connected";
-  }
-}
-
 const CATEGORY_LABELS: Record<string, string> = {
   ads: "Plataformas de Anúncios",
   analytics: "Analytics",
@@ -159,9 +136,60 @@ const CATEGORY_LABELS: Record<string, string> = {
   messaging: "Mensagens",
 };
 
+function getExistingValues(project: any, connectorId: string, metaCreds: any, googleCreds: any): Record<string, string> {
+  if (!project) return {};
+  switch (connectorId) {
+    case "kiwify":
+      return {
+        client_id: project.kiwify_client_id || "",
+        client_secret: project.kiwify_client_secret || "",
+        account_id: project.kiwify_account_id || "",
+      };
+    case "hotmart":
+      return {
+        client_id: project.hotmart_client_id || "",
+        client_secret: project.hotmart_client_secret || "",
+      };
+    case "whatsapp":
+      return {
+        api_url: project.evolution_api_url || "",
+        api_key: project.evolution_api_key || "",
+        instance_name: project.evolution_instance_name || "",
+      };
+    case "meta":
+      return metaCreds
+        ? { access_token: metaCreds.access_token || "", ad_account_id: metaCreds.ad_account_id || "" }
+        : {};
+    case "google":
+      return googleCreds
+        ? {
+            client_id: googleCreds.client_id || "",
+            client_secret: googleCreds.client_secret || "",
+            refresh_token: googleCreds.refresh_token || "",
+            customer_id: googleCreds.customer_id || "",
+          }
+        : {};
+    default:
+      return {};
+  }
+}
+
+function maskValue(value: string, type: "text" | "password"): string {
+  if (!value) return "—";
+  if (type === "text") return value;
+  if (value.length <= 6) return "••••••";
+  return value.slice(0, 3) + "••••••" + value.slice(-3);
+}
+
+function isConnected(existing: Record<string, string>): boolean {
+  return Object.values(existing).some((v) => !!v);
+}
+
 export default function ConnectorHub() {
   const { projectId } = useParams();
   const { data: project, refetch } = useProject(projectId);
+  const { data: metaCreds, refetch: refetchMeta } = useMetaCredentials(projectId);
+  const { data: googleCreds, refetch: refetchGoogle } = useGoogleCredentials(projectId);
   const [configuring, setConfiguring] = useState<ConnectorConfig | null>(null);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -169,7 +197,8 @@ export default function ConnectorHub() {
   const categories = ["ads", "analytics", "crm", "messaging"] as const;
 
   const handleConfigure = (connector: ConnectorConfig) => {
-    setFormData({});
+    const existing = getExistingValues(project, connector.id, metaCreds, googleCreds);
+    setFormData(existing);
     setConfiguring(connector);
   };
 
@@ -195,15 +224,17 @@ export default function ConnectorHub() {
           updates.evolution_api_key = formData.api_key || null;
           updates.evolution_instance_name = formData.instance_name || null;
           break;
-        case "meta":
+        case "meta": {
           const { error: metaErr } = await supabase.from("meta_credentials").upsert({
             project_id: projectId,
             access_token: formData.access_token || "",
             ad_account_id: formData.ad_account_id || "",
           }, { onConflict: "project_id" });
           if (metaErr) throw metaErr;
+          refetchMeta();
           break;
-        case "google":
+        }
+        case "google": {
           const { error: googleErr } = await supabase.from("google_credentials").upsert({
             project_id: projectId,
             client_id: formData.client_id || "",
@@ -212,23 +243,19 @@ export default function ConnectorHub() {
             customer_id: formData.customer_id || "",
           }, { onConflict: "project_id" });
           if (googleErr) throw googleErr;
+          refetchGoogle();
           break;
+        }
         case "tiktok":
         case "ga4":
-          toast({
-            title: "Em breve",
-            description: `O conector ${configuring.name} será ativado em uma próxima atualização. Suas credenciais foram salvas localmente.`,
-          });
+          toast({ title: "Em breve", description: `O conector ${configuring.name} será ativado em uma próxima atualização.` });
           setConfiguring(null);
           setSaving(false);
           return;
       }
 
       if (Object.keys(updates).length > 0) {
-        const { error } = await supabase
-          .from("projects")
-          .update(updates)
-          .eq("id", projectId);
+        const { error } = await supabase.from("projects").update(updates).eq("id", projectId);
         if (error) throw error;
       }
 
@@ -244,16 +271,14 @@ export default function ConnectorHub() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Zap className="h-6 w-6 text-primary" />
-            Hub de Conectores
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Conecte suas fontes de dados e gerencie integrações
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Zap className="h-6 w-6 text-primary" />
+          Hub de Conectores
+        </h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          Conecte suas fontes de dados e gerencie integrações
+        </p>
       </div>
 
       {categories.map((cat) => {
@@ -263,8 +288,8 @@ export default function ConnectorHub() {
             <h2 className="text-lg font-semibold text-foreground">{CATEGORY_LABELS[cat]}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {items.map((connector) => {
-                const status = getConnectorStatus(project, connector.id);
-                const isConnected = status === "connected";
+                const existing = getExistingValues(project, connector.id, metaCreds, googleCreds);
+                const connected = isConnected(existing);
                 const isComingSoon = connector.id === "tiktok" || connector.id === "ga4";
 
                 return (
@@ -277,10 +302,8 @@ export default function ConnectorHub() {
                           <CardTitle className="text-base">{connector.name}</CardTitle>
                         </div>
                         <div className="flex items-center gap-1">
-                          {isComingSoon && (
-                            <Badge variant="outline" className="text-xs">Em breve</Badge>
-                          )}
-                          {isConnected ? (
+                          {isComingSoon && <Badge variant="outline" className="text-xs">Em breve</Badge>}
+                          {connected ? (
                             <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs gap-1">
                               <CheckCircle2 className="h-3 w-3" /> Ativo
                             </Badge>
@@ -293,16 +316,30 @@ export default function ConnectorHub() {
                       </div>
                       <CardDescription className="text-xs mt-1">{connector.description}</CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-0">
+                    <CardContent className="pt-0 space-y-2">
+                      {connected && (
+                        <div className="bg-muted/50 rounded-md p-2 space-y-1">
+                          {connector.fields.map((field) => {
+                            const val = existing[field.key];
+                            if (!val) return null;
+                            return (
+                              <div key={field.key} className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground">{field.label}:</span>
+                                <span className="font-mono text-foreground/70">{maskValue(val, field.type)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
                         <Button
                           size="sm"
-                          variant={isConnected ? "outline" : "default"}
+                          variant={connected ? "outline" : "default"}
                           className="flex-1 text-xs"
                           onClick={() => handleConfigure(connector)}
                         >
                           <Settings2 className="h-3 w-3 mr-1" />
-                          {isConnected ? "Reconfigurar" : "Configurar"}
+                          {connected ? "Reconfigurar" : "Configurar"}
                         </Button>
                         <Button size="sm" variant="ghost" className="px-2" asChild>
                           <a href={connector.docsUrl} target="_blank" rel="noopener noreferrer">
@@ -341,11 +378,7 @@ export default function ConnectorHub() {
               </div>
             ))}
             <Button className="w-full" onClick={handleSave} disabled={saving}>
-              {saving ? (
-                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Plus className="h-4 w-4 mr-2" />
-              )}
+              {saving ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
               Salvar Conector
             </Button>
           </div>
