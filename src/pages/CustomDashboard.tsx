@@ -131,8 +131,13 @@ export default function CustomDashboard() {
 
   const metricsData = React.useMemo(() => ({
     ...metrics,
-    metaAds: metrics.metaAdsData || [],
-    approvedSales: metrics.approvedSales || [],
+    changes: {
+      revenue: metrics.revenueChange,
+      sales: metrics.salesCountChange,
+      roi: metrics.roiChange,
+      investment: metrics.investmentChange,
+      leads: metrics.leadsChange,
+    },
   }), [metrics]);
 
   const gridLayouts = React.useMemo(() => {
