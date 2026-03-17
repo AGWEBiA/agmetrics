@@ -36,6 +36,7 @@ import {
   Globe,
   RefreshCw,
   Shield,
+  Search,
 } from "lucide-react";
 
 interface GuideSection {
