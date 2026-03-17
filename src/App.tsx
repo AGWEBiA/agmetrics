@@ -20,6 +20,7 @@ import WhatsAppReports from "./pages/WhatsAppReports";
 import LeadJourney from "./pages/LeadJourney";
 import PixelAnalytics from "./pages/PixelAnalytics";
 import BehaviorAnalytics from "./pages/BehaviorAnalytics";
+import CustomDashboard from "./pages/CustomDashboard";
 import { PermissionGuard } from "./components/PermissionGuard";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="projects/:projectId/lead-journey" element={<PermissionGuard permission="projects.view"><LeadJourney /></PermissionGuard>} />
             <Route path="projects/:projectId/pixel-analytics" element={<PermissionGuard permission="projects.view"><PixelAnalytics /></PermissionGuard>} />
             <Route path="projects/:projectId/behavior" element={<PermissionGuard permission="projects.view"><BehaviorAnalytics /></PermissionGuard>} />
+            <Route path="projects/:projectId/custom-dashboard" element={<PermissionGuard permission="projects.view"><CustomDashboard /></PermissionGuard>} />
             <Route path="users" element={<PermissionGuard adminOnly><UserManagement /></PermissionGuard>} />
             <Route path="guide" element={<Guide />} />
           </Route>

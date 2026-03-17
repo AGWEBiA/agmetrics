@@ -13,6 +13,7 @@ import {
   Route,
   Activity,
   MousePointer2,
+  LayoutGrid,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
@@ -89,6 +90,12 @@ export function AppSidebar() {
           title: "Comportamento",
           url: `/admin/projects/${projectId}/behavior`,
           icon: MousePointer2,
+          visible: can("projects.view"),
+        },
+        {
+          title: "Dashboard Custom",
+          url: `/admin/projects/${projectId}/custom-dashboard`,
+          icon: LayoutGrid,
           visible: can("projects.view"),
         },
         {
