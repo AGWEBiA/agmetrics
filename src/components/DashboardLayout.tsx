@@ -3,9 +3,11 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
-import { Outlet } from "react-router-dom";
+import { GlobalFiltersBar } from "@/components/GlobalFiltersBar";
+import { Outlet, useParams } from "react-router-dom";
 
 export function DashboardLayout() {
+  const { projectId } = useParams();
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
@@ -19,7 +21,8 @@ export function DashboardLayout() {
               <ThemeToggle />
             </div>
           </header>
-          <div className="p-4 sm:p-6">
+          <div className="p-4 sm:p-6 space-y-4">
+            {projectId && <GlobalFiltersBar />}
             <Outlet />
           </div>
         </main>
