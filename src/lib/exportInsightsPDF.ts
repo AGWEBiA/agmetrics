@@ -53,7 +53,7 @@ export function exportInsightsPDF(data: InsightsPDFData) {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
-  doc.text("Relatório de Inteligência", margin, y + 2);
+  doc.text("Relatorio de Inteligencia", margin, y + 2);
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
