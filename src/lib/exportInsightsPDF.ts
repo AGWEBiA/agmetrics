@@ -209,7 +209,7 @@ export function exportInsightsPDF(data: InsightsPDFData) {
     doc.setFontSize(7);
     doc.setTextColor(150, 150, 150);
     doc.text(`AGMetrics - Inteligencia de Conversao`, margin, 290);
-    doc.text(`Página ${p} de ${totalPages}`, pageWidth - margin, 290, { align: "right" });
+    doc.text(`Pagina ${p} de ${totalPages}`, pageWidth - margin, 290, { align: "right" });
   }
 
   doc.save(`insights-${data.projectName.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().slice(0, 10)}.pdf`);
