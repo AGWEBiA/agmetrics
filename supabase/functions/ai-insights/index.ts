@@ -35,7 +35,7 @@ serve(async (req) => {
       { data: leadEvents },
       { data: goals },
     ] = await Promise.all([
-      supabase.from("projects").select("name, strategy, budget, start_date, end_date, cart_open_date").eq("id", project_id).single(),
+      supabase.from("projects").select("name, strategy, budget, start_date, end_date, cart_open_date, description").eq("id", project_id).single(),
       supabase.from("sales_events").select("amount, status, product_name, product_type, payment_method, buyer_state, sale_date, tracking_src, tracking_sck, utm_source, utm_medium, utm_campaign").eq("project_id", project_id).eq("is_ignored", false).gte("sale_date", thirtyDaysAgo).order("sale_date", { ascending: false }).limit(500),
       supabase.from("sales_events").select("amount, status, sale_date").eq("project_id", project_id).eq("is_ignored", false).gte("sale_date", sixtyDaysAgo).lt("sale_date", thirtyDaysAgo).limit(500),
       supabase.from("meta_metrics").select("date, investment, impressions, clicks, leads, purchases, ctr, cpc, cpm, link_clicks, landing_page_views, checkouts_initiated").eq("project_id", project_id).gte("date", thirtyDaysAgo).order("date", { ascending: false }).limit(30),
