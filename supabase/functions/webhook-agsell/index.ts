@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { event, form_id, data, contact_id, submitted_at } = body;
+    const { event, form_id, form_name, submission_id, data, contact_id, submitted_at } = body;
 
     if (!event || !data) {
       return new Response(JSON.stringify({ error: "Invalid payload" }), {
@@ -65,7 +65,6 @@ Deno.serve(async (req) => {
       const mappings: FieldMapping[] = (project.agsell_form_field_mapping as FieldMapping[]) || [];
       const activeMappings = mappings.filter((m) => m.enabled && m.formField);
 
-      // If no mappings configured, use default extraction (backwards compatible)
       let buyerName = "";
       let buyerEmail = "";
       let phone = "";
@@ -76,7 +75,6 @@ Deno.serve(async (req) => {
       const customMetadata: Record<string, unknown> = {};
 
       if (activeMappings.length > 0) {
-        // Use configured mapping — only extract mapped fields
         for (const mapping of activeMappings) {
           const value = data[mapping.formField];
           if (value === undefined || value === null) continue;
@@ -139,6 +137,8 @@ Deno.serve(async (req) => {
         metadata: {
           contact_id,
           form_id,
+          form_name: form_name || null,
+          submission_id: submission_id || null,
           phone,
           ...customMetadata,
           raw_data: filteredData,

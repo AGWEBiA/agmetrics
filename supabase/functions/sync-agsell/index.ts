@@ -6,6 +6,29 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function fetchWithRetry(
+  url: string,
+  headers: Record<string, string>,
+  maxRetries = 3
+): Promise<Response> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const res = await fetch(url, { headers });
+
+    if (res.status === 429) {
+      const retryAfter = parseInt(res.headers.get("retry-after") || "5", 10);
+      const waitMs = Math.min(retryAfter * 1000, 30000);
+      console.warn(`Rate limited on ${url}, retrying in ${waitMs}ms (attempt ${attempt + 1}/${maxRetries})`);
+      await new Promise((r) => setTimeout(r, waitMs));
+      continue;
+    }
+
+    return res;
+  }
+
+  // Final attempt without retry
+  return fetch(url, { headers });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -43,6 +66,11 @@ Deno.serve(async (req) => {
       project.agsell_base_url ||
       "https://gmemxbfibakfpsjbsvyt.supabase.co/functions/v1/public-api";
 
+    const requestHeaders = {
+      "x-api-key": apiKey,
+      "Content-Type": "application/json",
+    };
+
     const endpoints = [
       { type: "overview", path: "/metrics/overview?period=30d" },
       { type: "email", path: "/metrics/email?period=30d" },
@@ -56,9 +84,10 @@ Deno.serve(async (req) => {
 
     for (const ep of endpoints) {
       try {
-        const res = await fetch(`${baseUrl}${ep.path}`, {
-          headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
-        });
+        const res = await fetchWithRetry(
+          `${baseUrl}${ep.path}`,
+          requestHeaders
+        );
         if (res.ok) {
           results[ep.type] = await res.json();
         } else {
@@ -71,7 +100,6 @@ Deno.serve(async (req) => {
 
     // Upsert metrics into custom_api_metrics
     for (const [metricType, data] of Object.entries(results)) {
-      // Delete existing then insert
       await supabase
         .from("custom_api_metrics")
         .delete()
