@@ -287,26 +287,64 @@ export default function AGSellConfig() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
             {[
-              { method: "GET", path: "/metrics/overview", desc: "Dashboard geral" },
+              // Métricas
+              { method: "GET", path: "/metrics/overview", desc: "Resumo geral" },
               { method: "GET", path: "/metrics/email", desc: "Aberturas, cliques, entrega" },
               { method: "GET", path: "/metrics/leads", desc: "Leads por funil/tag/source" },
               { method: "GET", path: "/metrics/pipeline", desc: "Deals por etapa" },
               { method: "GET", path: "/metrics/automations", desc: "Execuções e sucesso" },
               { method: "GET", path: "/metrics/forms", desc: "Submissões e conversão" },
-              { method: "GET", path: "/contacts", desc: "Listar contatos" },
+              // Contatos
+              { method: "GET", path: "/contacts", desc: "Listar contatos (cursor)" },
+              { method: "POST", path: "/contacts", desc: "Criar contato" },
+              { method: "GET", path: "/contacts/:id", desc: "Buscar contato" },
+              { method: "PUT", path: "/contacts/:id", desc: "Atualizar contato" },
+              { method: "PATCH", path: "/contacts/:id", desc: "Atualização parcial" },
+              { method: "DELETE", path: "/contacts/:id", desc: "Excluir contato" },
+              // Empresas
+              { method: "GET", path: "/companies", desc: "Listar empresas" },
+              { method: "POST", path: "/companies", desc: "Criar empresa" },
+              { method: "GET", path: "/companies/:id", desc: "Buscar empresa" },
+              { method: "PUT", path: "/companies/:id", desc: "Atualizar empresa" },
+              { method: "PATCH", path: "/companies/:id", desc: "Atualização parcial" },
+              { method: "DELETE", path: "/companies/:id", desc: "Excluir empresa" },
+              // Negócios
               { method: "GET", path: "/deals", desc: "Listar negócios" },
+              { method: "POST", path: "/deals", desc: "Criar negócio" },
+              { method: "GET", path: "/deals/:id", desc: "Buscar negócio" },
+              { method: "PUT", path: "/deals/:id", desc: "Atualizar negócio" },
+              { method: "PATCH", path: "/deals/:id", desc: "Atualização parcial" },
+              { method: "DELETE", path: "/deals/:id", desc: "Excluir negócio" },
+              // Tags
+              { method: "GET", path: "/tags", desc: "Listar tags" },
+              { method: "POST", path: "/tags", desc: "Criar tag" },
+              { method: "GET", path: "/tags/:id", desc: "Buscar tag" },
+              { method: "DELETE", path: "/tags/:id", desc: "Excluir tag" },
+              // Formulários
               { method: "GET", path: "/forms", desc: "Listar formulários" },
-            ].map((ep) => (
-              <div key={ep.path} className="flex items-center gap-3 text-sm">
-                <Badge variant="outline" className="font-mono text-xs w-12 justify-center shrink-0">
-                  {ep.method}
-                </Badge>
-                <code className="text-xs font-mono text-muted-foreground">{ep.path}</code>
-                <span className="text-xs text-muted-foreground ml-auto">{ep.desc}</span>
-              </div>
-            ))}
+              { method: "GET", path: "/forms/:id", desc: "Detalhes do formulário" },
+              { method: "GET", path: "/forms/:id/submissions", desc: "Submissões com filtros" },
+              { method: "POST", path: "/forms/:id/submit", desc: "Submissão pública (sem key)" },
+            ].map((ep, idx) => {
+              const methodColor = {
+                GET: "text-emerald-600 border-emerald-500/30",
+                POST: "text-blue-600 border-blue-500/30",
+                PUT: "text-amber-600 border-amber-500/30",
+                PATCH: "text-orange-600 border-orange-500/30",
+                DELETE: "text-red-600 border-red-500/30",
+              }[ep.method] || "";
+              return (
+                <div key={`${ep.method}-${ep.path}-${idx}`} className="flex items-center gap-3 text-sm">
+                  <Badge variant="outline" className={`font-mono text-xs w-16 justify-center shrink-0 ${methodColor}`}>
+                    {ep.method}
+                  </Badge>
+                  <code className="text-xs font-mono text-muted-foreground truncate">{ep.path}</code>
+                  <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">{ep.desc}</span>
+                </div>
+              );
+            })}
           </div>
           <Separator className="my-3" />
           <Button variant="link" size="sm" className="p-0 h-auto" asChild>
