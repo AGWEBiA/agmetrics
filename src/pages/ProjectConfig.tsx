@@ -378,6 +378,7 @@ function MetaAccountCard({ cred, projectId, onDelete }: { cred: any; projectId: 
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
   const [savingCampaigns, setSavingCampaigns] = useState(false);
   const [showOnlyActive, setShowOnlyActive] = useState(true);
+  const [campaignSearch, setCampaignSearch] = useState("");
 
   const { data: campaigns, refetch: refetchCampaigns } = useQuery({
     queryKey: ["meta_campaigns", projectId, cred.id],
