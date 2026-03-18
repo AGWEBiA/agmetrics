@@ -70,6 +70,7 @@ const categoryConfig: Record<InsightCategory, { label: string; icon: React.Eleme
   leads: { label: "Leads", icon: Users, color: "text-amber-400" },
   financeiro: { label: "Financeiro", icon: DollarSign, color: "text-green-400" },
   tracking: { label: "Tracking", icon: Crosshair, color: "text-cyan-400" },
+  produtos: { label: "Produtos", icon: Target, color: "text-pink-400" },
 };
 
 const impactConfig: Record<Impact, { label: string; variant: "default" | "secondary" | "outline" }> = {
