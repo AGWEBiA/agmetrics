@@ -241,6 +241,7 @@ Deno.serve(async (req) => {
 
     // 2. Parse body
     const { project_id } = await req.json();
+    project_id_for_log = project_id || null;
     if (!project_id) {
       return new Response(JSON.stringify({ error: "project_id is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
