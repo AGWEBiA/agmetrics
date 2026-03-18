@@ -231,6 +231,8 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  let adsSynced = 0;
   try {
     // 1. Authenticate
     const auth = await authenticateRequest(req);
