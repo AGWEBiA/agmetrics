@@ -27,7 +27,7 @@ export function exportDashboardPDF(data: ExportData) {
 
   // Title
   doc.setFontSize(20);
-  doc.text(`${data.projectName} — Relatório`, 14, 22);
+  doc.text(`${data.projectName} - Relatorio`, 14, 22);
   doc.setFontSize(10);
   doc.setTextColor(100);
   doc.text(`Gerado em ${now}`, 14, 30);
