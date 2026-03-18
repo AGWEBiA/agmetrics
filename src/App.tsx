@@ -29,6 +29,7 @@ import ScheduledReports from "./pages/ScheduledReports";
 import TemporalComparison from "./pages/TemporalComparison";
 import ConnectorHub from "./pages/ConnectorHub";
 import AGSellConfig from "./pages/AGSellConfig";
+import AIInsights from "./pages/AIInsights";
 import WorkspaceSettings from "./pages/WorkspaceSettings";
 import { PermissionGuard } from "./components/PermissionGuard";
 import Index from "./pages/Index";
@@ -72,6 +73,7 @@ const App = () => (
               <Route path="projects/:projectId/temporal-comparison" element={<PermissionGuard permission="projects.view"><TemporalComparison /></PermissionGuard>} />
               <Route path="projects/:projectId/connectors" element={<PermissionGuard permission="integrations.manage"><ConnectorHub /></PermissionGuard>} />
               <Route path="projects/:projectId/agsell" element={<PermissionGuard permission="integrations.manage"><AGSellConfig /></PermissionGuard>} />
+              <Route path="projects/:projectId/ai-insights" element={<PermissionGuard permission="projects.view"><AIInsights /></PermissionGuard>} />
               <Route path="users" element={<PermissionGuard adminOnly><UserManagement /></PermissionGuard>} />
               <Route path="settings" element={<PermissionGuard adminOnly><WorkspaceSettings /></PermissionGuard>} />
               <Route path="guide" element={<Guide />} />
