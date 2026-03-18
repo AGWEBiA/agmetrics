@@ -268,7 +268,7 @@ Regras:
                       properties: {
                         category: {
                           type: "string",
-                          enum: ["vendas", "anuncios", "funil", "leads", "financeiro", "tracking"]
+                          enum: ["vendas", "anuncios", "funil", "leads", "financeiro", "tracking", "produtos"]
                         },
                         title: { type: "string" },
                         analysis: { type: "string" },
