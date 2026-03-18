@@ -235,6 +235,10 @@ export default function ConnectorHub() {
           updates.hotmart_client_id = formData.client_id || null;
           updates.hotmart_client_secret = formData.client_secret || null;
           break;
+        case "agsell":
+          updates.agsell_api_key = formData.api_key || null;
+          updates.agsell_base_url = formData.base_url || null;
+          break;
         case "whatsapp":
           updates.evolution_api_url = formData.api_url || null;
           updates.evolution_api_key = formData.api_key || null;
