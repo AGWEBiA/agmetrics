@@ -116,6 +116,17 @@ const CONNECTORS: ConnectorConfig[] = [
     color: "hsl(15, 90%, 50%)",
   },
   {
+    id: "agsell", name: "AG Sell", icon: "🚀",
+    description: "Automação de e-mails, WhatsApp, Instagram — importa métricas de leads, formulários e pipeline.",
+    category: "crm",
+    fields: [
+      { key: "api_key", label: "API Key", type: "password", placeholder: "ag_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" },
+      { key: "base_url", label: "Base URL (opcional)", type: "text", placeholder: "https://gmemxbfibakfpsjbsvyt.supabase.co/functions/v1/public-api" },
+    ],
+    docsUrl: "https://agsell.com.br",
+    color: "hsl(260, 70%, 55%)",
+  },
+  {
     id: "whatsapp", name: "WhatsApp (Evolution)", icon: "💬",
     description: "Evolution API — monitora grupos, membros e engajamento via WhatsApp.",
     category: "messaging",
