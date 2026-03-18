@@ -831,10 +831,27 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Import failed");
-      toast({
-        title: "Importação concluída",
-        description: `${result.imported} vendas importadas, ${result.skipped} ignoradas`,
-      });
+      
+      const hasErrors = result.errors && result.errors.length > 0;
+      const errorDetail = hasErrors ? `\nErros: ${result.errors.slice(0, 3).join("; ")}` : "";
+      
+      if (result.imported === 0 && result.skipped > 0) {
+        toast({
+          title: "⚠️ Nenhuma venda importada",
+          description: `${result.skipped} registros ignorados (produto não encontrado ou erro).${errorDetail}`,
+          variant: "destructive",
+        });
+      } else if (hasErrors) {
+        toast({
+          title: "⚠️ Importação parcial",
+          description: `${result.imported} importadas, ${result.skipped} ignoradas.${errorDetail}`,
+        });
+      } else {
+        toast({
+          title: "✅ Importação concluída com sucesso!",
+          description: `${result.imported} vendas importadas, ${result.skipped} ignoradas.`,
+        });
+      }
     } catch (err: any) {
       toast({ title: "Erro na importação", description: err.message, variant: "destructive" });
     } finally {
