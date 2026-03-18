@@ -70,6 +70,7 @@ const App = () => (
               <Route path="projects/:projectId/scheduled-reports" element={<PermissionGuard permission="projects.edit"><ScheduledReports /></PermissionGuard>} />
               <Route path="projects/:projectId/temporal-comparison" element={<PermissionGuard permission="projects.view"><TemporalComparison /></PermissionGuard>} />
               <Route path="projects/:projectId/connectors" element={<PermissionGuard permission="integrations.manage"><ConnectorHub /></PermissionGuard>} />
+              <Route path="projects/:projectId/agsell" element={<PermissionGuard permission="integrations.manage"><AGSellConfig /></PermissionGuard>} />
               <Route path="users" element={<PermissionGuard adminOnly><UserManagement /></PermissionGuard>} />
               <Route path="settings" element={<PermissionGuard adminOnly><WorkspaceSettings /></PermissionGuard>} />
               <Route path="guide" element={<Guide />} />
