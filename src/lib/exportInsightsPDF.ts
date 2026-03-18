@@ -72,7 +72,7 @@ export function exportInsightsPDF(data: InsightsPDFData) {
   doc.setFont("helvetica", "bold");
   doc.text(`${data.health_score}`, pageWidth - 32, 22, { align: "center" });
   doc.setFontSize(7);
-  doc.text("SAÚDE", pageWidth - 32, 29, { align: "center" });
+  doc.text("SAUDE", pageWidth - 32, 29, { align: "center" });
 
   y = 55;
 
