@@ -64,8 +64,8 @@ export function exportPixelPDF(data: PixelExportData) {
   // ── Intro ──
   addText("Sobre o Pixel AGMetrics", 14, { bold: true });
   addText(
-    "O pixel AGMetrics é um script JavaScript leve que rastreia automaticamente o comportamento dos visitantes no seu site. " +
-    "Ele captura page views, cliques em botões e links, profundidade de scroll, movimentos do mouse (mapa de calor) e eventos customizados.",
+    "O pixel AGMetrics e um script JavaScript leve que rastreia automaticamente o comportamento dos visitantes no seu site. " +
+    "Ele captura page views, cliques em botoes e links, profundidade de scroll, movimentos do mouse (mapa de calor) e eventos customizados.",
     10
   );
   addSpacer();
