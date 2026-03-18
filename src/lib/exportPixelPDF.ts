@@ -143,7 +143,7 @@ export function exportPixelPDF(data: PixelExportData) {
   addSpacer(4);
 
   // ── Important Notes ──
-  addText("⚠️ Observações Importantes", 12, { bold: true, color: [220, 80, 0] });
+  addText("[!] Observacoes Importantes", 12, { bold: true, color: [220, 80, 0] });
   addSpacer(2);
 
   const notes = [
