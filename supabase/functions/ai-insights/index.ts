@@ -34,8 +34,9 @@ serve(async (req) => {
       { data: topAds },
       { data: leadEvents },
       { data: goals },
+      { data: products },
     ] = await Promise.all([
-      supabase.from("projects").select("name, strategy, budget, start_date, end_date, cart_open_date").eq("id", project_id).single(),
+      supabase.from("projects").select("name, strategy, budget, start_date, end_date, cart_open_date, description").eq("id", project_id).single(),
       supabase.from("sales_events").select("amount, status, product_name, product_type, payment_method, buyer_state, sale_date, tracking_src, tracking_sck, utm_source, utm_medium, utm_campaign").eq("project_id", project_id).eq("is_ignored", false).gte("sale_date", thirtyDaysAgo).order("sale_date", { ascending: false }).limit(500),
       supabase.from("sales_events").select("amount, status, sale_date").eq("project_id", project_id).eq("is_ignored", false).gte("sale_date", sixtyDaysAgo).lt("sale_date", thirtyDaysAgo).limit(500),
       supabase.from("meta_metrics").select("date, investment, impressions, clicks, leads, purchases, ctr, cpc, cpm, link_clicks, landing_page_views, checkouts_initiated").eq("project_id", project_id).gte("date", thirtyDaysAgo).order("date", { ascending: false }).limit(30),
@@ -43,6 +44,7 @@ serve(async (req) => {
       supabase.from("meta_ads").select("ad_id, ad_name, spend, impressions, clicks, link_clicks, purchases, leads, cpc, ctr, hook_rate, hold_rate, landing_page_views, checkouts_initiated").eq("project_id", project_id).order("spend", { ascending: false }).limit(15),
       supabase.from("lead_events").select("event_type, event_source, utm_source, utm_medium, utm_campaign, amount, event_date").eq("project_id", project_id).gte("event_date", thirtyDaysAgo).limit(300),
       supabase.from("project_goals").select("type, target_value, period").eq("project_id", project_id).eq("is_active", true),
+      supabase.from("products").select("name, type, platform, price").eq("project_id", project_id),
     ]);
 
     // Summarize data for the prompt
@@ -92,11 +94,65 @@ serve(async (req) => {
     const cpa = approvedSales.length > 0 ? (totalInvestment / approvedSales.length) : 0;
     const refundRate = approvedSales.length > 0 ? (refundedSales.length / (approvedSales.length + refundedSales.length) * 100) : 0;
 
+    // Product analysis
+    const mainProducts = (products || []).filter(p => p.type === "main");
+    const orderBumps = (products || []).filter(p => p.type === "order_bump");
+    const hasOrderBump = orderBumps.length > 0;
+
+    // Sales by product type
+    const salesByProduct: Record<string, { count: number; revenue: number; type: string }> = {};
+    approvedSales.forEach(s => {
+      const key = s.product_name || "Desconhecido";
+      if (!salesByProduct[key]) salesByProduct[key] = { count: 0, revenue: 0, type: s.product_type || "main" };
+      salesByProduct[key].count++;
+      salesByProduct[key].revenue += (s.amount || 0);
+    });
+
+    // Order bump adoption rate
+    const mainSalesCount = approvedSales.filter(s => s.product_type === "main" || !s.product_type).length;
+    const bumpSalesCount = approvedSales.filter(s => s.product_type === "order_bump").length;
+    const bumpAdoptionRate = mainSalesCount > 0 ? (bumpSalesCount / mainSalesCount * 100) : 0;
+
+    // Strategy-specific context
+    const strategyLabels: Record<string, string> = {
+      perpetuo: "Perpétuo (vendas contínuas, sem data de encerramento)",
+      lancamento: "Lançamento (captação de leads → evento → abertura de carrinho por tempo limitado)",
+      lancamento_pago: "Lançamento Pago (venda de ingressos baratos → workshop/evento → venda do produto principal de maior valor)",
+      funis: "Funis (sequência automatizada de páginas e ofertas)",
+      evento_presencial: "Evento Presencial (vendas de ingressos + upsells no evento)",
+    };
+    const strategyDescription = strategyLabels[project?.strategy || ""] || project?.strategy || "N/A";
+
+    // Days context for launches
+    let launchContext = "";
+    if (project?.strategy && project.strategy !== "perpetuo") {
+      if (project.cart_open_date) {
+        const cartDate = new Date(project.cart_open_date);
+        const now = new Date();
+        const diffDays = Math.round((cartDate.getTime() - now.getTime()) / 86400000);
+        if (diffDays > 0) launchContext = `\nAbertura do carrinho em ${diffDays} dias (${project.cart_open_date})`;
+        else if (diffDays === 0) launchContext = `\nCarrinho ABERTO HOJE (${project.cart_open_date})`;
+        else launchContext = `\nCarrinho abriu há ${Math.abs(diffDays)} dias (${project.cart_open_date})`;
+      }
+      if (project.start_date) launchContext += `\nInício: ${project.start_date}`;
+      if (project.end_date) launchContext += ` | Fim: ${project.end_date}`;
+    }
+
     const dataContext = `
 ## Dados do Projeto: ${project?.name || "N/A"}
-Estratégia: ${project?.strategy || "N/A"}
-Orçamento: R$ ${project?.budget || "N/A"}
+Estratégia: ${strategyDescription}
+${project?.description ? `Descrição: ${project.description}` : ""}
+Orçamento: R$ ${project?.budget || "N/A"}${launchContext}
 Período de análise: últimos 30 dias
+
+## Produtos Cadastrados
+${mainProducts.length > 0 ? mainProducts.map(p => `- [PRINCIPAL] ${p.name} (${p.platform}) — R$ ${(p.price || 0).toFixed(2)}`).join("\n") : "Nenhum produto principal cadastrado"}
+${hasOrderBump ? orderBumps.map(p => `- [ORDER BUMP] ${p.name} (${p.platform}) — R$ ${(p.price || 0).toFixed(2)}`).join("\n") : "⚠️ Nenhum Order Bump cadastrado"}
+Total de produtos: ${(products || []).length} (${mainProducts.length} principal, ${orderBumps.length} order bump)
+
+## Vendas por Produto (30 dias)
+${Object.entries(salesByProduct).sort((a,b) => b[1].revenue - a[1].revenue).map(([name, d]) => `- ${name} [${d.type}]: ${d.count} vendas, R$ ${d.revenue.toFixed(2)}`).join("\n") || "Sem vendas no período"}
+${hasOrderBump ? `Taxa de adoção Order Bump: ${bumpAdoptionRate.toFixed(1)}% (${bumpSalesCount} bumps em ${mainSalesCount} vendas principais)` : ""}
 
 ## Métricas de Performance (30 dias)
 - Receita Total: R$ ${totalRevenue.toFixed(2)}
@@ -149,13 +205,32 @@ Analise os dados fornecidos e gere insights acionáveis organizados nas seguinte
 
 Responda EXCLUSIVAMENTE usando a function tool "generate_insights" fornecida. Gere entre 5 e 10 insights de alta qualidade.
 
+CONTEXTO ESTRATÉGICO IMPORTANTE — adapte sua análise conforme a estratégia do projeto:
+
+1. **Perpétuo**: Foco em otimização contínua de CPA, escala de anúncios, retenção e LTV. Analise tendências de longo prazo.
+
+2. **Lançamento**: As métricas-chave são CPL (Custo por Lead), volume de leads captados, e preparação para a abertura do carrinho. Antes da abertura, o foco é captação; após, é conversão de leads em vendas.
+
+3. **Lançamento Pago**: Os números INICIAIS são de vendas de INGRESSOS (produtos baratos, R$47-R$197). O produto principal (mais caro) será vendido DURANTE o workshop/evento. Analise: taxa de conversão de ingresso, CPA do ingresso vs preço, projeção de receita do produto principal baseada na taxa de conversão típica de 5-15% dos participantes.
+
+4. **Funis**: Analise cada etapa do funil separadamente. Identifique onde estão os maiores vazamentos e oportunidades de otimização.
+
+5. **Evento Presencial**: Similar ao lançamento pago — ingressos são o front-end, upsells e vendas no evento são o back-end.
+
+ANÁLISE DE PRODUTOS:
+- Se não há Order Bump cadastrado, sugira URGENTEMENTE a criação de um (potencial de +15-30% no ticket médio)
+- Se há Order Bump, analise a taxa de adoção (benchmark: 20-40% é bom, abaixo de 15% precisa otimizar)
+- Compare o ticket médio real vs preço cadastrado para identificar oportunidades
+- Para lançamento pago: analise a relação preço do ingresso vs investimento em ads
+
 Regras:
 - Seja específico: cite números, anúncios por nome, percentuais reais
 - Priorize insights com maior potencial de impacto em receita
 - Considere benchmarks do mercado brasileiro de infoprodutos
 - Se alguma métrica estiver zerada ou ausente, sugira como começar a rastrear
 - Analise o funil completo: impressão → clique → LP → checkout → compra
-- Identifique gargalos no funil e oportunidades de otimização`;
+- Identifique gargalos no funil e oportunidades de otimização
+- Adapte completamente sua análise à estratégia do projeto`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
