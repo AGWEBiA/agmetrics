@@ -15,6 +15,7 @@ import {
   MousePointer2,
   LayoutGrid,
   Brain,
+  Sparkles,
   Shield,
   FileBarChart,
   GitCompare,
