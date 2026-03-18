@@ -71,9 +71,9 @@ export function exportPixelPDF(data: PixelExportData) {
   addSpacer();
 
   // ── Section 1: Basic ──
-  addText("1. Pixel Básico", 13, { bold: true });
-  addText("Rastreia apenas page views e parâmetros UTM. Use quando precisar de rastreamento mínimo.", 10);
-  addText("Cole antes da tag </body> em todas as páginas:", 9, { color: [100, 100, 100] });
+  addText("1. Pixel Basico", 13, { bold: true });
+  addText("Rastreia apenas page views e parametros UTM. Use quando precisar de rastreamento minimo.", 10);
+  addText("Cole antes da tag </body> em todas as paginas:", 9, { color: [100, 100, 100] });
   addSpacer(2);
   addCode(data.basicSnippet);
   addSpacer();
