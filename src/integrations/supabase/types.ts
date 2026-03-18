@@ -952,6 +952,7 @@ export type Database = {
         Row: {
           agsell_api_key: string | null
           agsell_base_url: string | null
+          agsell_form_field_mapping: Json | null
           budget: number | null
           cart_open_date: string | null
           created_at: string
@@ -988,6 +989,7 @@ export type Database = {
         Insert: {
           agsell_api_key?: string | null
           agsell_base_url?: string | null
+          agsell_form_field_mapping?: Json | null
           budget?: number | null
           cart_open_date?: string | null
           created_at?: string
@@ -1024,6 +1026,7 @@ export type Database = {
         Update: {
           agsell_api_key?: string | null
           agsell_base_url?: string | null
+          agsell_form_field_mapping?: Json | null
           budget?: number | null
           cart_open_date?: string | null
           created_at?: string
