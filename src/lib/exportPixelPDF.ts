@@ -120,7 +120,7 @@ export function exportPixelPDF(data: PixelExportData) {
   doc.line(margin, y, pageWidth - margin, y);
   y += 8;
 
-  addText("Instruções de Instalação para o Webdesigner", 14, { bold: true, color: [59, 130, 246] });
+  addText("Instrucoes de Instalacao para o Webdesigner", 14, { bold: true, color: [59, 130, 246] });
   addSpacer(2);
 
   const steps = [
