@@ -42,6 +42,8 @@ export default function AGSellConfig() {
     }
   }, [project]);
 
+  const formFieldMapping = (project as any)?.agsell_form_field_mapping || [];
+
   const isConnected = !!apiKey;
 
   const defaultBaseUrl = "https://gmemxbfibakfpsjbsvyt.supabase.co/functions/v1/public-api";
