@@ -979,7 +979,7 @@ export type Database = {
           manual_investment: number | null
           meta_leads_enabled: boolean
           name: string
-          owner_id: string
+          owner_id: string | null
           slug: string | null
           start_date: string | null
           strategy: Database["public"]["Enums"]["project_strategy"]
@@ -1016,7 +1016,7 @@ export type Database = {
           manual_investment?: number | null
           meta_leads_enabled?: boolean
           name: string
-          owner_id: string
+          owner_id?: string | null
           slug?: string | null
           start_date?: string | null
           strategy?: Database["public"]["Enums"]["project_strategy"]
@@ -1053,7 +1053,7 @@ export type Database = {
           manual_investment?: number | null
           meta_leads_enabled?: boolean
           name?: string
-          owner_id?: string
+          owner_id?: string | null
           slug?: string | null
           start_date?: string | null
           strategy?: Database["public"]["Enums"]["project_strategy"]
