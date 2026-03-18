@@ -573,6 +573,19 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Log successful sync
+    const endTime = Date.now();
+    await supabase.from("integration_sync_logs").insert({
+      project_id,
+      platform: "meta",
+      status: "success",
+      ads_synced: adsSynced || 0,
+      metrics_synced: synced,
+      demographics_synced: demoSynced,
+      accounts_synced: totalAccountsSynced,
+      duration_ms: endTime - startTime,
+    });
+
     return new Response(
       JSON.stringify({
         success: true, synced, total: allRows.length,
@@ -582,6 +595,22 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error("Meta sync error:", err);
+
+    // Log error sync
+    const endTime = Date.now();
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const logClient = createClient(supabaseUrl, serviceRoleKey);
+      await logClient.from("integration_sync_logs").insert({
+        project_id: "00000000-0000-0000-0000-000000000000",
+        platform: "meta",
+        status: "error",
+        error_message: err instanceof Error ? err.message : String(err),
+        duration_ms: endTime - startTime,
+      });
+    } catch (_) { /* ignore logging errors */ }
+
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
