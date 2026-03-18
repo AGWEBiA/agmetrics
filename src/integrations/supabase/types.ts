@@ -86,6 +86,51 @@ export type Database = {
           },
         ]
       }
+      ai_insights_history: {
+        Row: {
+          created_at: string
+          health_score: number
+          id: string
+          insights: Json
+          project_id: string
+          summary: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          health_score?: number
+          id?: string
+          insights?: Json
+          project_id: string
+          summary: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          health_score?: number
+          id?: string
+          insights?: Json
+          project_id?: string
+          summary?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_insights_history_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_insights_history_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_api_metrics: {
         Row: {
           created_at: string
