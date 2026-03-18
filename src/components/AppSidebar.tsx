@@ -20,6 +20,7 @@ import {
   GitCompare,
   Paintbrush,
   Zap,
+  ChevronDown,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
@@ -38,6 +39,11 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -67,111 +73,67 @@ export function AppSidebar() {
     { title: "Guia", url: "/admin/guide", icon: BookOpen, visible: true },
   ].filter((item) => item.visible);
 
-  const projectItems = projectId
+  // Grouped project items
+  const analysisItems = projectId
     ? [
-        {
-          title: "Dashboard",
-          url: `/admin/projects/${projectId}/dashboard`,
-          icon: LayoutDashboard,
-          visible: can("projects.view"),
-        },
-        {
-          title: "Vendas",
-          url: `/admin/projects/${projectId}/sales`,
-          icon: ShoppingCart,
-          visible: can("sales.view"),
-        },
-        {
-          title: "Jornada do Lead",
-          url: `/admin/projects/${projectId}/lead-journey`,
-          icon: Route,
-          visible: can("projects.view"),
-        },
-        {
-          title: "Analytics do Pixel",
-          url: `/admin/projects/${projectId}/pixel-analytics`,
-          icon: Activity,
-          visible: can("projects.view"),
-        },
-        {
-          title: "Comportamento",
-          url: `/admin/projects/${projectId}/behavior`,
-          icon: MousePointer2,
-          visible: can("projects.view"),
-        },
-        {
-          title: "Dashboard Custom",
-          url: `/admin/projects/${projectId}/custom-dashboard`,
-          icon: LayoutGrid,
-          visible: can("projects.view"),
-        },
-        {
-          title: "Forecasting IA",
-          url: `/admin/projects/${projectId}/forecast`,
-          icon: Brain,
-          visible: can("projects.view"),
-        },
-        {
-          title: "Cohort & LTV",
-          url: `/admin/projects/${projectId}/cohort-ltv`,
-          icon: Users,
-          visible: can("projects.view"),
-        },
-        {
-          title: "Alertas Anomalia",
-          url: `/admin/projects/${projectId}/anomaly-alerts`,
-          icon: Shield,
-          visible: can("projects.view"),
-        },
-        {
-          title: "Relatórios Agendados",
-          url: `/admin/projects/${projectId}/scheduled-reports`,
-          icon: FileBarChart,
-          visible: can("projects.edit"),
-        },
-        {
-          title: "Comparação Temporal",
-          url: `/admin/projects/${projectId}/temporal-comparison`,
-          icon: GitCompare,
-          visible: can("projects.view"),
-        },
-        {
-          title: "Relatórios WhatsApp",
-          url: `/admin/projects/${projectId}/whatsapp-reports`,
-          icon: MessageSquare,
-          visible: can("projects.edit"),
-        },
-        {
-          title: "Configurações",
-          url: `/admin/projects/${projectId}/config`,
-          icon: Settings,
-          visible: can("projects.edit"),
-        },
-        {
-          title: "Integrações",
-          url: `/admin/projects/${projectId}/integrations`,
-          icon: Plug,
-          visible: can("integrations.manage"),
-        },
-        {
-          title: "Hub de Conectores",
-          url: `/admin/projects/${projectId}/connectors`,
-          icon: Zap,
-          visible: can("integrations.manage"),
-        },
+        { title: "Dashboard", url: `/admin/projects/${projectId}/dashboard`, icon: LayoutDashboard, visible: can("projects.view") },
+        { title: "Vendas", url: `/admin/projects/${projectId}/sales`, icon: ShoppingCart, visible: can("sales.view") },
+        { title: "Jornada do Lead", url: `/admin/projects/${projectId}/lead-journey`, icon: Route, visible: can("projects.view") },
+        { title: "Analytics do Pixel", url: `/admin/projects/${projectId}/pixel-analytics`, icon: Activity, visible: can("projects.view") },
+        { title: "Comportamento", url: `/admin/projects/${projectId}/behavior`, icon: MousePointer2, visible: can("projects.view") },
+        { title: "Cohort & LTV", url: `/admin/projects/${projectId}/cohort-ltv`, icon: Users, visible: can("projects.view") },
+        { title: "Comparação Temporal", url: `/admin/projects/${projectId}/temporal-comparison`, icon: GitCompare, visible: can("projects.view") },
       ].filter((item) => item.visible)
     : [];
+
+  const reportItems = projectId
+    ? [
+        { title: "Dashboard Custom", url: `/admin/projects/${projectId}/custom-dashboard`, icon: LayoutGrid, visible: can("projects.view") },
+        { title: "Forecasting IA", url: `/admin/projects/${projectId}/forecast`, icon: Brain, visible: can("projects.view") },
+        { title: "Alertas Anomalia", url: `/admin/projects/${projectId}/anomaly-alerts`, icon: Shield, visible: can("projects.view") },
+        { title: "Relatórios Agendados", url: `/admin/projects/${projectId}/scheduled-reports`, icon: FileBarChart, visible: can("projects.edit") },
+        { title: "Relatórios WhatsApp", url: `/admin/projects/${projectId}/whatsapp-reports`, icon: MessageSquare, visible: can("projects.edit") },
+      ].filter((item) => item.visible)
+    : [];
+
+  const configItems = projectId
+    ? [
+        { title: "Configurações", url: `/admin/projects/${projectId}/config`, icon: Settings, visible: can("projects.edit") },
+        { title: "Integrações", url: `/admin/projects/${projectId}/integrations`, icon: Plug, visible: can("integrations.manage") },
+        { title: "Hub de Conectores", url: `/admin/projects/${projectId}/connectors`, icon: Zap, visible: can("integrations.manage") },
+      ].filter((item) => item.visible)
+    : [];
+
+  const renderMenuItems = (items: typeof mainItems) => (
+    <SidebarMenu>
+      {items.map((item) => (
+        <SidebarMenuItem key={item.title}>
+          <SidebarMenuButton asChild>
+            <NavLink
+              to={item.url}
+              end={false}
+              className="hover:bg-sidebar-accent"
+              activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+              onClick={closeSidebar}
+            >
+              <item.icon className="mr-2 h-4 w-4" />
+              <span>{item.title}</span>
+            </NavLink>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  );
 
   return (
     <Sidebar className="border-r border-sidebar-border">
       <SidebarContent>
+        {/* App header */}
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 py-3">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />
-              <span className="text-base font-semibold tracking-tight">
-                AGMetrics
-              </span>
+              <span className="text-base font-semibold tracking-tight">AGMetrics</span>
             </div>
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -197,47 +159,95 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {projectId && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground px-4">
-              {project?.name || "Projeto"}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {projectItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.url}
-                        end={false}
-                        className="hover:bg-sidebar-accent"
-                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                        onClick={closeSidebar}
-                      >
-                        <item.icon className="mr-2 h-4 w-4" />
-                        <span>{item.title}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-                {project?.view_token && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <a
-                        href={`https://agmetrics.lovable.app/view/${project.slug || project.view_token}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center hover:bg-sidebar-accent"
-                        onClick={closeSidebar}
-                      >
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        <span>Dashboard Público</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <>
+            {/* Project name */}
+            <div className="px-4 pt-3 pb-1">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold truncate">
+                {project?.name || "Projeto"}
+              </p>
+            </div>
+
+            {/* Análises */}
+            {analysisItems.length > 0 && (
+              <Collapsible defaultOpen className="group/collapsible">
+                <SidebarGroup className="py-0">
+                  <CollapsibleTrigger asChild>
+                    <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent/50 rounded-md transition-colors text-xs uppercase tracking-wider text-muted-foreground px-4">
+                      <span>Análises</span>
+                      <ChevronDown className="ml-auto h-3.5 w-3.5 transition-transform group-data-[state=closed]/collapsible:rotate-[-90deg]" />
+                    </SidebarGroupLabel>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarGroupContent>
+                      {renderMenuItems(analysisItems)}
+                    </SidebarGroupContent>
+                  </CollapsibleContent>
+                </SidebarGroup>
+              </Collapsible>
+            )}
+
+            {/* Relatórios */}
+            {reportItems.length > 0 && (
+              <Collapsible defaultOpen className="group/collapsible">
+                <SidebarGroup className="py-0">
+                  <CollapsibleTrigger asChild>
+                    <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent/50 rounded-md transition-colors text-xs uppercase tracking-wider text-muted-foreground px-4">
+                      <span>Relatórios</span>
+                      <ChevronDown className="ml-auto h-3.5 w-3.5 transition-transform group-data-[state=closed]/collapsible:rotate-[-90deg]" />
+                    </SidebarGroupLabel>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarGroupContent>
+                      {renderMenuItems(reportItems)}
+                    </SidebarGroupContent>
+                  </CollapsibleContent>
+                </SidebarGroup>
+              </Collapsible>
+            )}
+
+            {/* Configurações */}
+            {configItems.length > 0 && (
+              <Collapsible defaultOpen className="group/collapsible">
+                <SidebarGroup className="py-0">
+                  <CollapsibleTrigger asChild>
+                    <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent/50 rounded-md transition-colors text-xs uppercase tracking-wider text-muted-foreground px-4">
+                      <span>Configurações</span>
+                      <ChevronDown className="ml-auto h-3.5 w-3.5 transition-transform group-data-[state=closed]/collapsible:rotate-[-90deg]" />
+                    </SidebarGroupLabel>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarGroupContent>
+                      {renderMenuItems(configItems)}
+                    </SidebarGroupContent>
+                  </CollapsibleContent>
+                </SidebarGroup>
+              </Collapsible>
+            )}
+
+            {/* Dashboard Público link */}
+            {project?.view_token && (
+              <SidebarGroup className="py-0">
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild>
+                        <a
+                          href={`https://agmetrics.lovable.app/view/${project.slug || project.view_token}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center hover:bg-sidebar-accent"
+                          onClick={closeSidebar}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          <span>Dashboard Público</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
+          </>
         )}
       </SidebarContent>
 
