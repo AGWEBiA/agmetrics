@@ -35,7 +35,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 
-type InsightCategory = "vendas" | "anuncios" | "funil" | "leads" | "financeiro" | "tracking";
+type InsightCategory = "vendas" | "anuncios" | "funil" | "leads" | "financeiro" | "tracking" | "produtos";
 type Impact = "alto" | "medio" | "baixo";
 type Priority = "urgente" | "importante" | "oportunidade";
 
