@@ -5,12 +5,12 @@ import { useMetaCredentialsList, useGoogleCredentials } from "@/hooks/useProject
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatedCard, AnimatedPage } from "@/components/AnimatedCard";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, ArrowLeft, Info, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { RefreshCw, ArrowLeft, Info, CheckCircle2, XCircle, Clock, AlertTriangle, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export default function IntegrationStatus() {
@@ -102,6 +102,25 @@ export default function IntegrationStatus() {
     },
   });
 
+  // Sync logs for Meta
+  const { data: syncLogs, refetch: refetchLogs } = useQuery({
+    queryKey: ["sync_logs", projectId, "meta"],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("integration_sync_logs" as any)
+        .select("*")
+        .eq("project_id", projectId!)
+        .eq("platform", "meta")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      return (data || []) as any[];
+    },
+  });
+
+  const lastSuccess = syncLogs?.find((l: any) => l.status === "success");
+  const lastError = syncLogs?.find((l: any) => l.status === "error");
+
   // Sync actions
   const [syncing, setSyncing] = useState<Record<string, boolean>>({});
 
@@ -118,8 +137,10 @@ export default function IntegrationStatus() {
       if (res.error) throw res.error;
       const labels: Record<string, string> = { meta: "Meta Ads", google: "Google Ads", whatsapp: "WhatsApp", kiwify: "Kiwify", hotmart: "Hotmart" };
       toast({ title: "Sincronização concluída", description: `${labels[platform]} sincronizado com sucesso.` });
+      if (platform === "meta") refetchLogs();
     } catch (err: any) {
       toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
+      if (platform === "meta") refetchLogs();
     } finally {
       setSyncing((p) => ({ ...p, [platform]: false }));
     }
@@ -245,8 +266,115 @@ export default function IntegrationStatus() {
         ))}
       </div>
 
+      {/* Meta Sync Health Panel */}
+      {metaConnected && (
+        <AnimatedCard index={5}>
+          <Card className="border-border/40">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" />
+                Log de Saúde — Meta Ads
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Summary cards */}
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+                <div className="rounded-lg border border-border/40 p-3 space-y-1">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Último Sucesso</p>
+                  {lastSuccess ? (
+                    <>
+                      <p className="text-sm font-medium text-success">
+                        {format(new Date(lastSuccess.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {lastSuccess.ads_synced} anúncios · {lastSuccess.metrics_synced} métricas · {lastSuccess.duration_ms ? `${(lastSuccess.duration_ms / 1000).toFixed(1)}s` : "—"}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nenhum registro</p>
+                  )}
+                </div>
 
-      <AnimatedCard index={5}>
+                <div className="rounded-lg border border-border/40 p-3 space-y-1">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Último Erro</p>
+                  {lastError ? (
+                    <>
+                      <p className="text-sm font-medium text-destructive">
+                        {format(new Date(lastError.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </p>
+                      <p className="text-[10px] text-destructive/70 line-clamp-2">
+                        {lastError.error_message || "Erro desconhecido"}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-success">Nenhum erro registrado ✓</p>
+                  )}
+                </div>
+
+                <div className="rounded-lg border border-border/40 p-3 space-y-1">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Últimas 10 Syncs</p>
+                  <div className="flex items-center gap-1 mt-1">
+                    {(syncLogs || []).slice(0, 10).reverse().map((log: any, i: number) => (
+                      <div
+                        key={i}
+                        className={`w-3 h-6 rounded-sm ${log.status === "success" ? "bg-success" : "bg-destructive"}`}
+                        title={`${log.status === "success" ? "✓" : "✗"} ${format(new Date(log.created_at), "dd/MM HH:mm")}`}
+                      />
+                    ))}
+                    {(!syncLogs || syncLogs.length === 0) && (
+                      <p className="text-xs text-muted-foreground">Sem registros</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent log table */}
+              {syncLogs && syncLogs.length > 0 && (
+                <div className="rounded-lg border border-border/40 overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-muted/30 text-muted-foreground">
+                        <th className="text-left p-2 font-medium">Data</th>
+                        <th className="text-left p-2 font-medium">Status</th>
+                        <th className="text-right p-2 font-medium">Anúncios</th>
+                        <th className="text-right p-2 font-medium">Métricas</th>
+                        <th className="text-right p-2 font-medium">Duração</th>
+                        <th className="text-left p-2 font-medium">Detalhes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {syncLogs.map((log: any) => (
+                        <tr key={log.id} className="border-t border-border/20">
+                          <td className="p-2 whitespace-nowrap">
+                            {format(new Date(log.created_at), "dd/MM HH:mm:ss")}
+                          </td>
+                          <td className="p-2">
+                            {log.status === "success" ? (
+                              <Badge variant="outline" className="text-success border-success/30 text-[10px]">OK</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-destructive border-destructive/30 text-[10px]">Erro</Badge>
+                            )}
+                          </td>
+                          <td className="p-2 text-right font-medium">{log.ads_synced || 0}</td>
+                          <td className="p-2 text-right font-medium">{log.metrics_synced || 0}</td>
+                          <td className="p-2 text-right text-muted-foreground">
+                            {log.duration_ms ? `${(log.duration_ms / 1000).toFixed(1)}s` : "—"}
+                          </td>
+                          <td className="p-2 text-muted-foreground max-w-[200px] truncate">
+                            {log.status === "error" ? log.error_message : `${log.accounts_synced || 0} contas`}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </AnimatedCard>
+      )}
+
+      <AnimatedCard index={6}>
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-5">
             <div className="flex items-start gap-3">

@@ -231,6 +231,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  let adsSynced = 0;
+  let project_id_for_log: string | null = null;
   try {
     // 1. Authenticate
     const auth = await authenticateRequest(req);
@@ -238,6 +241,7 @@ Deno.serve(async (req) => {
 
     // 2. Parse body
     const { project_id } = await req.json();
+    project_id_for_log = project_id || null;
     if (!project_id) {
       return new Response(JSON.stringify({ error: "project_id is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -510,17 +514,18 @@ Deno.serve(async (req) => {
           return buildAdRecord(project_id, adId, agg, meta, sinceStr, untilStr);
         });
 
-        let adsSynced = 0;
+        let localAdsSynced = 0;
         const AD_BATCH_SIZE = 20;
         for (let i = 0; i < adRecords.length; i += AD_BATCH_SIZE) {
           const batch = adRecords.slice(i, i + AD_BATCH_SIZE);
           const { error } = await supabase
             .from("meta_ads")
             .upsert(batch, { onConflict: "project_id,ad_id" });
-          if (!error) adsSynced += batch.length;
+          if (!error) localAdsSynced += batch.length;
           else console.warn(`[sync-meta] Ad batch upsert error:`, error.message);
         }
-        console.log(`[sync-meta] Saved ${adsSynced} ads via batch upsert`);
+        adsSynced += localAdsSynced;
+        console.log(`[sync-meta] Saved ${localAdsSynced} ads via batch upsert`);
       } catch (e) {
         console.error("Top ads fetch error:", e);
       }
@@ -573,6 +578,19 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Log successful sync
+    const endTime = Date.now();
+    await supabase.from("integration_sync_logs").insert({
+      project_id,
+      platform: "meta",
+      status: "success",
+      ads_synced: adsSynced || 0,
+      metrics_synced: synced,
+      demographics_synced: demoSynced,
+      accounts_synced: totalAccountsSynced,
+      duration_ms: endTime - startTime,
+    });
+
     return new Response(
       JSON.stringify({
         success: true, synced, total: allRows.length,
@@ -582,6 +600,24 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error("Meta sync error:", err);
+
+    // Log error sync
+    const endTime = Date.now();
+    if (project_id_for_log) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const logClient = createClient(supabaseUrl, serviceRoleKey);
+        await logClient.from("integration_sync_logs").insert({
+          project_id: project_id_for_log,
+          platform: "meta",
+          status: "error",
+          error_message: err instanceof Error ? err.message : String(err),
+          duration_ms: endTime - startTime,
+        });
+      } catch (_) { /* ignore logging errors */ }
+    }
+
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
