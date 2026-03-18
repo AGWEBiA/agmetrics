@@ -383,7 +383,7 @@ Deno.serve(async (req) => {
 
       // === Fetch and save ads ===
       try {
-        const insightFields = "id,name,status,preview_shareable_link,creative{id,thumbnail_url,effective_image_url,image_url,object_story_spec}";
+        const insightFields = "id,name,status,preview_shareable_link,creative{id,thumbnail_url,image_url,object_story_spec}";
         const insightMetrics = "spend,impressions,clicks,actions,video_play_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,ad_id,ad_name";
 
         const adMeta = new Map<string, { name: string; status: string; preview_link: string | null; thumbnail_url: string | null }>();
@@ -407,7 +407,6 @@ Deno.serve(async (req) => {
 
             const creative = ad.creative || {};
             let thumbnailUrl = creative.thumbnail_url
-              || creative.effective_image_url
               || creative.image_url
               || creative.object_story_spec?.link_data?.image_url
               || creative.object_story_spec?.photo_data?.images?.[0]?.source
@@ -427,7 +426,7 @@ Deno.serve(async (req) => {
               for (let ci = 0; ci < creativeIdsNeedingImage.length; ci += batchSize) {
                 const ids = creativeIdsNeedingImage.slice(ci, ci + batchSize);
                 const idsParam = ids.join(",");
-                const creativesUrl = `https://graph.facebook.com/v21.0/?ids=${idsParam}&fields=thumbnail_url,image_url,effective_image_url,object_story_spec&access_token=${creds.access_token}`;
+                const creativesUrl = `https://graph.facebook.com/v21.0/?ids=${idsParam}&fields=thumbnail_url,image_url,object_story_spec&access_token=${creds.access_token}`;
                 const creativesRes = await fetch(creativesUrl);
                 if (!creativesRes.ok) continue;
 
@@ -439,7 +438,6 @@ Deno.serve(async (req) => {
                   if (!meta || meta.thumbnail_url) continue;
 
                   const fallbackUrl = cdata.thumbnail_url
-                    || cdata.effective_image_url
                     || cdata.image_url
                     || cdata.object_story_spec?.link_data?.image_url
                     || null;
