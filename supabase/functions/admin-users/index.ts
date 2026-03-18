@@ -150,6 +150,12 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Não é possível deletar a si mesmo" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Reassign orphaned projects to the admin who is deleting
+    await adminClient
+      .from("projects")
+      .update({ owner_id: callerId })
+      .eq("owner_id", userId);
+
     const { error } = await adminClient.auth.admin.deleteUser(userId);
     if (error) {
       console.error("Admin delete user error:", error);
