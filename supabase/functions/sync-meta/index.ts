@@ -386,16 +386,13 @@ Deno.serve(async (req) => {
         const insightFields = "id,name,status,preview_shareable_link,creative{id,thumbnail_url,effective_image_url,image_url,object_story_spec}";
         const insightMetrics = "spend,impressions,clicks,actions,video_play_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,ad_id,ad_name";
 
+        const adMeta = new Map<string, { name: string; status: string; preview_link: string | null; thumbnail_url: string | null }>();
         const adsListUrl = `https://graph.facebook.com/v21.0/${adAccountId}/ads?fields=${insightFields}&limit=200&access_token=${creds.access_token}`;
         const adsListRes = await fetch(adsListUrl);
 
         if (adsListRes.ok) {
           const adsListData = await adsListRes.json();
           const adsList = (adsListData.data || []) as any[];
-
-          // Build ad metadata map with multiple image fallbacks
-          const adMeta = new Map<string, { name: string; status: string; preview_link: string | null; thumbnail_url: string | null }>();
-          // Collect creative IDs that need fallback image fetch
           const creativeIdsNeedingImage: string[] = [];
           const creativeIdToAdId = new Map<string, string>();
 
@@ -407,7 +404,7 @@ Deno.serve(async (req) => {
               const first = rawLink[0];
               previewLink = typeof first === "string" ? first : (first?.body || first?.share_link || null);
             }
-            // Try multiple image sources: thumbnail_url → effective_image_url → image_url → object_story_spec image
+
             const creative = ad.creative || {};
             let thumbnailUrl = creative.thumbnail_url
               || creative.effective_image_url
@@ -418,14 +415,12 @@ Deno.serve(async (req) => {
 
             adMeta.set(ad.id, { name: ad.name, status: ad.status, preview_link: previewLink, thumbnail_url: thumbnailUrl });
 
-            // If still no image, try fetching from adcreatives endpoint later
             if (!thumbnailUrl && creative.id) {
               creativeIdsNeedingImage.push(creative.id);
               creativeIdToAdId.set(creative.id, ad.id);
             }
           }
 
-          // Fallback: batch fetch missing creative images via adcreatives endpoint
           if (creativeIdsNeedingImage.length > 0) {
             try {
               const batchSize = 50;
@@ -434,68 +429,46 @@ Deno.serve(async (req) => {
                 const idsParam = ids.join(",");
                 const creativesUrl = `https://graph.facebook.com/v21.0/?ids=${idsParam}&fields=thumbnail_url,image_url,effective_image_url,object_story_spec&access_token=${creds.access_token}`;
                 const creativesRes = await fetch(creativesUrl);
-                if (creativesRes.ok) {
-                  const creativesData = await creativesRes.json();
-                  for (const [cid, cdata] of Object.entries(creativesData) as [string, any][]) {
-                    const adId = creativeIdToAdId.get(cid);
-                    if (!adId) continue;
-                    const meta = adMeta.get(adId);
-                    if (!meta || meta.thumbnail_url) continue;
-                    const fallbackUrl = cdata.thumbnail_url
-                      || cdata.effective_image_url
-                      || cdata.image_url
-                      || cdata.object_story_spec?.link_data?.image_url
-                      || null;
-                    if (fallbackUrl) {
-                      meta.thumbnail_url = fallbackUrl;
-                    }
-                  }
+                if (!creativesRes.ok) continue;
+
+                const creativesData = await creativesRes.json();
+                for (const [cid, cdata] of Object.entries(creativesData) as [string, any][]) {
+                  const adId = creativeIdToAdId.get(cid);
+                  if (!adId) continue;
+                  const meta = adMeta.get(adId);
+                  if (!meta || meta.thumbnail_url) continue;
+
+                  const fallbackUrl = cdata.thumbnail_url
+                    || cdata.effective_image_url
+                    || cdata.image_url
+                    || cdata.object_story_spec?.link_data?.image_url
+                    || null;
+
+                  if (fallbackUrl) meta.thumbnail_url = fallbackUrl;
                 }
               }
             } catch (e) {
               console.warn("[sync-meta] Creative fallback fetch error:", e);
             }
           }
+        } else {
+          console.warn("[sync-meta] Ads metadata list error:", await adsListRes.text());
+        }
 
-          // Fetch ad-level insights (filter by selected campaigns if any)
-          const adAggMap = new Map<string, any>();
-          let usedAccountFallbackForAds = false;
+        const adAggMap = new Map<string, any>();
+        let usedAccountFallbackForAds = false;
 
-          if (hasFilter) {
-            for (const cid of campaignIds) {
-              try {
-                const campAdUrl = `https://graph.facebook.com/v21.0/${cid}/insights?fields=${insightMetrics}&time_range=${timeRange}&level=ad&limit=500&access_token=${creds.access_token}`;
-                const campAdRes = await fetch(campAdUrl);
-                if (!campAdRes.ok) {
-                  console.warn(`[sync-meta] Ad insights for campaign ${cid} error:`, await campAdRes.text());
-                  continue;
-                }
-                const campAdData = await campAdRes.json();
-                for (const row of (campAdData.data || [])) {
-                  const adId = row.ad_id;
-                  if (!adId) continue;
-                  if (!adAggMap.has(adId)) {
-                    adAggMap.set(adId, { spend: 0, impressions: 0, clicks: 0, purchases: 0, leads: 0, link_clicks: 0, landing_page_views: 0, checkouts_initiated: 0, ad_name: row.ad_name, video_plays: 0, video_p25: 0, video_p50: 0, video_p75: 0, video_p100: 0 });
-                  }
-                  aggregateAdRow(adAggMap.get(adId)!, row);
-                }
-              } catch (campErr) {
-                console.warn(`[sync-meta] Ad insights campaign ${cid} exception:`, campErr);
+        if (hasFilter) {
+          for (const cid of campaignIds) {
+            try {
+              const campAdUrl = `https://graph.facebook.com/v21.0/${cid}/insights?fields=${insightMetrics}&time_range=${timeRange}&level=ad&limit=500&access_token=${creds.access_token}`;
+              const campAdRes = await fetch(campAdUrl);
+              if (!campAdRes.ok) {
+                console.warn(`[sync-meta] Ad insights for campaign ${cid} error:`, await campAdRes.text());
+                continue;
               }
-            }
-
-            if (adAggMap.size === 0) {
-              usedAccountFallbackForAds = true;
-              console.warn(`[sync-meta] Selected campaign ad insights returned no ads for project ${project_id}; falling back to account-level ad insights.`);
-            }
-          }
-
-          if (!hasFilter || usedAccountFallbackForAds) {
-            const adsInsightsUrl = `https://graph.facebook.com/v21.0/${adAccountId}/insights?fields=${insightMetrics}&time_range=${timeRange}&level=ad&limit=500&access_token=${creds.access_token}`;
-            const adsInsightsRes = await fetch(adsInsightsUrl);
-            if (adsInsightsRes.ok) {
-              const insightsData = await adsInsightsRes.json();
-              for (const row of (insightsData.data || [])) {
+              const campAdData = await campAdRes.json();
+              for (const row of (campAdData.data || [])) {
                 const adId = row.ad_id;
                 if (!adId) continue;
                 if (!adAggMap.has(adId)) {
@@ -503,31 +476,53 @@ Deno.serve(async (req) => {
                 }
                 aggregateAdRow(adAggMap.get(adId)!, row);
               }
-            } else {
-              console.warn(`[sync-meta] Account-level ad insights error:`, await adsInsightsRes.text());
+            } catch (campErr) {
+              console.warn(`[sync-meta] Ad insights campaign ${cid} exception:`, campErr);
             }
           }
 
-          console.log(`[sync-meta] Found ${adAggMap.size} unique ads for project ${project_id}`);
-
-          // Batch upsert ads (chunks of 20)
-          const adRecords = Array.from(adAggMap.entries()).map(([adId, agg]) => {
-            const meta = adMeta.get(adId) || { name: agg.ad_name || "—", status: "UNKNOWN", preview_link: null, thumbnail_url: null };
-            return buildAdRecord(project_id, adId, agg, meta, sinceStr, untilStr);
-          });
-
-          let adsSynced = 0;
-          const AD_BATCH_SIZE = 20;
-          for (let i = 0; i < adRecords.length; i += AD_BATCH_SIZE) {
-            const batch = adRecords.slice(i, i + AD_BATCH_SIZE);
-            const { error } = await supabase
-              .from("meta_ads")
-              .upsert(batch, { onConflict: "project_id,ad_id" });
-            if (!error) adsSynced += batch.length;
-            else console.warn(`[sync-meta] Ad batch upsert error:`, error.message);
+          if (adAggMap.size === 0) {
+            usedAccountFallbackForAds = true;
+            console.warn(`[sync-meta] Selected campaign ad insights returned no ads for project ${project_id}; falling back to account-level ad insights.`);
           }
-          console.log(`[sync-meta] Saved ${adsSynced} ads via batch upsert`);
         }
+
+        if (!hasFilter || usedAccountFallbackForAds) {
+          const adsInsightsUrl = `https://graph.facebook.com/v21.0/${adAccountId}/insights?fields=${insightMetrics}&time_range=${timeRange}&level=ad&limit=500&access_token=${creds.access_token}`;
+          const adsInsightsRes = await fetch(adsInsightsUrl);
+          if (adsInsightsRes.ok) {
+            const insightsData = await adsInsightsRes.json();
+            for (const row of (insightsData.data || [])) {
+              const adId = row.ad_id;
+              if (!adId) continue;
+              if (!adAggMap.has(adId)) {
+                adAggMap.set(adId, { spend: 0, impressions: 0, clicks: 0, purchases: 0, leads: 0, link_clicks: 0, landing_page_views: 0, checkouts_initiated: 0, ad_name: row.ad_name, video_plays: 0, video_p25: 0, video_p50: 0, video_p75: 0, video_p100: 0 });
+              }
+              aggregateAdRow(adAggMap.get(adId)!, row);
+            }
+          } else {
+            console.warn(`[sync-meta] Account-level ad insights error:`, await adsInsightsRes.text());
+          }
+        }
+
+        console.log(`[sync-meta] Found ${adAggMap.size} unique ads for project ${project_id}`);
+
+        const adRecords = Array.from(adAggMap.entries()).map(([adId, agg]) => {
+          const meta = adMeta.get(adId) || { name: agg.ad_name || "—", status: "UNKNOWN", preview_link: null, thumbnail_url: null };
+          return buildAdRecord(project_id, adId, agg, meta, sinceStr, untilStr);
+        });
+
+        let adsSynced = 0;
+        const AD_BATCH_SIZE = 20;
+        for (let i = 0; i < adRecords.length; i += AD_BATCH_SIZE) {
+          const batch = adRecords.slice(i, i + AD_BATCH_SIZE);
+          const { error } = await supabase
+            .from("meta_ads")
+            .upsert(batch, { onConflict: "project_id,ad_id" });
+          if (!error) adsSynced += batch.length;
+          else console.warn(`[sync-meta] Ad batch upsert error:`, error.message);
+        }
+        console.log(`[sync-meta] Saved ${adsSynced} ads via batch upsert`);
       } catch (e) {
         console.error("Top ads fetch error:", e);
       }
