@@ -603,18 +603,20 @@ Deno.serve(async (req) => {
 
     // Log error sync
     const endTime = Date.now();
-    try {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const logClient = createClient(supabaseUrl, serviceRoleKey);
-      await logClient.from("integration_sync_logs").insert({
-        project_id: "00000000-0000-0000-0000-000000000000",
-        platform: "meta",
-        status: "error",
-        error_message: err instanceof Error ? err.message : String(err),
-        duration_ms: endTime - startTime,
-      });
-    } catch (_) { /* ignore logging errors */ }
+    if (project_id_for_log) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const logClient = createClient(supabaseUrl, serviceRoleKey);
+        await logClient.from("integration_sync_logs").insert({
+          project_id: project_id_for_log,
+          platform: "meta",
+          status: "error",
+          error_message: err instanceof Error ? err.message : String(err),
+          duration_ms: endTime - startTime,
+        });
+      } catch (_) { /* ignore logging errors */ }
+    }
 
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
