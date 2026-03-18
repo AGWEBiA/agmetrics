@@ -91,7 +91,7 @@ export function AppSidebar() {
   const reportItems = projectId
     ? [
         { title: "Dashboard Custom", url: `/admin/projects/${projectId}/custom-dashboard`, icon: LayoutGrid, visible: can("projects.view") },
-        { title: "Inteligência IA", url: `/admin/projects/${projectId}/ai-insights`, icon: Brain, visible: can("projects.view") },
+        { title: "Inteligência IA", url: `/admin/projects/${projectId}/ai-insights`, icon: Sparkles, visible: can("projects.view") },
         { title: "Forecasting IA", url: `/admin/projects/${projectId}/forecast`, icon: Brain, visible: can("projects.view") },
         { title: "Alertas Anomalia", url: `/admin/projects/${projectId}/anomaly-alerts`, icon: Shield, visible: can("projects.view") },
         { title: "Relatórios Agendados", url: `/admin/projects/${projectId}/scheduled-reports`, icon: FileBarChart, visible: can("projects.edit") },
