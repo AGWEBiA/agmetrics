@@ -147,12 +147,12 @@ export function exportPixelPDF(data: PixelExportData) {
   addSpacer(2);
 
   const notes = [
-    "• NÃO modifique o ID do projeto (pid) nos snippets — ele é único para este projeto.",
-    "• NÃO coloque o snippet da página de obrigado em outras páginas além da de confirmação.",
-    "• O pixel funciona com sites estáticos (HTML), WordPress, Elementor, Webflow e qualquer plataforma que permita inserir scripts customizados.",
-    "• Em WordPress: use o plugin \"Insert Headers and Footers\" ou adicione no arquivo footer.php do tema.",
-    "• Em Elementor: vá em Configurações do Elementor > Custom Code > Adicione antes do </body>.",
-    `• ID do Projeto: ${data.projectId}`,
+    "- NAO modifique o ID do projeto (pid) nos snippets - ele e unico para este projeto.",
+    "- NAO coloque o snippet da pagina de obrigado em outras paginas alem da de confirmacao.",
+    "- O pixel funciona com sites estaticos (HTML), WordPress, Elementor, Webflow e qualquer plataforma que permita inserir scripts customizados.",
+    "- Em WordPress: use o plugin \"Insert Headers and Footers\" ou adicione no arquivo footer.php do tema.",
+    "- Em Elementor: va em Configuracoes do Elementor > Custom Code > Adicione antes do </body>.",
+    `- ID do Projeto: ${data.projectId}`,
   ];
 
   notes.forEach((note) => {
