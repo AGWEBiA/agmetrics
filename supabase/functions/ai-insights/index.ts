@@ -34,6 +34,7 @@ serve(async (req) => {
       { data: topAds },
       { data: leadEvents },
       { data: goals },
+      { data: products },
     ] = await Promise.all([
       supabase.from("projects").select("name, strategy, budget, start_date, end_date, cart_open_date, description").eq("id", project_id).single(),
       supabase.from("sales_events").select("amount, status, product_name, product_type, payment_method, buyer_state, sale_date, tracking_src, tracking_sck, utm_source, utm_medium, utm_campaign").eq("project_id", project_id).eq("is_ignored", false).gte("sale_date", thirtyDaysAgo).order("sale_date", { ascending: false }).limit(500),
@@ -43,6 +44,7 @@ serve(async (req) => {
       supabase.from("meta_ads").select("ad_id, ad_name, spend, impressions, clicks, link_clicks, purchases, leads, cpc, ctr, hook_rate, hold_rate, landing_page_views, checkouts_initiated").eq("project_id", project_id).order("spend", { ascending: false }).limit(15),
       supabase.from("lead_events").select("event_type, event_source, utm_source, utm_medium, utm_campaign, amount, event_date").eq("project_id", project_id).gte("event_date", thirtyDaysAgo).limit(300),
       supabase.from("project_goals").select("type, target_value, period").eq("project_id", project_id).eq("is_active", true),
+      supabase.from("products").select("name, type, platform, price").eq("project_id", project_id),
     ]);
 
     // Summarize data for the prompt
