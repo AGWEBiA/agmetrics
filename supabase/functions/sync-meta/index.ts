@@ -512,7 +512,7 @@ Deno.serve(async (req) => {
           return buildAdRecord(project_id, adId, agg, meta, sinceStr, untilStr);
         });
 
-        let adsSynced = 0;
+        let localAdsSynced = 0;
         const AD_BATCH_SIZE = 20;
         for (let i = 0; i < adRecords.length; i += AD_BATCH_SIZE) {
           const batch = adRecords.slice(i, i + AD_BATCH_SIZE);
