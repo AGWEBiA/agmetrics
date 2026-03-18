@@ -295,18 +295,39 @@ Deno.serve(async (req) => {
 
       // === Fetch main metrics ===
       let rows: any[] = [];
+      let usedAccountFallbackForMetrics = false;
+
       if (hasFilter) {
+        let campaignSuccessCount = 0;
+
         for (const cid of campaignIds) {
           const url = `https://graph.facebook.com/v21.0/${cid}/insights?fields=${fields}&time_range=${timeRange}&time_increment=1&access_token=${creds.access_token}&limit=100`;
           const metaRes = await fetch(url);
-          if (!metaRes.ok) { console.error(`Campaign ${cid} fetch error:`, await metaRes.text()); continue; }
+
+          if (!metaRes.ok) {
+            console.error(`[sync-meta] Campaign ${cid} fetch error:`, await metaRes.text());
+            continue;
+          }
+
           const metaData = await metaRes.json();
-          rows.push(...(metaData.data || []));
+          const campaignRows = metaData.data || [];
+          if (campaignRows.length > 0) campaignSuccessCount++;
+          rows.push(...campaignRows);
         }
-      } else {
+
+        if (rows.length === 0) {
+          usedAccountFallbackForMetrics = true;
+          console.warn(`[sync-meta] Selected campaign metrics returned no rows for project ${project_id}; falling back to account-level insights.`);
+        }
+      }
+
+      if (!hasFilter || usedAccountFallbackForMetrics) {
         const url = `https://graph.facebook.com/v21.0/${adAccountId}/insights?fields=${fields}&time_range=${timeRange}&time_increment=1&level=account&access_token=${creds.access_token}&limit=100`;
         const metaRes = await fetch(url);
-        if (!metaRes.ok) { console.error(`Account ${creds.ad_account_id} error:`, await metaRes.text()); continue; }
+        if (!metaRes.ok) {
+          console.error(`[sync-meta] Account ${creds.ad_account_id} error:`, await metaRes.text());
+          continue;
+        }
         const metaData = await metaRes.json();
         rows = metaData.data || [];
       }
@@ -438,9 +459,9 @@ Deno.serve(async (req) => {
 
           // Fetch ad-level insights (filter by selected campaigns if any)
           const adAggMap = new Map<string, any>();
+          let usedAccountFallbackForAds = false;
 
           if (hasFilter) {
-            // Fetch ad insights per selected campaign to avoid pulling unrelated ads
             for (const cid of campaignIds) {
               try {
                 const campAdUrl = `https://graph.facebook.com/v21.0/${cid}/insights?fields=${insightMetrics}&time_range=${timeRange}&level=ad&limit=500&access_token=${creds.access_token}`;
@@ -462,7 +483,14 @@ Deno.serve(async (req) => {
                 console.warn(`[sync-meta] Ad insights campaign ${cid} exception:`, campErr);
               }
             }
-          } else {
+
+            if (adAggMap.size === 0) {
+              usedAccountFallbackForAds = true;
+              console.warn(`[sync-meta] Selected campaign ad insights returned no ads for project ${project_id}; falling back to account-level ad insights.`);
+            }
+          }
+
+          if (!hasFilter || usedAccountFallbackForAds) {
             const adsInsightsUrl = `https://graph.facebook.com/v21.0/${adAccountId}/insights?fields=${insightMetrics}&time_range=${timeRange}&level=ad&limit=500&access_token=${creds.access_token}`;
             const adsInsightsRes = await fetch(adsInsightsUrl);
             if (adsInsightsRes.ok) {
