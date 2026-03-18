@@ -52,7 +52,7 @@ export function exportPixelPDF(data: PixelExportData) {
 
   // ── Header ──
   addText(`${data.projectName}`, 22, { bold: true });
-  addText("Guia de Instalação dos Pixels de Rastreamento", 14, { bold: true, color: [59, 130, 246] });
+  addText("Guia de Instalacao dos Pixels de Rastreamento", 14, { bold: true, color: [59, 130, 246] });
   addText(`Documento gerado em ${now}`, 9, { color: [120, 120, 120] });
   addSpacer(4);
 
