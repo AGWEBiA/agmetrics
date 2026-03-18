@@ -94,7 +94,7 @@ export function exportPixelPDF(data: PixelExportData) {
   addText("3. Pixel de Checkout (Kiwify / Hotmart)", 13, { bold: true });
   addText(
     "Use este snippet no campo de scripts personalizados do checkout da sua plataforma de vendas. " +
-    "Ele rastreia a visita ao checkout e permite eventos customizados como início de preenchimento.",
+    "Ele rastreia a visita ao checkout e permite eventos customizados como inicio de preenchimento.",
     10
   );
   addText("Kiwify: Produto → Configurações → Checkout → Scripts", 9, { color: [100, 100, 100] });
