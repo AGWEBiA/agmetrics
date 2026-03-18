@@ -208,7 +208,7 @@ export function exportInsightsPDF(data: InsightsPDFData) {
     doc.setPage(p);
     doc.setFontSize(7);
     doc.setTextColor(150, 150, 150);
-    doc.text(`AGMetrics — Inteligência de Conversão`, margin, 290);
+    doc.text(`AGMetrics - Inteligencia de Conversao`, margin, 290);
     doc.text(`Página ${p} de ${totalPages}`, pageWidth - margin, 290, { align: "right" });
   }
 
