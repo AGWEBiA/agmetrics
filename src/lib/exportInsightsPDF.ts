@@ -99,7 +99,7 @@ export function exportInsightsPDF(data: InsightsPDFData) {
   doc.setTextColor(30, 30, 30);
   doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
-  doc.text("Visão Geral dos Insights", margin, y);
+  doc.text("Visao Geral dos Insights", margin, y);
   y += 3;
 
   const tableData = data.insights.map((ins, i) => [
