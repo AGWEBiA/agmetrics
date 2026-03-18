@@ -23,6 +23,7 @@ import {
   ExternalLink,
   TestTube,
 } from "lucide-react";
+import AGSellFieldMapping from "@/components/agsell/AGSellFieldMapping";
 
 export default function AGSellConfig() {
   const { projectId } = useParams();
