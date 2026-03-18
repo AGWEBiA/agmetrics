@@ -214,6 +214,8 @@ Deno.serve(async (req) => {
         console.log("Sample Tracking:", JSON.stringify(sample.Tracking));
       }
 
+      const batch: any[] = [];
+
       for (const tx of transactions) {
         const productName = tx.product?.name || tx.Product?.product_name || tx.product_name || tx.offer?.name || "";
         const matchedProduct = registeredProducts.find(
