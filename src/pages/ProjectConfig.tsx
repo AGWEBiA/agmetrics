@@ -521,9 +521,16 @@ function MetaAccountCard({ cred, projectId, onDelete }: { cred: any; projectId: 
                   <span className="text-xs text-muted-foreground">Apenas ativas</span>
                 </label>
               </div>
+              <Input
+                placeholder="Buscar campanha..."
+                value={campaignSearch}
+                onChange={(e) => setCampaignSearch(e.target.value)}
+                className="h-8 text-sm"
+              />
               <div className="max-h-60 overflow-y-auto rounded-lg border divide-y">
                 {[...campaigns]
                   .filter((c: any) => !showOnlyActive || c.status === "ACTIVE")
+                  .filter((c: any) => !campaignSearch || (c.campaign_name || "").toLowerCase().includes(campaignSearch.toLowerCase()))
                   .sort((a: any, b: any) => {
                     if (a.status === "ACTIVE" && b.status !== "ACTIVE") return -1;
                     if (a.status !== "ACTIVE" && b.status === "ACTIVE") return 1;
