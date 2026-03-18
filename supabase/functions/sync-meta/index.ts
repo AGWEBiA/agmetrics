@@ -432,43 +432,69 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Fetch ad-level insights
-          const adsInsightsUrl = `https://graph.facebook.com/v21.0/${adAccountId}/insights?fields=${insightMetrics}&time_range=${timeRange}&level=ad&limit=500&access_token=${creds.access_token}`;
-          const adsInsightsRes = await fetch(adsInsightsUrl);
+          // Fetch ad-level insights (filter by selected campaigns if any)
+          const adAggMap = new Map<string, any>();
 
-          if (adsInsightsRes.ok) {
-            const insightsData = await adsInsightsRes.json();
-            const insightRows = (insightsData.data || []) as any[];
-
-            // Aggregate by ad_id
-            const adAggMap = new Map<string, any>();
-            for (const row of insightRows) {
-              const adId = row.ad_id;
-              if (!adId) continue;
-              if (!adAggMap.has(adId)) {
-                adAggMap.set(adId, { spend: 0, impressions: 0, clicks: 0, purchases: 0, leads: 0, link_clicks: 0, landing_page_views: 0, checkouts_initiated: 0, ad_name: row.ad_name, video_plays: 0, video_p25: 0, video_p50: 0, video_p75: 0, video_p100: 0 });
+          if (hasFilter) {
+            // Fetch ad insights per selected campaign to avoid pulling unrelated ads
+            for (const cid of campaignIds) {
+              try {
+                const campAdUrl = `https://graph.facebook.com/v21.0/${cid}/insights?fields=${insightMetrics}&time_range=${timeRange}&level=ad&limit=500&access_token=${creds.access_token}`;
+                const campAdRes = await fetch(campAdUrl);
+                if (!campAdRes.ok) {
+                  console.warn(`[sync-meta] Ad insights for campaign ${cid} error:`, await campAdRes.text());
+                  continue;
+                }
+                const campAdData = await campAdRes.json();
+                for (const row of (campAdData.data || [])) {
+                  const adId = row.ad_id;
+                  if (!adId) continue;
+                  if (!adAggMap.has(adId)) {
+                    adAggMap.set(adId, { spend: 0, impressions: 0, clicks: 0, purchases: 0, leads: 0, link_clicks: 0, landing_page_views: 0, checkouts_initiated: 0, ad_name: row.ad_name, video_plays: 0, video_p25: 0, video_p50: 0, video_p75: 0, video_p100: 0 });
+                  }
+                  aggregateAdRow(adAggMap.get(adId)!, row);
+                }
+              } catch (campErr) {
+                console.warn(`[sync-meta] Ad insights campaign ${cid} exception:`, campErr);
               }
-              aggregateAdRow(adAggMap.get(adId)!, row);
             }
-
-            // Batch upsert ads (chunks of 20)
-            const adRecords = Array.from(adAggMap.entries()).map(([adId, agg]) => {
-              const meta = adMeta.get(adId) || { name: agg.ad_name || "—", status: "UNKNOWN", preview_link: null, thumbnail_url: null };
-              return buildAdRecord(project_id, adId, agg, meta, sinceStr, untilStr);
-            });
-
-            let adsSynced = 0;
-            const AD_BATCH_SIZE = 20;
-            for (let i = 0; i < adRecords.length; i += AD_BATCH_SIZE) {
-              const batch = adRecords.slice(i, i + AD_BATCH_SIZE);
-              const { error } = await supabase
-                .from("meta_ads")
-                .upsert(batch, { onConflict: "project_id,ad_id" });
-              if (!error) adsSynced += batch.length;
-              else console.warn(`[sync-meta] Ad batch upsert error:`, error.message);
+          } else {
+            const adsInsightsUrl = `https://graph.facebook.com/v21.0/${adAccountId}/insights?fields=${insightMetrics}&time_range=${timeRange}&level=ad&limit=500&access_token=${creds.access_token}`;
+            const adsInsightsRes = await fetch(adsInsightsUrl);
+            if (adsInsightsRes.ok) {
+              const insightsData = await adsInsightsRes.json();
+              for (const row of (insightsData.data || [])) {
+                const adId = row.ad_id;
+                if (!adId) continue;
+                if (!adAggMap.has(adId)) {
+                  adAggMap.set(adId, { spend: 0, impressions: 0, clicks: 0, purchases: 0, leads: 0, link_clicks: 0, landing_page_views: 0, checkouts_initiated: 0, ad_name: row.ad_name, video_plays: 0, video_p25: 0, video_p50: 0, video_p75: 0, video_p100: 0 });
+                }
+                aggregateAdRow(adAggMap.get(adId)!, row);
+              }
+            } else {
+              console.warn(`[sync-meta] Account-level ad insights error:`, await adsInsightsRes.text());
             }
-            console.log(`[sync-meta] Saved ${adsSynced} ads via batch upsert`);
           }
+
+          console.log(`[sync-meta] Found ${adAggMap.size} unique ads for project ${project_id}`);
+
+          // Batch upsert ads (chunks of 20)
+          const adRecords = Array.from(adAggMap.entries()).map(([adId, agg]) => {
+            const meta = adMeta.get(adId) || { name: agg.ad_name || "—", status: "UNKNOWN", preview_link: null, thumbnail_url: null };
+            return buildAdRecord(project_id, adId, agg, meta, sinceStr, untilStr);
+          });
+
+          let adsSynced = 0;
+          const AD_BATCH_SIZE = 20;
+          for (let i = 0; i < adRecords.length; i += AD_BATCH_SIZE) {
+            const batch = adRecords.slice(i, i + AD_BATCH_SIZE);
+            const { error } = await supabase
+              .from("meta_ads")
+              .upsert(batch, { onConflict: "project_id,ad_id" });
+            if (!error) adsSynced += batch.length;
+            else console.warn(`[sync-meta] Ad batch upsert error:`, error.message);
+          }
+          console.log(`[sync-meta] Saved ${adsSynced} ads via batch upsert`);
         }
       } catch (e) {
         console.error("Top ads fetch error:", e);
