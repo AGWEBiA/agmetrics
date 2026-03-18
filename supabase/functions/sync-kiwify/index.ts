@@ -205,7 +205,14 @@ Deno.serve(async (req) => {
         break;
       }
 
-      const batch: any[] = [];
+      // Debug: log first transaction keys and tracking data
+      if (page === 1 && transactions.length > 0) {
+        const sample = transactions[0];
+        console.log("Sample transaction keys:", Object.keys(sample));
+        console.log("Sample tracking:", JSON.stringify(sample.tracking));
+        console.log("Sample sale_tracking:", JSON.stringify(sample.sale_tracking));
+        console.log("Sample Tracking:", JSON.stringify(sample.Tracking));
+      }
 
       for (const tx of transactions) {
         const productName = tx.product?.name || tx.Product?.product_name || tx.product_name || tx.offer?.name || "";
