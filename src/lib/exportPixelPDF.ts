@@ -124,15 +124,15 @@ export function exportPixelPDF(data: PixelExportData) {
   addSpacer(2);
 
   const steps = [
-    "1. Identifique todas as páginas do site que precisam de rastreamento.",
-    "2. Em TODAS as páginas (landing pages, páginas de vendas, blog, etc.), cole o snippet \"Pixel Completo\" (seção 2) imediatamente antes da tag </body>.",
-    "3. Na página de obrigado/confirmação de compra, substitua o snippet completo pelo snippet de \"Página de Obrigado\" (seção 3). NÃO use os dois juntos.",
-    "4. O pixel é carregado de forma assíncrona e não impacta a performance do site.",
-    "5. Após a instalação, os dados começam a aparecer no painel AGMetrics em até 1 minuto.",
+    "1. Identifique todas as paginas do site que precisam de rastreamento.",
+    "2. Em TODAS as paginas (landing pages, paginas de vendas, blog, etc.), cole o snippet \"Pixel Completo\" (secao 2) imediatamente antes da tag </body>.",
+    "3. Na pagina de obrigado/confirmacao de compra, substitua o snippet completo pelo snippet de \"Pagina de Obrigado\" (secao 3). NAO use os dois juntos.",
+    "4. O pixel e carregado de forma assincrona e nao impacta a performance do site.",
+    "5. Apos a instalacao, os dados comecam a aparecer no painel AGMetrics em ate 1 minuto.",
     "6. Para eventos customizados, SEMPRE use addEventListener ou onclick. Exemplo:",
     "   document.getElementById(\"meuBotao\").addEventListener(\"click\", function() { window.AGMetrics?.track(\"nome_evento\", { chave: \"valor\" }); });",
-    "7. SEMPRE use window.AGMetrics?.track() (com ?.) em vez de AGMetrics.track() para evitar erros caso o pixel não carregue (ex: AdBlocker).",
-    "8. Teste a instalação acessando o site e verificando no painel AGMetrics se os eventos estão sendo registrados.",
+    "7. SEMPRE use window.AGMetrics?.track() (com ?.) em vez de AGMetrics.track() para evitar erros caso o pixel nao carregue (ex: AdBlocker).",
+    "8. Teste a instalacao acessando o site e verificando no painel AGMetrics se os eventos estao sendo registrados.",
   ];
 
   steps.forEach((step) => {
