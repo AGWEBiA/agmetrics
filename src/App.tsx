@@ -31,6 +31,7 @@ import ConnectorHub from "./pages/ConnectorHub";
 import AGSellConfig from "./pages/AGSellConfig";
 import WorkspaceSettings from "./pages/WorkspaceSettings";
 import { PermissionGuard } from "./components/PermissionGuard";
+import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
 
@@ -75,7 +76,7 @@ const App = () => (
               <Route path="settings" element={<PermissionGuard adminOnly><WorkspaceSettings /></PermissionGuard>} />
               <Route path="guide" element={<Guide />} />
             </Route>
-            <Route path="/" element={<Navigate to="/admin/projects" replace />} />
+            <Route path="/" element={<Index />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
