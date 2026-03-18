@@ -97,8 +97,8 @@ export function exportPixelPDF(data: PixelExportData) {
     "Ele rastreia a visita ao checkout e permite eventos customizados como inicio de preenchimento.",
     10
   );
-  addText("Kiwify: Produto → Configurações → Checkout → Scripts", 9, { color: [100, 100, 100] });
-  addText("Hotmart: Produto → Editar → Checkout → Pixel de rastreamento", 9, { color: [100, 100, 100] });
+  addText("Kiwify: Produto > Configuracoes > Checkout > Scripts", 9, { color: [100, 100, 100] });
+  addText("Hotmart: Produto > Editar > Checkout > Pixel de rastreamento", 9, { color: [100, 100, 100] });
   addSpacer(2);
   addCode(data.checkoutSnippet);
   addSpacer();
