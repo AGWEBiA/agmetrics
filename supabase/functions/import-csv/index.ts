@@ -148,10 +148,10 @@ Deno.serve(async (req) => {
         const platformFee = taxes > 0 ? taxes : Math.max(0, grossAmount - netAmount - coproducerCommission);
 
         // Hotmart tracking columns
-        const paymentMethod = clean(row["payment_method"] || row["método de pagamento"] || row["metodo de pagamento"] || "");
-        const trackingSrc = clean(row["código src"] || row["codigo src"] || "");
-        const trackingSck = clean(row["código sck"] || row["codigo sck"] || "");
-        const buyerState = clean(row["estado / província"] || row["estado / provincia"] || row["buyer_state"] || "");
+        const paymentMethod = clean(row["payment_method"] || row["pagamento"] || row["método de pagamento"] || row["metodo de pagamento"] || "");
+        const trackingSrc = clean(row["tracking src"] || row["código src"] || row["codigo src"] || "");
+        const trackingSck = clean(row["tracking sck"] || row["código sck"] || row["codigo sck"] || "");
+        const buyerState = clean(row["estado"] || row["estado / província"] || row["estado / provincia"] || row["buyer_state"] || "");
         const buyerCity = clean(row["cidade"] || row["buyer_city"] || "");
         const buyerCountry = clean(row["país"] || row["pais"] || row["buyer_country"] || "");
 
