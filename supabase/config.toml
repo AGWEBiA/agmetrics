@@ -41,3 +41,9 @@ verify_jwt = false
 
 [functions.ai-forecast]
 verify_jwt = false
+
+[functions.sync-agsell]
+verify_jwt = false
+
+[functions.webhook-agsell]
+verify_jwt = false
