@@ -11,19 +11,54 @@ async function getOAuthToken(clientId: string, clientSecret: string): Promise<st
   const res = await fetch("https://public-api.kiwify.com/v1/oauth/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-    }),
+    body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret }),
   });
-
   if (!res.ok) {
     const errText = await res.text();
     throw new Error(`OAuth token error: ${res.status} ${errText}`);
   }
+  return (await res.json()).access_token;
+}
 
-  const data = await res.json();
-  return data.access_token;
+/** Fetch individual sale detail to get tracking data */
+async function fetchSaleDetail(
+  saleId: string,
+  bearerToken: string,
+  accountId: string
+): Promise<Record<string, any> | null> {
+  try {
+    const res = await fetch(`https://public-api.kiwify.com/v1/sales/${saleId}`, {
+      headers: {
+        "Authorization": `Bearer ${bearerToken}`,
+        "x-kiwify-account-id": accountId,
+        "Content-Type": "application/json",
+      },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+/** Fetch details for a batch of sale IDs concurrently */
+async function fetchDetailsBatch(
+  saleIds: string[],
+  bearerToken: string,
+  accountId: string,
+  concurrency = 5
+): Promise<Map<string, Record<string, any>>> {
+  const results = new Map<string, Record<string, any>>();
+  for (let i = 0; i < saleIds.length; i += concurrency) {
+    const chunk = saleIds.slice(i, i + concurrency);
+    const details = await Promise.all(
+      chunk.map((id) => fetchSaleDetail(id, bearerToken, accountId))
+    );
+    chunk.forEach((id, idx) => {
+      if (details[idx]) results.set(id, details[idx]!);
+    });
+  }
+  return results;
 }
 
 Deno.serve(async (req) => {
@@ -38,76 +73,54 @@ Deno.serve(async (req) => {
 
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      serviceRoleKey
-    );
-
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, serviceRoleKey);
     const token = authHeader.replace("Bearer ", "");
     const isInternalCron = syncSource === "auto-sync-cron" && token === serviceRoleKey;
 
     let userId: string | null = null;
-
     if (!isInternalCron) {
       const anonClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_ANON_KEY")!,
         { global: { headers: { Authorization: authHeader } } }
       );
-
       const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
       if (authError || !user) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       userId = user.id;
     }
 
     const { project_id } = await req.json();
-
     if (!project_id) {
-      return new Response(
-        JSON.stringify({ error: "project_id is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "project_id is required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Verify project ownership for non-cron calls
+    // Verify project ownership
     if (!isInternalCron && userId) {
-      const { data: project } = await supabase
-        .from("projects")
-        .select("id, owner_id")
-        .eq("id", project_id)
-        .single();
-
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .single();
-
+      const { data: project } = await supabase.from("projects").select("id, owner_id").eq("id", project_id).single();
+      const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", userId).single();
       const isAdmin = roleData?.role === "admin";
       if (!project || (!isAdmin && project.owner_id !== userId)) {
         return new Response(JSON.stringify({ error: "Forbidden" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
     } else if (!isInternalCron) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get OAuth credentials from project row
+    // Get OAuth credentials
     const { data: projectData, error: projectError } = await supabase
       .from("projects")
       .select("kiwify_client_id, kiwify_client_secret, kiwify_account_id")
@@ -115,63 +128,43 @@ Deno.serve(async (req) => {
       .single();
 
     if (projectError || !projectData) {
-      return new Response(
-        JSON.stringify({ error: "Project not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Project not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const clientId = projectData.kiwify_client_id;
-    const clientSecret = projectData.kiwify_client_secret;
-    const accountId = projectData.kiwify_account_id;
+    const { kiwify_client_id: clientId, kiwify_client_secret: clientSecret, kiwify_account_id: accountId } = projectData;
 
     if (!clientId || !clientSecret || !accountId) {
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          imported: 0, 
-          skipped: 0, 
-          message: "Este projeto usa apenas webhook para receber vendas da Kiwify. As vendas são registradas automaticamente quando chegam via webhook. Para sincronização manual via API, configure Client ID, Client Secret e Account ID nas configurações do projeto." 
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({
+        success: true, imported: 0, skipped: 0,
+        message: "Este projeto usa apenas webhook para receber vendas da Kiwify. Configure Client ID, Client Secret e Account ID para sincronização via API."
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Get OAuth bearer token
     let bearerToken: string;
     try {
       bearerToken = await getOAuthToken(clientId, clientSecret);
     } catch (err) {
       console.error("OAuth error:", err);
-      return new Response(
-        JSON.stringify({ error: "Failed to authenticate with Kiwify" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Failed to authenticate with Kiwify" }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Load registered products for this project
-    const { data: registeredProducts } = await supabase
-      .from("products")
-      .select("name, type")
-      .eq("project_id", project_id);
-
+    // Load registered products
+    const { data: registeredProducts } = await supabase.from("products").select("name, type").eq("project_id", project_id);
     if (!registeredProducts || registeredProducts.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "No products registered for this project" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "No products registered for this project" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Fetch sales from Kiwify API (last 30 days)
-    // Use São Paulo timezone to ensure today's sales are included
+    // Date range (last 30 days, São Paulo timezone)
     const spFormatter = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo" });
-    const todaySP = spFormatter.format(new Date());
     const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const startDate = spFormatter.format(thirtyDaysAgo);
-    // Add 1 day to endDate to ensure the API includes all of today's sales
-    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    const endDate = spFormatter.format(tomorrow);
+    const startDate = spFormatter.format(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
+    const endDate = spFormatter.format(new Date(now.getTime() + 24 * 60 * 60 * 1000));
 
     let page = 1;
     let imported = 0;
@@ -191,107 +184,95 @@ Deno.serve(async (req) => {
       if (!res.ok) {
         const errText = await res.text();
         console.error("Kiwify API error:", res.status, errText);
-        return new Response(
-          JSON.stringify({ error: "Failed to fetch sales from Kiwify" }),
-          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Failed to fetch sales from Kiwify" }), {
+          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       const data = await res.json();
       const transactions = data.data || [];
 
-      if (transactions.length === 0) {
-        hasMore = false;
-        break;
-      }
+      if (transactions.length === 0) { hasMore = false; break; }
 
-      // Debug: log first transaction keys and tracking data
-      if (page === 1 && transactions.length > 0) {
-        const sample = transactions[0];
-        console.log("Sample transaction keys:", Object.keys(sample));
-        console.log("Sample tracking:", JSON.stringify(sample.tracking));
-        console.log("Sample sale_tracking:", JSON.stringify(sample.sale_tracking));
-        console.log("Sample Tracking:", JSON.stringify(sample.Tracking));
-      }
-
-      const batch: any[] = [];
-
+      // Filter matched transactions first
+      const matchedTxs: { tx: any; product: any }[] = [];
       for (const tx of transactions) {
         const productName = tx.product?.name || tx.Product?.product_name || tx.product_name || tx.offer?.name || "";
         const matchedProduct = registeredProducts.find(
           (p: any) => p.name.toLowerCase() === productName.toLowerCase()
         );
+        if (!matchedProduct) { skipped++; continue; }
+        matchedTxs.push({ tx, product: matchedProduct });
+      }
 
-        if (!matchedProduct) {
-          skipped++;
-          continue;
-        }
+      // Fetch individual sale details to get tracking data (concurrency = 5)
+      const saleIds = matchedTxs.map(({ tx }) => tx.id).filter(Boolean);
+      console.log(`Page ${page}: fetching details for ${saleIds.length} matched sales...`);
+      const detailsMap = await fetchDetailsBatch(saleIds, bearerToken, accountId);
+      console.log(`Page ${page}: got details for ${detailsMap.size} sales`);
 
+      // Log sample tracking from detail endpoint
+      if (page === 1 && detailsMap.size > 0) {
+        const firstDetail = detailsMap.values().next().value;
+        console.log("Sample detail tracking:", JSON.stringify(firstDetail?.tracking));
+      }
+
+      const batch: any[] = [];
+
+      for (const { tx, product } of matchedTxs) {
         const orderId = tx.reference || tx.id || "";
         const orderStatus = tx.status || "";
         const rawCharge = parseFloat(tx.charge_amount || tx.order_amount || "0") / 100;
         const rawNet = parseFloat(tx.net_amount || "0") / 100;
         const netValue = rawNet || rawCharge;
         const orderAmount = rawCharge > 0 ? rawCharge : netValue;
-        const buyerEmail = tx.customer?.email || "";
-        const buyerName = tx.customer?.name || "";
+        const customer = tx.customer || {};
         const createdAt = tx.created_at || new Date().toISOString();
 
         let status: string;
         switch (orderStatus) {
-          case "paid":
-          case "completed":
-            status = "approved";
-            break;
-          case "refunded":
-            status = "refunded";
-            break;
-          case "cancelled":
-          case "canceled":
-            status = "cancelled";
-            break;
-          default:
-            status = "pending";
+          case "paid": case "completed": status = "approved"; break;
+          case "refunded": status = "refunded"; break;
+          case "cancelled": case "canceled": status = "cancelled"; break;
+          default: status = "pending";
         }
 
-        const platformFee = Math.max(0, orderAmount - netValue);
-        const tracking = tx.tracking || {};
-        const customer = tx.customer || {};
+        // Get tracking from individual sale detail endpoint
+        const detail = detailsMap.get(tx.id);
+        const tracking = detail?.tracking || {};
 
         batch.push({
           project_id,
           platform: "kiwify",
           external_id: orderId,
-          product_name: productName,
-          product_type: matchedProduct.type || "main",
+          product_name: tx.product?.name || tx.Product?.product_name || tx.product_name || "",
+          product_type: product.type || "main",
           amount: netValue,
           gross_amount: orderAmount,
-          platform_fee: platformFee,
+          platform_fee: Math.max(0, orderAmount - netValue),
           status,
-          buyer_email: buyerEmail,
-          buyer_name: buyerName,
+          buyer_email: customer.email || "",
+          buyer_name: customer.name || "",
           sale_date: createdAt,
-          payment_method: tx.payment_method || tx.pagamento || undefined,
-          buyer_state: customer.state || customer.estado || undefined,
-          buyer_city: customer.city || customer.cidade || undefined,
-          buyer_country: customer.country || customer.pais || undefined,
-          utm_source: tracking.utm_source || tx.utm_source || undefined,
-          utm_medium: tracking.utm_medium || tx.utm_medium || undefined,
-          utm_campaign: tracking.utm_campaign || tx.utm_campaign || undefined,
-          utm_term: tracking.utm_term || tx.utm_term || undefined,
-          utm_content: tracking.utm_content || tx.utm_content || undefined,
-          tracking_src: tracking.src || tx.src || undefined,
-          tracking_sck: tracking.sck || tx.sck || undefined,
-          payload: tx,
+          payment_method: tx.payment_method || undefined,
+          buyer_state: customer.state || undefined,
+          buyer_city: customer.city || undefined,
+          buyer_country: customer.country || undefined,
+          utm_source: tracking.utm_source || undefined,
+          utm_medium: tracking.utm_medium || undefined,
+          utm_campaign: tracking.utm_campaign || undefined,
+          utm_term: tracking.utm_term || undefined,
+          utm_content: tracking.utm_content || undefined,
+          tracking_src: tracking.src || undefined,
+          tracking_sck: tracking.sck || undefined,
+          payload: detail || tx,
         });
       }
 
-      // Batch upsert to avoid timeout from individual calls
       if (batch.length > 0) {
         const { error, count } = await supabase
           .from("sales_events")
           .upsert(batch, { onConflict: "platform,external_id,project_id", count: "exact" });
-
         if (error) {
           console.error("Batch upsert error:", error);
         } else {
@@ -302,11 +283,7 @@ Deno.serve(async (req) => {
       const pagination = data.pagination || {};
       const totalItems = pagination.count || 0;
       const pageSize = pagination.page_size || 100;
-      if (page * pageSize >= totalItems) {
-        hasMore = false;
-      } else {
-        page++;
-      }
+      if (page * pageSize >= totalItems) { hasMore = false; } else { page++; }
     }
 
     return new Response(
@@ -315,9 +292,8 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error("Sync error:", err);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
