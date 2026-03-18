@@ -266,6 +266,15 @@ export default function AGSellConfig() {
         </CardContent>
       </Card>
 
+      {/* Field Mapping */}
+      {projectId && (
+        <AGSellFieldMapping
+          projectId={projectId}
+          initialMapping={formFieldMapping}
+          onSaved={() => refetch()}
+        />
+      )}
+
       {/* API Endpoints Reference */}
       <Card>
         <CardHeader>
