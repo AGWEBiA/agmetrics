@@ -1,0 +1,1 @@
+ALTER TABLE public.projects ADD COLUMN agsell_form_field_mapping jsonb DEFAULT '[]'::jsonb;

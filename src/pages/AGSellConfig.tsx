@@ -23,6 +23,7 @@ import {
   ExternalLink,
   TestTube,
 } from "lucide-react";
+import AGSellFieldMapping from "@/components/agsell/AGSellFieldMapping";
 
 export default function AGSellConfig() {
   const { projectId } = useParams();
@@ -40,6 +41,8 @@ export default function AGSellConfig() {
       setBaseUrl((project as any).agsell_base_url || "");
     }
   }, [project]);
+
+  const formFieldMapping = (project as any)?.agsell_form_field_mapping || [];
 
   const isConnected = !!apiKey;
 
@@ -262,6 +265,15 @@ export default function AGSellConfig() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Field Mapping */}
+      {projectId && (
+        <AGSellFieldMapping
+          projectId={projectId}
+          initialMapping={formFieldMapping}
+          onSaved={() => refetch()}
+        />
+      )}
 
       {/* API Endpoints Reference */}
       <Card>
