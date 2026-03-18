@@ -31,6 +31,7 @@ import ConnectorHub from "./pages/ConnectorHub";
 import AGSellConfig from "./pages/AGSellConfig";
 import WorkspaceSettings from "./pages/WorkspaceSettings";
 import { PermissionGuard } from "./components/PermissionGuard";
+import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
 
