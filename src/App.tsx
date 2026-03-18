@@ -76,7 +76,7 @@ const App = () => (
               <Route path="settings" element={<PermissionGuard adminOnly><WorkspaceSettings /></PermissionGuard>} />
               <Route path="guide" element={<Guide />} />
             </Route>
-            <Route path="/" element={<Navigate to="/admin/projects" replace />} />
+            <Route path="/" element={<Index />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
