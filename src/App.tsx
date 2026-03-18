@@ -28,6 +28,7 @@ import AnomalyAlertsPage from "./pages/AnomalyAlertsPage";
 import ScheduledReports from "./pages/ScheduledReports";
 import TemporalComparison from "./pages/TemporalComparison";
 import ConnectorHub from "./pages/ConnectorHub";
+import AGSellConfig from "./pages/AGSellConfig";
 import WorkspaceSettings from "./pages/WorkspaceSettings";
 import { PermissionGuard } from "./components/PermissionGuard";
 
