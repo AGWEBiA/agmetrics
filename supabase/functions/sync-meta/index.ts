@@ -519,10 +519,11 @@ Deno.serve(async (req) => {
           const { error } = await supabase
             .from("meta_ads")
             .upsert(batch, { onConflict: "project_id,ad_id" });
-          if (!error) adsSynced += batch.length;
+          if (!error) localAdsSynced += batch.length;
           else console.warn(`[sync-meta] Ad batch upsert error:`, error.message);
         }
-        console.log(`[sync-meta] Saved ${adsSynced} ads via batch upsert`);
+        adsSynced += localAdsSynced;
+        console.log(`[sync-meta] Saved ${localAdsSynced} ads via batch upsert`);
       } catch (e) {
         console.error("Top ads fetch error:", e);
       }
