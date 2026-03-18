@@ -161,6 +161,11 @@ function getExistingValues(project: any, connectorId: string, metaCreds: any, go
         client_id: project.hotmart_client_id || "",
         client_secret: project.hotmart_client_secret || "",
       };
+    case "agsell":
+      return {
+        api_key: project.agsell_api_key || "",
+        base_url: project.agsell_base_url || "",
+      };
     case "whatsapp":
       return {
         api_url: project.evolution_api_url || "",
