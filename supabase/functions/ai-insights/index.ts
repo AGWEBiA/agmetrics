@@ -223,6 +223,15 @@ ANÁLISE DE PRODUTOS:
 - Compare o ticket médio real vs preço cadastrado para identificar oportunidades
 - Para lançamento pago: analise a relação preço do ingresso vs investimento em ads
 
+CATEGORIA "produtos" — OBRIGATÓRIA:
+- Sempre gere pelo menos 1 insight na categoria "produtos"
+- Sugira criação de Order Bumps se não existem (potencial +15-30% ticket médio)
+- Analise precificação: compare ticket médio real vs preço cadastrado
+- Sugira Downsells para recuperar vendas perdidas (ex: versão simplificada, parcelamento estendido)
+- Para lançamento pago: analise a relação preço do ingresso vs valor percebido vs CPA
+- Sugira upsells pós-compra e cross-sells entre produtos
+- Analise se a estrutura de produtos está otimizada para maximizar LTV
+
 Regras:
 - Seja específico: cite números, anúncios por nome, percentuais reais
 - Priorize insights com maior potencial de impacto em receita
@@ -268,7 +277,7 @@ Regras:
                       properties: {
                         category: {
                           type: "string",
-                          enum: ["vendas", "anuncios", "funil", "leads", "financeiro", "tracking"]
+                          enum: ["vendas", "anuncios", "funil", "leads", "financeiro", "tracking", "produtos"]
                         },
                         title: { type: "string" },
                         analysis: { type: "string" },
