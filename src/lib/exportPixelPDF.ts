@@ -52,7 +52,7 @@ export function exportPixelPDF(data: PixelExportData) {
 
   // ── Header ──
   addText(`${data.projectName}`, 22, { bold: true });
-  addText("Guia de Instalação dos Pixels de Rastreamento", 14, { bold: true, color: [59, 130, 246] });
+  addText("Guia de Instalacao dos Pixels de Rastreamento", 14, { bold: true, color: [59, 130, 246] });
   addText(`Documento gerado em ${now}`, 9, { color: [120, 120, 120] });
   addSpacer(4);
 
@@ -64,16 +64,16 @@ export function exportPixelPDF(data: PixelExportData) {
   // ── Intro ──
   addText("Sobre o Pixel AGMetrics", 14, { bold: true });
   addText(
-    "O pixel AGMetrics é um script JavaScript leve que rastreia automaticamente o comportamento dos visitantes no seu site. " +
-    "Ele captura page views, cliques em botões e links, profundidade de scroll, movimentos do mouse (mapa de calor) e eventos customizados.",
+    "O pixel AGMetrics e um script JavaScript leve que rastreia automaticamente o comportamento dos visitantes no seu site. " +
+    "Ele captura page views, cliques em botoes e links, profundidade de scroll, movimentos do mouse (mapa de calor) e eventos customizados.",
     10
   );
   addSpacer();
 
   // ── Section 1: Basic ──
-  addText("1. Pixel Básico", 13, { bold: true });
-  addText("Rastreia apenas page views e parâmetros UTM. Use quando precisar de rastreamento mínimo.", 10);
-  addText("Cole antes da tag </body> em todas as páginas:", 9, { color: [100, 100, 100] });
+  addText("1. Pixel Basico", 13, { bold: true });
+  addText("Rastreia apenas page views e parametros UTM. Use quando precisar de rastreamento minimo.", 10);
+  addText("Cole antes da tag </body> em todas as paginas:", 9, { color: [100, 100, 100] });
   addSpacer(2);
   addCode(data.basicSnippet);
   addSpacer();
@@ -81,11 +81,11 @@ export function exportPixelPDF(data: PixelExportData) {
   // ── Section 2: Full ──
   addText("2. Pixel Completo (Recomendado)", 13, { bold: true });
   addText(
-    "Rastreia page views, cliques em botões e links, profundidade de scroll (25%, 50%, 75%, 100%) e movimentos do mouse para mapa de calor. " +
-    "Também permite enviar eventos customizados via AGMetrics.track().",
+    "Rastreia page views, cliques em botoes e links, profundidade de scroll (25%, 50%, 75%, 100%) e movimentos do mouse para mapa de calor. " +
+    "Tambem permite enviar eventos customizados via AGMetrics.track().",
     10
   );
-  addText("Cole antes da tag </body> em TODAS as páginas do site (exceto página de obrigado):", 9, { color: [100, 100, 100] });
+  addText("Cole antes da tag </body> em TODAS as paginas do site (exceto pagina de obrigado):", 9, { color: [100, 100, 100] });
   addSpacer(2);
   addCode(data.fullSnippet);
   addSpacer();
@@ -94,23 +94,23 @@ export function exportPixelPDF(data: PixelExportData) {
   addText("3. Pixel de Checkout (Kiwify / Hotmart)", 13, { bold: true });
   addText(
     "Use este snippet no campo de scripts personalizados do checkout da sua plataforma de vendas. " +
-    "Ele rastreia a visita ao checkout e permite eventos customizados como início de preenchimento.",
+    "Ele rastreia a visita ao checkout e permite eventos customizados como inicio de preenchimento.",
     10
   );
-  addText("Kiwify: Produto → Configurações → Checkout → Scripts", 9, { color: [100, 100, 100] });
-  addText("Hotmart: Produto → Editar → Checkout → Pixel de rastreamento", 9, { color: [100, 100, 100] });
+  addText("Kiwify: Produto > Configuracoes > Checkout > Scripts", 9, { color: [100, 100, 100] });
+  addText("Hotmart: Produto > Editar > Checkout > Pixel de rastreamento", 9, { color: [100, 100, 100] });
   addSpacer(2);
   addCode(data.checkoutSnippet);
   addSpacer();
 
   // ── Section 4: Thank You ──
-  addText("4. Pixel de Página de Obrigado / Conversão", 13, { bold: true });
+  addText("4. Pixel de Pagina de Obrigado / Conversao", 13, { bold: true });
   addText(
-    "Use APENAS na página de obrigado ou confirmação de compra. Já inclui todo o rastreamento completo " +
-    "e dispara automaticamente o evento 'thank_you_page' para medir conversões.",
+    "Use APENAS na pagina de obrigado ou confirmacao de compra. Ja inclui todo o rastreamento completo " +
+    "e dispara automaticamente o evento 'thank_you_page' para medir conversoes.",
     10
   );
-  addText("Cole antes da tag </body> APENAS na página de obrigado:", 9, { color: [100, 100, 100] });
+  addText("Cole antes da tag </body> APENAS na pagina de obrigado:", 9, { color: [100, 100, 100] });
   addSpacer(2);
   addCode(data.thankYouSnippet);
   addSpacer();
@@ -120,19 +120,19 @@ export function exportPixelPDF(data: PixelExportData) {
   doc.line(margin, y, pageWidth - margin, y);
   y += 8;
 
-  addText("Instruções de Instalação para o Webdesigner", 14, { bold: true, color: [59, 130, 246] });
+  addText("Instrucoes de Instalacao para o Webdesigner", 14, { bold: true, color: [59, 130, 246] });
   addSpacer(2);
 
   const steps = [
-    "1. Identifique todas as páginas do site que precisam de rastreamento.",
-    "2. Em TODAS as páginas (landing pages, páginas de vendas, blog, etc.), cole o snippet \"Pixel Completo\" (seção 2) imediatamente antes da tag </body>.",
-    "3. Na página de obrigado/confirmação de compra, substitua o snippet completo pelo snippet de \"Página de Obrigado\" (seção 3). NÃO use os dois juntos.",
-    "4. O pixel é carregado de forma assíncrona e não impacta a performance do site.",
-    "5. Após a instalação, os dados começam a aparecer no painel AGMetrics em até 1 minuto.",
+    "1. Identifique todas as paginas do site que precisam de rastreamento.",
+    "2. Em TODAS as paginas (landing pages, paginas de vendas, blog, etc.), cole o snippet \"Pixel Completo\" (secao 2) imediatamente antes da tag </body>.",
+    "3. Na pagina de obrigado/confirmacao de compra, substitua o snippet completo pelo snippet de \"Pagina de Obrigado\" (secao 3). NAO use os dois juntos.",
+    "4. O pixel e carregado de forma assincrona e nao impacta a performance do site.",
+    "5. Apos a instalacao, os dados comecam a aparecer no painel AGMetrics em ate 1 minuto.",
     "6. Para eventos customizados, SEMPRE use addEventListener ou onclick. Exemplo:",
     "   document.getElementById(\"meuBotao\").addEventListener(\"click\", function() { window.AGMetrics?.track(\"nome_evento\", { chave: \"valor\" }); });",
-    "7. SEMPRE use window.AGMetrics?.track() (com ?.) em vez de AGMetrics.track() para evitar erros caso o pixel não carregue (ex: AdBlocker).",
-    "8. Teste a instalação acessando o site e verificando no painel AGMetrics se os eventos estão sendo registrados.",
+    "7. SEMPRE use window.AGMetrics?.track() (com ?.) em vez de AGMetrics.track() para evitar erros caso o pixel nao carregue (ex: AdBlocker).",
+    "8. Teste a instalacao acessando o site e verificando no painel AGMetrics se os eventos estao sendo registrados.",
   ];
 
   steps.forEach((step) => {
@@ -143,16 +143,16 @@ export function exportPixelPDF(data: PixelExportData) {
   addSpacer(4);
 
   // ── Important Notes ──
-  addText("⚠️ Observações Importantes", 12, { bold: true, color: [220, 80, 0] });
+  addText("[!] Observacoes Importantes", 12, { bold: true, color: [220, 80, 0] });
   addSpacer(2);
 
   const notes = [
-    "• NÃO modifique o ID do projeto (pid) nos snippets — ele é único para este projeto.",
-    "• NÃO coloque o snippet da página de obrigado em outras páginas além da de confirmação.",
-    "• O pixel funciona com sites estáticos (HTML), WordPress, Elementor, Webflow e qualquer plataforma que permita inserir scripts customizados.",
-    "• Em WordPress: use o plugin \"Insert Headers and Footers\" ou adicione no arquivo footer.php do tema.",
-    "• Em Elementor: vá em Configurações do Elementor > Custom Code > Adicione antes do </body>.",
-    `• ID do Projeto: ${data.projectId}`,
+    "- NAO modifique o ID do projeto (pid) nos snippets - ele e unico para este projeto.",
+    "- NAO coloque o snippet da pagina de obrigado em outras paginas alem da de confirmacao.",
+    "- O pixel funciona com sites estaticos (HTML), WordPress, Elementor, Webflow e qualquer plataforma que permita inserir scripts customizados.",
+    "- Em WordPress: use o plugin \"Insert Headers and Footers\" ou adicione no arquivo footer.php do tema.",
+    "- Em Elementor: va em Configuracoes do Elementor > Custom Code > Adicione antes do </body>.",
+    `- ID do Projeto: ${data.projectId}`,
   ];
 
   notes.forEach((note) => {

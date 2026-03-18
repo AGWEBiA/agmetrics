@@ -29,15 +29,15 @@ const categoryLabels: Record<string, string> = {
 };
 
 const impactLabels: Record<string, string> = {
-  alto: "🔴 Alto",
-  medio: "🟡 Médio",
-  baixo: "🟢 Baixo",
+  alto: "[!] Alto",
+  medio: "[~] Medio",
+  baixo: "[ok] Baixo",
 };
 
 const priorityLabels: Record<string, string> = {
-  urgente: "⚠️ Urgente",
-  importante: "⏰ Importante",
-  oportunidade: "⚡ Oportunidade",
+  urgente: "[!!] Urgente",
+  importante: "[!] Importante",
+  oportunidade: "[*] Oportunidade",
 };
 
 export function exportInsightsPDF(data: InsightsPDFData) {
@@ -53,7 +53,7 @@ export function exportInsightsPDF(data: InsightsPDFData) {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
-  doc.text("Relatório de Inteligência", margin, y + 2);
+  doc.text("Relatorio de Inteligencia", margin, y + 2);
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
@@ -72,7 +72,7 @@ export function exportInsightsPDF(data: InsightsPDFData) {
   doc.setFont("helvetica", "bold");
   doc.text(`${data.health_score}`, pageWidth - 32, 22, { align: "center" });
   doc.setFontSize(7);
-  doc.text("SAÚDE", pageWidth - 32, 29, { align: "center" });
+  doc.text("SAUDE", pageWidth - 32, 29, { align: "center" });
 
   y = 55;
 
@@ -99,7 +99,7 @@ export function exportInsightsPDF(data: InsightsPDFData) {
   doc.setTextColor(30, 30, 30);
   doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
-  doc.text("Visão Geral dos Insights", margin, y);
+  doc.text("Visao Geral dos Insights", margin, y);
   y += 3;
 
   const tableData = data.insights.map((ins, i) => [
@@ -161,7 +161,7 @@ export function exportInsightsPDF(data: InsightsPDFData) {
     doc.setTextColor(100, 100, 100);
     doc.text(`Impacto: ${impactLabels[ins.impact] || ins.impact}  |  Prioridade: ${priorityLabels[ins.priority] || ins.priority}`, margin + 3, y);
     if (ins.metric_reference) {
-      doc.text(`Métrica: ${ins.metric_reference}`, margin + 3, y + 4);
+      doc.text(`Metrica: ${ins.metric_reference}`, margin + 3, y + 4);
       y += 4;
     }
     y += 6;
@@ -179,7 +179,7 @@ export function exportInsightsPDF(data: InsightsPDFData) {
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(99, 102, 241);
-      doc.text("Ações Recomendadas:", margin + 3, y);
+      doc.text("Acoes Recomendadas:", margin + 3, y);
       y += 5;
 
       doc.setFont("helvetica", "normal");
@@ -208,8 +208,8 @@ export function exportInsightsPDF(data: InsightsPDFData) {
     doc.setPage(p);
     doc.setFontSize(7);
     doc.setTextColor(150, 150, 150);
-    doc.text(`AGMetrics — Inteligência de Conversão`, margin, 290);
-    doc.text(`Página ${p} de ${totalPages}`, pageWidth - margin, 290, { align: "right" });
+    doc.text(`AGMetrics - Inteligencia de Conversao`, margin, 290);
+    doc.text(`Pagina ${p} de ${totalPages}`, pageWidth - margin, 290, { align: "right" });
   }
 
   doc.save(`insights-${data.projectName.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().slice(0, 10)}.pdf`);

@@ -27,7 +27,7 @@ export function exportDashboardPDF(data: ExportData) {
 
   // Title
   doc.setFontSize(20);
-  doc.text(`${data.projectName} — Relatório`, 14, 22);
+  doc.text(`${data.projectName} - Relatorio`, 14, 22);
   doc.setFontSize(10);
   doc.setTextColor(100);
   doc.text(`Gerado em ${now}`, 14, 30);
@@ -41,18 +41,18 @@ export function exportDashboardPDF(data: ExportData) {
     startY: 48,
     head: [["Métrica", "Valor"]],
     body: [
-      ["Receita Líquida (Produtor)", formatBRL(data.producerRevenue || data.totalRevenue)],
+      ["Receita Liquida (Produtor)", formatBRL(data.producerRevenue || data.totalRevenue)],
       ["Receita Bruta", formatBRL(data.grossRevenue)],
-      ["Nº de Vendas", String(data.salesCount)],
-      ["Ticket Médio", formatBRL(data.avgTicket)],
+      ["No de Vendas", String(data.salesCount)],
+      ["Ticket Medio", formatBRL(data.avgTicket)],
       ["ROI", formatPercent(data.roi)],
       ["ROAS", `${formatDecimal(data.roas)}x`],
-      ["Margem Líquida", formatPercent(data.margin)],
-      ["Lucro Líquido Projeto", formatBRL(data.netProfitProject || data.netProfit)],
-      ["Lucro Líquido Produtor", formatBRL(data.netProfitProducer || 0)],
+      ["Margem Liquida", formatPercent(data.margin)],
+      ["Lucro Liquido Projeto", formatBRL(data.netProfitProject || data.netProfit)],
+      ["Lucro Liquido Produtor", formatBRL(data.netProfitProducer || 0)],
       ["Investimento Total", formatBRL(data.totalInvestment)],
       ["Total de Leads", String(data.totalLeads)],
-      ["Conversão", formatPercent(data.conversionRate)],
+      ["Conversao", formatPercent(data.conversionRate)],
     ],
     theme: "striped",
     headStyles: { fillColor: [59, 130, 246] },
