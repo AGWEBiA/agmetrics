@@ -81,24 +81,28 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Auto-detect delimiter: semicolon (Hotmart) or comma (Kiwify)
+    // Auto-detect delimiter
     const firstLine = lines[0];
     const delimiter = firstLine.includes(";") ? ";" : ",";
     console.log(`[import-csv] Detected delimiter: "${delimiter}"`);
 
     const headers = splitCSVLine(firstLine, delimiter).map((h: string) => h.trim().toLowerCase().replace(/"/g, "").replace(/^\uFEFF/, ""));
     console.log(`[import-csv] Headers found: ${JSON.stringify(headers.slice(0, 10))}...`);
-    // Load registered products for this project
+    console.log(`[import-csv] Total data rows: ${lines.length - 1}`);
+
+    // Load registered products
     const { data: registeredProducts } = await supabase
       .from("products")
       .select("name, type")
       .eq("project_id", projectId);
 
-    const productNames = (registeredProducts || []).map((p: any) => p.name.toLowerCase());
-
     let imported = 0;
     let skipped = 0;
     const errors: string[] = [];
+
+    // Parse all rows into a batch
+    const batch: any[] = [];
+    const clean = (v: string) => (!v || v === "(none)") ? "" : v;
 
     for (let i = 1; i < lines.length; i++) {
       try {
@@ -106,14 +110,10 @@ Deno.serve(async (req) => {
         const row: Record<string, string> = {};
         headers.forEach((h: string, idx: number) => { row[h] = (values[idx] || "").trim().replace(/^"|"$/g, ""); });
 
-        // Clean Hotmart "(none)" placeholder values
-        const clean = (v: string) => (!v || v === "(none)") ? "" : v;
-
-        // Flexible column mapping (supports Kiwify and Hotmart PT-BR exports)
         const externalId = row["transaction_id"] || row["order_id"] || row["external_id"] || row["id da venda"] || row["id"] || row["código da transação"] || row["codigo da transacao"] || `csv-${i}`;
         const productName = row["product_name"] || row["produto"] || row["product"] || "";
 
-        // Flexible product matching: exact → partial → single main fallback
+        // Product matching
         let matchedProduct = (registeredProducts || []).find((p: any) => p.name.toLowerCase() === productName.toLowerCase());
         if (!matchedProduct) {
           const saleLower = productName.toLowerCase();
@@ -127,12 +127,10 @@ Deno.serve(async (req) => {
           if (mainProducts.length === 1) matchedProduct = mainProducts[0];
         }
         if (!matchedProduct) {
-          console.log(`[import-csv] Skipped: product "${productName}" not found in project`);
           skipped++;
           continue;
         }
 
-        // Hotmart CSV columns: "valor de compra sem impostos" (gross), "faturamento líquido" (net), "faturamento líquido do(a) produtor(a)" (producer net)
         const grossAmount = parseBRNumber(row["gross_amount"] || row["total com acréscimo"] || row["total com acrescimo"] || row["valor_bruto"] || row["amount"] || row["valor"] || row["valor de compra sem impostos"] || row["faturamento bruto (sem impostos)"] || "0");
         const netAmount = parseBRNumber(row["net_amount"] || row["valor líquido"] || row["valor liquido"] || row["valor_liquido"] || row["net_value"] || row["faturamento líquido"] || row["faturamento liquido"] || row["faturamento líquido do(a) produtor(a)"] || row["faturamento liquido do(a) produtor(a)"] || String(grossAmount));
         const buyerEmail = row["buyer_email"] || row["email"] || row["email do(a) comprador(a)"] || "";
@@ -142,12 +140,10 @@ Deno.serve(async (req) => {
         const rawDate = row["sale_date"] || row["data de criação"] || row["data de criacao"] || row["data"] || row["date"] || row["created_at"] || row["data da transação"] || row["data da transacao"] || "";
         const saleDate = parseDateFlexible(rawDate);
 
-        // Hotmart-specific: "taxa de processamento" for platform fee, "faturamento do(a) coprodutor(a)" for coproducer
         const taxes = parseBRNumber(row["taxas"] || row["taxes"] || row["platform_tax"] || row["taxa de processamento"] || "0");
         const coproducerCommission = parseBRNumber(row["comissões dos coprodutores"] || row["comissoes dos coprodutores"] || row["coproducer_commission"] || row["faturamento do(a) coprodutor(a)"] || "0");
         const platformFee = taxes > 0 ? taxes : Math.max(0, grossAmount - netAmount - coproducerCommission);
 
-        // Hotmart tracking columns
         const paymentMethod = clean(row["payment_method"] || row["pagamento"] || row["método de pagamento"] || row["metodo de pagamento"] || "");
         const trackingSrc = clean(row["tracking src"] || row["código src"] || row["codigo src"] || "");
         const trackingSck = clean(row["tracking sck"] || row["código sck"] || row["codigo sck"] || "");
@@ -155,68 +151,74 @@ Deno.serve(async (req) => {
         const buyerCity = clean(row["cidade"] || row["buyer_city"] || "");
         const buyerCountry = clean(row["país"] || row["pais"] || row["buyer_country"] || "");
 
-        // Extract UTM tracking data from CSV
         const utmSource = clean(row["utm_source"] || row["tracking utm_source"] || "");
         const utmMedium = clean(row["utm_medium"] || row["tracking utm_medium"] || "");
         const utmCampaign = clean(row["utm_campaign"] || row["tracking utm_campaign"] || "");
         const utmTerm = clean(row["utm_term"] || row["tracking utm_term"] || "");
         const utmContent = clean(row["utm_content"] || row["tracking utm_content"] || "");
 
-        // Use registered product type
-        const productType = matchedProduct.type || "main";
-
-        const { error: upsertError } = await supabase
-          .from("sales_events")
-          .upsert(
-            {
-              project_id: projectId,
-              platform,
-              external_id: externalId,
-              product_name: productName,
-              product_type: productType,
-              amount: netAmount,
-              gross_amount: grossAmount,
-              platform_fee: platformFee,
-              taxes,
-              coproducer_commission: coproducerCommission,
-              status,
-              buyer_email: buyerEmail,
-              buyer_name: buyerName,
-              sale_date: saleDate,
-              payment_method: paymentMethod || undefined,
-              tracking_src: trackingSrc || undefined,
-              tracking_sck: trackingSck || undefined,
-              buyer_state: buyerState || undefined,
-              buyer_city: buyerCity || undefined,
-              buyer_country: buyerCountry || undefined,
-              utm_source: utmSource || undefined,
-              utm_medium: utmMedium || undefined,
-              utm_campaign: utmCampaign || undefined,
-              utm_term: utmTerm || undefined,
-              utm_content: utmContent || undefined,
-              payload: row,
-            },
-            { onConflict: "platform,external_id,project_id" }
-          );
-
-        if (upsertError) {
-          errors.push(`Row ${i + 1}: ${upsertError.message}`);
-          skipped++;
-        } else {
-          imported++;
-        }
+        batch.push({
+          project_id: projectId,
+          platform,
+          external_id: externalId,
+          product_name: productName,
+          product_type: matchedProduct.type || "main",
+          amount: netAmount,
+          gross_amount: grossAmount,
+          platform_fee: platformFee,
+          taxes,
+          coproducer_commission: coproducerCommission,
+          status,
+          buyer_email: buyerEmail,
+          buyer_name: buyerName,
+          sale_date: saleDate,
+          payment_method: paymentMethod || undefined,
+          tracking_src: trackingSrc || undefined,
+          tracking_sck: trackingSck || undefined,
+          buyer_state: buyerState || undefined,
+          buyer_city: buyerCity || undefined,
+          buyer_country: buyerCountry || undefined,
+          utm_source: utmSource || undefined,
+          utm_medium: utmMedium || undefined,
+          utm_campaign: utmCampaign || undefined,
+          utm_term: utmTerm || undefined,
+          utm_content: utmContent || undefined,
+          payload: row,
+        });
       } catch (rowErr) {
         errors.push(`Row ${i + 1}: parse error`);
         skipped++;
       }
     }
 
+    console.log(`[import-csv] Parsed ${batch.length} valid rows, ${skipped} skipped`);
+
+    // Batch upsert in chunks of 200
+    const CHUNK_SIZE = 200;
+    for (let i = 0; i < batch.length; i += CHUNK_SIZE) {
+      const chunk = batch.slice(i, i + CHUNK_SIZE);
+      const { error: upsertError, count } = await supabase
+        .from("sales_events")
+        .upsert(chunk, { onConflict: "platform,external_id,project_id", count: "exact" });
+
+      if (upsertError) {
+        console.error(`[import-csv] Batch upsert error (rows ${i + 1}-${i + chunk.length}):`, upsertError.message);
+        errors.push(`Batch ${Math.floor(i / CHUNK_SIZE) + 1}: ${upsertError.message}`);
+        skipped += chunk.length;
+      } else {
+        imported += count || chunk.length;
+        console.log(`[import-csv] Batch ${Math.floor(i / CHUNK_SIZE) + 1}: upserted ${count || chunk.length} rows`);
+      }
+    }
+
+    console.log(`[import-csv] ✅ Import complete: ${imported} imported, ${skipped} skipped`);
+
     return new Response(
       JSON.stringify({ success: true, imported, skipped, errors: errors.slice(0, 10) }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    console.error("CSV import error:", err);
+    console.error("[import-csv] Fatal error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -237,10 +239,8 @@ function splitCSVLine(line: string, delimiter: string): string[] {
   return result;
 }
 
-// Parse Brazilian number format: "1.234,56" → 1234.56
 function parseBRNumber(value: string): number {
   if (!value || value === "(none)") return 0;
-  // If contains comma as decimal separator (BR format)
   if (value.includes(",") && value.includes(".")) {
     return parseFloat(value.replace(/\./g, "").replace(",", "."));
   }
@@ -260,19 +260,16 @@ function mapStatus(s: string): string {
 
 function parseDateFlexible(raw: string): string {
   if (!raw || !raw.trim()) return new Date().toISOString();
-  // Try DD/MM/YYYY HH:mm:ss (Brazilian format)
   const brMatch = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})$/);
   if (brMatch) {
     const [, day, month, year, hour, min, sec] = brMatch;
     return `${year}-${month}-${day}T${hour}:${min}:${sec}+00:00`;
   }
-  // Try DD/MM/YYYY (no time)
   const brDateOnly = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (brDateOnly) {
     const [, day, month, year] = brDateOnly;
     return `${year}-${month}-${day}T00:00:00+00:00`;
   }
-  // Already ISO or other parseable format
   const d = new Date(raw);
   if (!isNaN(d.getTime())) return d.toISOString();
   return new Date().toISOString();

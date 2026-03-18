@@ -824,11 +824,16 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
       formData.append("project_id", projectId);
       formData.append("platform", platform);
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 120000);
+      
       const res = await fetch(`${supabaseUrl}/functions/v1/import-csv`, {
         method: "POST",
         headers: { Authorization: `Bearer ${session?.access_token}` },
         body: formData,
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Import failed");
       
@@ -853,7 +858,11 @@ function WebhookTab({ projectId, platform }: { projectId: string; platform: "kiw
         });
       }
     } catch (err: any) {
-      toast({ title: "Erro na importação", description: err.message, variant: "destructive" });
+      if (err.name === "AbortError") {
+        toast({ title: "⏱️ Tempo esgotado", description: "A importação demorou muito. Tente com um arquivo menor ou aguarde e verifique se os dados foram importados.", variant: "destructive" });
+      } else {
+        toast({ title: "Erro na importação", description: err.message, variant: "destructive" });
+      }
     } finally {
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
