@@ -102,6 +102,7 @@ export function AppSidebar() {
         { title: "Configurações", url: `/admin/projects/${projectId}/config`, icon: Settings, visible: can("projects.edit") },
         { title: "Integrações", url: `/admin/projects/${projectId}/integrations`, icon: Plug, visible: can("integrations.manage") },
         { title: "Hub de Conectores", url: `/admin/projects/${projectId}/connectors`, icon: Zap, visible: can("integrations.manage") },
+        { title: "AG Sell", url: `/admin/projects/${projectId}/agsell`, icon: Rocket, visible: can("integrations.manage") },
       ].filter((item) => item.visible)
     : [];
 
