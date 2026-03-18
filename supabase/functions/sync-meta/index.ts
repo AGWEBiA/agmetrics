@@ -233,6 +233,7 @@ Deno.serve(async (req) => {
 
   const startTime = Date.now();
   let adsSynced = 0;
+  let project_id_for_log: string | null = null;
   try {
     // 1. Authenticate
     const auth = await authenticateRequest(req);
