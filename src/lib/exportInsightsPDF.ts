@@ -179,7 +179,7 @@ export function exportInsightsPDF(data: InsightsPDFData) {
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(99, 102, 241);
-      doc.text("Ações Recomendadas:", margin + 3, y);
+      doc.text("Acoes Recomendadas:", margin + 3, y);
       y += 5;
 
       doc.setFont("helvetica", "normal");
