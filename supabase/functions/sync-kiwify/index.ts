@@ -205,6 +205,8 @@ Deno.serve(async (req) => {
         break;
       }
 
+      const batch: any[] = [];
+
       for (const tx of transactions) {
         const productName = tx.product?.name || tx.Product?.product_name || tx.product_name || tx.offer?.name || "";
         const matchedProduct = registeredProducts.find(
@@ -244,60 +246,47 @@ Deno.serve(async (req) => {
         }
 
         const platformFee = Math.max(0, orderAmount - netValue);
-
-        // Extract tracking data from Kiwify API response
         const tracking = tx.tracking || {};
-        const utmSource = tracking.utm_source || tx.utm_source || "";
-        const utmMedium = tracking.utm_medium || tx.utm_medium || "";
-        const utmCampaign = tracking.utm_campaign || tx.utm_campaign || "";
-        const utmTerm = tracking.utm_term || tx.utm_term || "";
-        const utmContent = tracking.utm_content || tx.utm_content || "";
-        const trackingSrc = tracking.src || tx.src || "";
-        const trackingSck = tracking.sck || tx.sck || "";
-
-        // Extract buyer location
         const customer = tx.customer || {};
-        const buyerState = customer.state || customer.estado || "";
-        const buyerCity = customer.city || customer.cidade || "";
-        const buyerCountry = customer.country || customer.pais || "";
-        const paymentMethod = tx.payment_method || tx.pagamento || "";
 
-        const { error } = await supabase
+        batch.push({
+          project_id,
+          platform: "kiwify",
+          external_id: orderId,
+          product_name: productName,
+          product_type: matchedProduct.type || "main",
+          amount: netValue,
+          gross_amount: orderAmount,
+          platform_fee: platformFee,
+          status,
+          buyer_email: buyerEmail,
+          buyer_name: buyerName,
+          sale_date: createdAt,
+          payment_method: tx.payment_method || tx.pagamento || undefined,
+          buyer_state: customer.state || customer.estado || undefined,
+          buyer_city: customer.city || customer.cidade || undefined,
+          buyer_country: customer.country || customer.pais || undefined,
+          utm_source: tracking.utm_source || tx.utm_source || undefined,
+          utm_medium: tracking.utm_medium || tx.utm_medium || undefined,
+          utm_campaign: tracking.utm_campaign || tx.utm_campaign || undefined,
+          utm_term: tracking.utm_term || tx.utm_term || undefined,
+          utm_content: tracking.utm_content || tx.utm_content || undefined,
+          tracking_src: tracking.src || tx.src || undefined,
+          tracking_sck: tracking.sck || tx.sck || undefined,
+          payload: tx,
+        });
+      }
+
+      // Batch upsert to avoid timeout from individual calls
+      if (batch.length > 0) {
+        const { error, count } = await supabase
           .from("sales_events")
-          .upsert(
-            {
-              project_id,
-              platform: "kiwify",
-              external_id: orderId,
-              product_name: productName,
-              product_type: matchedProduct.type || "main",
-              amount: netValue,
-              gross_amount: orderAmount,
-              platform_fee: platformFee,
-              status,
-              buyer_email: buyerEmail,
-              buyer_name: buyerName,
-              sale_date: createdAt,
-              payment_method: paymentMethod || undefined,
-              buyer_state: buyerState || undefined,
-              buyer_city: buyerCity || undefined,
-              buyer_country: buyerCountry || undefined,
-              utm_source: utmSource || undefined,
-              utm_medium: utmMedium || undefined,
-              utm_campaign: utmCampaign || undefined,
-              utm_term: utmTerm || undefined,
-              utm_content: utmContent || undefined,
-              tracking_src: trackingSrc || undefined,
-              tracking_sck: trackingSck || undefined,
-              payload: tx,
-            },
-            { onConflict: "platform,external_id,project_id" }
-          );
+          .upsert(batch, { onConflict: "platform,external_id,project_id", count: "exact" });
 
         if (error) {
-          console.error("Upsert error:", error);
+          console.error("Batch upsert error:", error);
         } else {
-          imported++;
+          imported += count || batch.length;
         }
       }
 
