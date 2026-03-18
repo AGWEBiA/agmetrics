@@ -40,9 +40,13 @@ async function authenticateRequest(req: Request): Promise<{
     { global: { headers: { Authorization: authHeader } } }
   );
 
-  const claimsResult = await anonClient.auth.getClaims(token);
-  if (claimsResult.data?.claims) {
-    return { ok: true, userId: claimsResult.data.claims.sub, isInternalCron: false };
+  try {
+    const claimsResult = await (anonClient.auth as any).getClaims(token);
+    if (claimsResult?.data?.claims) {
+      return { ok: true, userId: claimsResult.data.claims.sub, isInternalCron: false };
+    }
+  } catch {
+    // getClaims not available in this SDK version, fall through to getUser
   }
 
   const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
