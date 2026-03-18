@@ -293,6 +293,63 @@ export type Database = {
           },
         ]
       }
+      integration_sync_logs: {
+        Row: {
+          accounts_synced: number | null
+          ads_synced: number | null
+          created_at: string
+          demographics_synced: number | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          metrics_synced: number | null
+          platform: string
+          project_id: string
+          status: string
+        }
+        Insert: {
+          accounts_synced?: number | null
+          ads_synced?: number | null
+          created_at?: string
+          demographics_synced?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          metrics_synced?: number | null
+          platform?: string
+          project_id: string
+          status?: string
+        }
+        Update: {
+          accounts_synced?: number | null
+          ads_synced?: number | null
+          created_at?: string
+          demographics_synced?: number | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          metrics_synced?: number | null
+          platform?: string
+          project_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_sync_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_sync_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_events: {
         Row: {
           ad_id: string | null
