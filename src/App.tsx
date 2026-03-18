@@ -29,6 +29,7 @@ import ScheduledReports from "./pages/ScheduledReports";
 import TemporalComparison from "./pages/TemporalComparison";
 import ConnectorHub from "./pages/ConnectorHub";
 import AGSellConfig from "./pages/AGSellConfig";
+import AIInsights from "./pages/AIInsights";
 import WorkspaceSettings from "./pages/WorkspaceSettings";
 import { PermissionGuard } from "./components/PermissionGuard";
 import Index from "./pages/Index";
