@@ -104,13 +104,13 @@ export function exportPixelPDF(data: PixelExportData) {
   addSpacer();
 
   // ── Section 4: Thank You ──
-  addText("4. Pixel de Página de Obrigado / Conversão", 13, { bold: true });
+  addText("4. Pixel de Pagina de Obrigado / Conversao", 13, { bold: true });
   addText(
-    "Use APENAS na página de obrigado ou confirmação de compra. Já inclui todo o rastreamento completo " +
-    "e dispara automaticamente o evento 'thank_you_page' para medir conversões.",
+    "Use APENAS na pagina de obrigado ou confirmacao de compra. Ja inclui todo o rastreamento completo " +
+    "e dispara automaticamente o evento 'thank_you_page' para medir conversoes.",
     10
   );
-  addText("Cole antes da tag </body> APENAS na página de obrigado:", 9, { color: [100, 100, 100] });
+  addText("Cole antes da tag </body> APENAS na pagina de obrigado:", 9, { color: [100, 100, 100] });
   addSpacer(2);
   addCode(data.thankYouSnippet);
   addSpacer();
