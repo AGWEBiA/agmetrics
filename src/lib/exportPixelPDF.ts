@@ -81,11 +81,11 @@ export function exportPixelPDF(data: PixelExportData) {
   // ── Section 2: Full ──
   addText("2. Pixel Completo (Recomendado)", 13, { bold: true });
   addText(
-    "Rastreia page views, cliques em botões e links, profundidade de scroll (25%, 50%, 75%, 100%) e movimentos do mouse para mapa de calor. " +
-    "Também permite enviar eventos customizados via AGMetrics.track().",
+    "Rastreia page views, cliques em botoes e links, profundidade de scroll (25%, 50%, 75%, 100%) e movimentos do mouse para mapa de calor. " +
+    "Tambem permite enviar eventos customizados via AGMetrics.track().",
     10
   );
-  addText("Cole antes da tag </body> em TODAS as páginas do site (exceto página de obrigado):", 9, { color: [100, 100, 100] });
+  addText("Cole antes da tag </body> em TODAS as paginas do site (exceto pagina de obrigado):", 9, { color: [100, 100, 100] });
   addSpacer(2);
   addCode(data.fullSnippet);
   addSpacer();
