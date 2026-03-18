@@ -161,7 +161,7 @@ export function exportInsightsPDF(data: InsightsPDFData) {
     doc.setTextColor(100, 100, 100);
     doc.text(`Impacto: ${impactLabels[ins.impact] || ins.impact}  |  Prioridade: ${priorityLabels[ins.priority] || ins.priority}`, margin + 3, y);
     if (ins.metric_reference) {
-      doc.text(`Métrica: ${ins.metric_reference}`, margin + 3, y + 4);
+      doc.text(`Metrica: ${ins.metric_reference}`, margin + 3, y + 4);
       y += 4;
     }
     y += 6;
