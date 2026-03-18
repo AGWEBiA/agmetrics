@@ -29,15 +29,15 @@ const categoryLabels: Record<string, string> = {
 };
 
 const impactLabels: Record<string, string> = {
-  alto: "🔴 Alto",
-  medio: "🟡 Médio",
-  baixo: "🟢 Baixo",
+  alto: "[!] Alto",
+  medio: "[~] Medio",
+  baixo: "[ok] Baixo",
 };
 
 const priorityLabels: Record<string, string> = {
-  urgente: "⚠️ Urgente",
-  importante: "⏰ Importante",
-  oportunidade: "⚡ Oportunidade",
+  urgente: "[!!] Urgente",
+  importante: "[!] Importante",
+  oportunidade: "[*] Oportunidade",
 };
 
 export function exportInsightsPDF(data: InsightsPDFData) {
