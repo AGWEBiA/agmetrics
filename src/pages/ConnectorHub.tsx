@@ -116,6 +116,17 @@ const CONNECTORS: ConnectorConfig[] = [
     color: "hsl(15, 90%, 50%)",
   },
   {
+    id: "agsell", name: "AG Sell", icon: "🚀",
+    description: "Automação de e-mails, WhatsApp, Instagram — importa métricas de leads, formulários e pipeline.",
+    category: "crm",
+    fields: [
+      { key: "api_key", label: "API Key", type: "password", placeholder: "ag_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" },
+      { key: "base_url", label: "Base URL (opcional)", type: "text", placeholder: "https://gmemxbfibakfpsjbsvyt.supabase.co/functions/v1/public-api" },
+    ],
+    docsUrl: "https://agsell.com.br",
+    color: "hsl(260, 70%, 55%)",
+  },
+  {
     id: "whatsapp", name: "WhatsApp (Evolution)", icon: "💬",
     description: "Evolution API — monitora grupos, membros e engajamento via WhatsApp.",
     category: "messaging",
@@ -149,6 +160,11 @@ function getExistingValues(project: any, connectorId: string, metaCreds: any, go
       return {
         client_id: project.hotmart_client_id || "",
         client_secret: project.hotmart_client_secret || "",
+      };
+    case "agsell":
+      return {
+        api_key: project.agsell_api_key || "",
+        base_url: project.agsell_base_url || "",
       };
     case "whatsapp":
       return {
@@ -218,6 +234,10 @@ export default function ConnectorHub() {
         case "hotmart":
           updates.hotmart_client_id = formData.client_id || null;
           updates.hotmart_client_secret = formData.client_secret || null;
+          break;
+        case "agsell":
+          updates.agsell_api_key = formData.api_key || null;
+          updates.agsell_base_url = formData.base_url || null;
           break;
         case "whatsapp":
           updates.evolution_api_url = formData.api_url || null;

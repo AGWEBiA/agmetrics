@@ -950,6 +950,8 @@ export type Database = {
       }
       projects: {
         Row: {
+          agsell_api_key: string | null
+          agsell_base_url: string | null
           budget: number | null
           cart_open_date: string | null
           created_at: string
@@ -984,6 +986,8 @@ export type Database = {
           view_token: string
         }
         Insert: {
+          agsell_api_key?: string | null
+          agsell_base_url?: string | null
           budget?: number | null
           cart_open_date?: string | null
           created_at?: string
@@ -1018,6 +1022,8 @@ export type Database = {
           view_token?: string
         }
         Update: {
+          agsell_api_key?: string | null
+          agsell_base_url?: string | null
           budget?: number | null
           cart_open_date?: string | null
           created_at?: string
