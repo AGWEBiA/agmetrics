@@ -304,7 +304,7 @@ export default function ConnectorHub() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
           <Zap className="h-6 w-6 text-primary" />
           Hub de Conectores
         </h1>

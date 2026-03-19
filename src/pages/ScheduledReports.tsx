@@ -242,7 +242,7 @@ export default function ScheduledReports() {
           <div className="grid gap-4">
             {reports.map((r) => (
               <Card key={r.id} className={!r.is_active ? "opacity-60" : ""}>
-                <CardContent className="flex items-center justify-between py-4">
+                <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{r.name}</span>
