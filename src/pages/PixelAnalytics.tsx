@@ -459,13 +459,15 @@ export default function PixelAnalytics() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="overflow-x-auto flex-nowrap">
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="sources">Fontes</TabsTrigger>
-          <TabsTrigger value="campaigns">Campanhas</TabsTrigger>
-          <TabsTrigger value="pages">Páginas</TabsTrigger>
-          <TabsTrigger value="funnel">Funil</TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 styled-scrollbar">
+          <TabsList className="inline-flex w-max min-w-full sm:w-auto sm:min-w-0 gap-0.5">
+            <TabsTrigger value="overview" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Visão Geral</TabsTrigger>
+            <TabsTrigger value="sources" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Fontes</TabsTrigger>
+            <TabsTrigger value="campaigns" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Campanhas</TabsTrigger>
+            <TabsTrigger value="pages" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Páginas</TabsTrigger>
+            <TabsTrigger value="funnel" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Funil</TabsTrigger>
+          </TabsList>
+        </div>
 
         <AnimatedTabContent value="overview" className="space-y-4">
           <AnimatedCard index={0}>

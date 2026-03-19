@@ -42,19 +42,21 @@ export default function ProjectConfig() {
       </div>
 
       <Tabs defaultValue="general">
-        <TabsList className="w-full sm:w-auto flex overflow-x-auto no-scrollbar">
-          <TabsTrigger value="general" className="text-xs sm:text-sm whitespace-nowrap">Geral</TabsTrigger>
-          <TabsTrigger value="meta" className="text-xs sm:text-sm whitespace-nowrap">Meta Ads</TabsTrigger>
-          <TabsTrigger value="google" className="text-xs sm:text-sm whitespace-nowrap">Google Ads</TabsTrigger>
-          <TabsTrigger value="kiwify" className="text-xs sm:text-sm whitespace-nowrap">Kiwify</TabsTrigger>
-          <TabsTrigger value="hotmart" className="text-xs sm:text-sm whitespace-nowrap">Hotmart</TabsTrigger>
-          <TabsTrigger value="whatsapp" className="text-xs sm:text-sm whitespace-nowrap">WhatsApp</TabsTrigger>
-          <TabsTrigger value="products" className="text-xs sm:text-sm whitespace-nowrap">Produtos</TabsTrigger>
-          <TabsTrigger value="goals" className="text-xs sm:text-sm whitespace-nowrap">Metas</TabsTrigger>
-          <TabsTrigger value="investments" className="text-xs sm:text-sm whitespace-nowrap">Investimentos</TabsTrigger>
-          <TabsTrigger value="pixel" className="text-xs sm:text-sm whitespace-nowrap">Pixel</TabsTrigger>
-          <TabsTrigger value="custom-api" className="text-xs sm:text-sm whitespace-nowrap">API Customizada</TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 styled-scrollbar">
+          <TabsList className="inline-flex w-max min-w-full sm:w-auto sm:min-w-0 gap-0.5">
+            <TabsTrigger value="general" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Geral</TabsTrigger>
+            <TabsTrigger value="meta" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Meta Ads</TabsTrigger>
+            <TabsTrigger value="google" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Google Ads</TabsTrigger>
+            <TabsTrigger value="kiwify" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Kiwify</TabsTrigger>
+            <TabsTrigger value="hotmart" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Hotmart</TabsTrigger>
+            <TabsTrigger value="whatsapp" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">WhatsApp</TabsTrigger>
+            <TabsTrigger value="products" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Produtos</TabsTrigger>
+            <TabsTrigger value="goals" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Metas</TabsTrigger>
+            <TabsTrigger value="investments" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Investimentos</TabsTrigger>
+            <TabsTrigger value="pixel" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Pixel</TabsTrigger>
+            <TabsTrigger value="custom-api" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">API Customizada</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="general">
           <GeneralTab projectId={projectId!} />

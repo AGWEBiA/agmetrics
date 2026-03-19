@@ -671,17 +671,19 @@ export default function BehaviorAnalytics() {
       </div>
 
       <Tabs defaultValue="heatmap">
-        <TabsList className="flex overflow-x-auto no-scrollbar">
-          <TabsTrigger value="heatmap" className="text-xs whitespace-nowrap">Mapa de Calor</TabsTrigger>
-          <TabsTrigger value="clicks" className="text-xs whitespace-nowrap">Cliques</TabsTrigger>
-          <TabsTrigger value="scroll" className="text-xs whitespace-nowrap">Scroll</TabsTrigger>
-          <TabsTrigger value="compare" className="text-xs gap-1 whitespace-nowrap">
-            <GitCompareArrows className="h-3 w-3" /> Comparar
-          </TabsTrigger>
-          <TabsTrigger value="sessions" className="text-xs gap-1 whitespace-nowrap">
-            <Video className="h-3 w-3" /> Sessões
-          </TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 styled-scrollbar">
+          <TabsList className="inline-flex w-max min-w-full sm:w-auto sm:min-w-0 gap-0.5">
+            <TabsTrigger value="heatmap" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Mapa de Calor</TabsTrigger>
+            <TabsTrigger value="clicks" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Cliques</TabsTrigger>
+            <TabsTrigger value="scroll" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Scroll</TabsTrigger>
+            <TabsTrigger value="compare" className="text-[11px] sm:text-sm gap-1 whitespace-nowrap px-2.5 sm:px-3">
+              <GitCompareArrows className="h-3 w-3" /> Comparar
+            </TabsTrigger>
+            <TabsTrigger value="sessions" className="text-[11px] sm:text-sm gap-1 whitespace-nowrap px-2.5 sm:px-3">
+              <Video className="h-3 w-3" /> Sessões
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* ── Heatmap Tab ── */}
         <AnimatedTabContent value="heatmap" className="mt-4">
