@@ -512,13 +512,15 @@ export function TrackingTab({ m, project }: TrackingTabProps) {
   return (
     <div className="space-y-6">
       <Tabs defaultValue={hasMetaData ? "meta" : "google"}>
-        <TabsList className="w-full sm:w-auto flex overflow-x-auto no-scrollbar">
-          {hasMetaData && <TabsTrigger value="meta" className="whitespace-nowrap text-xs sm:text-sm">Meta Ads</TabsTrigger>}
-          {hasGoogleData && <TabsTrigger value="google" className="whitespace-nowrap text-xs sm:text-sm">Google Ads</TabsTrigger>}
-          {m.salesCount > 0 && <TabsTrigger value="revenue" className="whitespace-nowrap text-xs sm:text-sm">Faturamento</TabsTrigger>}
-          {hasMetaData && <TabsTrigger value="top_ads" className="whitespace-nowrap text-xs sm:text-sm">Melhores Anúncios</TabsTrigger>}
-          <TabsTrigger value="demographics" className="whitespace-nowrap text-xs sm:text-sm">Demográficos</TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 styled-scrollbar">
+          <TabsList className="inline-flex w-max min-w-full sm:w-auto sm:min-w-0 gap-0.5">
+            {hasMetaData && <TabsTrigger value="meta" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Meta Ads</TabsTrigger>}
+            {hasGoogleData && <TabsTrigger value="google" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Google Ads</TabsTrigger>}
+            {m.salesCount > 0 && <TabsTrigger value="revenue" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Faturamento</TabsTrigger>}
+            {hasMetaData && <TabsTrigger value="top_ads" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Melhores Anúncios</TabsTrigger>}
+            <TabsTrigger value="demographics" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Demográficos</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* ========== META ADS ========== */}
         {hasMetaData && (

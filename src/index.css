@@ -119,6 +119,25 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Styled thin horizontal scrollbar for tab menus */
+  .styled-scrollbar::-webkit-scrollbar {
+    height: 3px;
+  }
+  .styled-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .styled-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 9999px;
+  }
+  .styled-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+  .styled-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
 }
 
 /* ── Recharts global tooltip & legend styling ── */

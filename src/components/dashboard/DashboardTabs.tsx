@@ -22,7 +22,7 @@ export function DashboardTabs({ m, project, overviewContent }: DashboardTabsProp
 
   return (
     <Tabs defaultValue="overview">
-      <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
+      <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 styled-scrollbar">
         <TabsList className="inline-flex w-max min-w-full sm:w-auto sm:min-w-0 gap-0.5">
           <TabsTrigger value="overview" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Visão Geral</TabsTrigger>
           {(m.totalLeads > 0 || m.totalInvestment > 0) && (
