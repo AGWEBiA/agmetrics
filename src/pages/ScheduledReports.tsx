@@ -131,14 +131,15 @@ export default function ScheduledReports() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Relatórios Agendados</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Relatórios Agendados</h1>
           <p className="text-sm text-muted-foreground">Configure envios automáticos e exporte PDFs</p>
         </div>
-        <Button onClick={handleExportPDF} disabled={metrics.isLoading} className="gap-2">
+        <Button onClick={handleExportPDF} disabled={metrics.isLoading} className="gap-2 w-full sm:w-auto">
           <FileDown className="h-4 w-4" />
-          Exportar PDF Agora
+          <span className="hidden sm:inline">Exportar PDF Agora</span>
+          <span className="sm:hidden">Exportar PDF</span>
         </Button>
       </div>
 
@@ -241,7 +242,7 @@ export default function ScheduledReports() {
           <div className="grid gap-4">
             {reports.map((r) => (
               <Card key={r.id} className={!r.is_active ? "opacity-60" : ""}>
-                <CardContent className="flex items-center justify-between py-4">
+                <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{r.name}</span>

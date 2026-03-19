@@ -205,12 +205,12 @@ export default function IntegrationStatus() {
 
   return (
     <AnimatedPage className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Status das Integrações</h1>
-          <p className="text-sm text-muted-foreground">Monitore o status e última sincronização de cada plataforma</p>
+          <p className="text-sm text-muted-foreground">Monitore o status e última sincronização</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => navigate(`/admin/projects/${projectId}/dashboard`)}>
+        <Button variant="outline" size="sm" onClick={() => navigate(`/admin/projects/${projectId}/dashboard`)} className="w-full sm:w-auto">
           Voltar ao Dashboard
         </Button>
       </div>
@@ -330,44 +330,70 @@ export default function IntegrationStatus() {
 
               {/* Recent log table */}
               {syncLogs && syncLogs.length > 0 && (
-                <div className="rounded-lg border border-border/40 overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-muted/30 text-muted-foreground">
-                        <th className="text-left p-2 font-medium">Data</th>
-                        <th className="text-left p-2 font-medium">Status</th>
-                        <th className="text-right p-2 font-medium">Anúncios</th>
-                        <th className="text-right p-2 font-medium">Métricas</th>
-                        <th className="text-right p-2 font-medium">Duração</th>
-                        <th className="text-left p-2 font-medium">Detalhes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {syncLogs.map((log: any) => (
-                        <tr key={log.id} className="border-t border-border/20">
-                          <td className="p-2 whitespace-nowrap">
-                            {format(new Date(log.created_at), "dd/MM HH:mm:ss")}
-                          </td>
-                          <td className="p-2">
-                            {log.status === "success" ? (
-                              <Badge variant="outline" className="text-success border-success/30 text-[10px]">OK</Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-destructive border-destructive/30 text-[10px]">Erro</Badge>
-                            )}
-                          </td>
-                          <td className="p-2 text-right font-medium">{log.ads_synced || 0}</td>
-                          <td className="p-2 text-right font-medium">{log.metrics_synced || 0}</td>
-                          <td className="p-2 text-right text-muted-foreground">
-                            {log.duration_ms ? `${(log.duration_ms / 1000).toFixed(1)}s` : "—"}
-                          </td>
-                          <td className="p-2 text-muted-foreground max-w-[200px] truncate">
-                            {log.status === "error" ? log.error_message : `${log.accounts_synced || 0} contas`}
-                          </td>
+                <>
+                  {/* Desktop table */}
+                  <div className="hidden sm:block rounded-lg border border-border/40 overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-muted/30 text-muted-foreground">
+                          <th className="text-left p-2 font-medium">Data</th>
+                          <th className="text-left p-2 font-medium">Status</th>
+                          <th className="text-right p-2 font-medium">Anúncios</th>
+                          <th className="text-right p-2 font-medium">Métricas</th>
+                          <th className="text-right p-2 font-medium">Duração</th>
+                          <th className="text-left p-2 font-medium">Detalhes</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {syncLogs.map((log: any) => (
+                          <tr key={log.id} className="border-t border-border/20">
+                            <td className="p-2 whitespace-nowrap">
+                              {format(new Date(log.created_at), "dd/MM HH:mm:ss")}
+                            </td>
+                            <td className="p-2">
+                              {log.status === "success" ? (
+                                <Badge variant="outline" className="text-success border-success/30 text-[10px]">OK</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-destructive border-destructive/30 text-[10px]">Erro</Badge>
+                              )}
+                            </td>
+                            <td className="p-2 text-right font-medium">{log.ads_synced || 0}</td>
+                            <td className="p-2 text-right font-medium">{log.metrics_synced || 0}</td>
+                            <td className="p-2 text-right text-muted-foreground">
+                              {log.duration_ms ? `${(log.duration_ms / 1000).toFixed(1)}s` : "—"}
+                            </td>
+                            <td className="p-2 text-muted-foreground max-w-[200px] truncate">
+                              {log.status === "error" ? log.error_message : `${log.accounts_synced || 0} contas`}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Mobile cards */}
+                  <div className="sm:hidden space-y-2">
+                    {syncLogs.map((log: any) => (
+                      <div key={log.id} className="rounded-lg border border-border/40 p-3 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">{format(new Date(log.created_at), "dd/MM HH:mm:ss")}</span>
+                          {log.status === "success" ? (
+                            <Badge variant="outline" className="text-success border-success/30 text-[10px]">OK</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-destructive border-destructive/30 text-[10px]">Erro</Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs">
+                          <span className="text-muted-foreground">Anúncios: <strong className="text-foreground">{log.ads_synced || 0}</strong></span>
+                          <span className="text-muted-foreground">Métricas: <strong className="text-foreground">{log.metrics_synced || 0}</strong></span>
+                          <span className="text-muted-foreground">{log.duration_ms ? `${(log.duration_ms / 1000).toFixed(1)}s` : ""}</span>
+                        </div>
+                        {log.status === "error" && log.error_message && (
+                          <p className="text-[10px] text-destructive/70 line-clamp-2">{log.error_message}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

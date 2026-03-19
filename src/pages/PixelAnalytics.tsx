@@ -557,24 +557,39 @@ export default function PixelAnalytics() {
                 {campaignData.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Sem dados de campanha</p>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Campanha</TableHead>
-                        <TableHead className="text-right">Page Views</TableHead>
-                        <TableHead className="text-right">Visitantes</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  <>
+                    <div className="hidden sm:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Campanha</TableHead>
+                            <TableHead className="text-right">Page Views</TableHead>
+                            <TableHead className="text-right">Visitantes</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {campaignData.map((c) => (
+                            <TableRow key={c.campaign}>
+                              <TableCell className="font-medium text-sm max-w-[250px] truncate">{c.campaign}</TableCell>
+                              <TableCell className="text-right">{formatNumber(c.views)}</TableCell>
+                              <TableCell className="text-right">{formatNumber(c.visitors)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <div className="sm:hidden space-y-2">
                       {campaignData.map((c) => (
-                        <TableRow key={c.campaign}>
-                          <TableCell className="font-medium text-sm max-w-[250px] truncate">{c.campaign}</TableCell>
-                          <TableCell className="text-right">{formatNumber(c.views)}</TableCell>
-                          <TableCell className="text-right">{formatNumber(c.visitors)}</TableCell>
-                        </TableRow>
+                        <div key={c.campaign} className="rounded-lg border p-3 space-y-1">
+                          <p className="text-sm font-medium truncate">{c.campaign}</p>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Views: <strong className="text-foreground">{formatNumber(c.views)}</strong></span>
+                            <span>Visitantes: <strong className="text-foreground">{formatNumber(c.visitors)}</strong></span>
+                          </div>
+                        </div>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -593,22 +608,34 @@ export default function PixelAnalytics() {
                 {topPages.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Sem dados</p>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Página</TableHead>
-                        <TableHead className="text-right">Views</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  <>
+                    <div className="hidden sm:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Página</TableHead>
+                            <TableHead className="text-right">Views</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {topPages.map((p) => (
+                            <TableRow key={p.page}>
+                              <TableCell className="font-mono text-sm truncate max-w-[300px]">{p.page}</TableCell>
+                              <TableCell className="text-right font-medium">{formatNumber(p.views)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <div className="sm:hidden space-y-2">
                       {topPages.map((p) => (
-                        <TableRow key={p.page}>
-                          <TableCell className="font-mono text-sm truncate max-w-[300px]">{p.page}</TableCell>
-                          <TableCell className="text-right font-medium">{formatNumber(p.views)}</TableCell>
-                        </TableRow>
+                        <div key={p.page} className="flex items-center justify-between rounded-lg border p-3">
+                          <span className="font-mono text-xs truncate max-w-[70%]">{p.page}</span>
+                          <span className="text-sm font-bold shrink-0 ml-2">{formatNumber(p.views)}</span>
+                        </div>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>

@@ -109,16 +109,16 @@ export default function TemporalComparison() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
             <TrendingUp className="h-6 w-6" />
             Comparação Temporal
           </h1>
           <p className="text-sm text-muted-foreground">Compare o desempenho entre períodos</p>
         </div>
         <Select value={mode} onValueChange={(v: CompareMode) => setMode(v)}>
-          <SelectTrigger className="w-[220px]">
+          <SelectTrigger className="w-full sm:w-[220px]">
             <Calendar className="h-4 w-4 mr-2" />
             <SelectValue />
           </SelectTrigger>
