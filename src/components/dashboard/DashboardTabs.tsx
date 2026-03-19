@@ -22,33 +22,35 @@ export function DashboardTabs({ m, project, overviewContent }: DashboardTabsProp
 
   return (
     <Tabs defaultValue="overview">
-      <TabsList className="w-full sm:w-auto flex overflow-x-auto no-scrollbar">
-        <TabsTrigger value="overview" className="text-xs sm:text-sm whitespace-nowrap">Visão Geral</TabsTrigger>
-        {(m.totalLeads > 0 || m.totalInvestment > 0) && (
-          <TabsTrigger value="acquisition" className="text-xs sm:text-sm whitespace-nowrap">Captação</TabsTrigger>
-        )}
-        {m.totalSalesCount > 0 && (
-          <TabsTrigger value="sales" className="text-xs sm:text-sm whitespace-nowrap">Vendas</TabsTrigger>
-        )}
-        {m.salesCount > 0 && (
-          <TabsTrigger value="timeline" className="text-xs sm:text-sm whitespace-nowrap">Temporal</TabsTrigger>
-        )}
-        {(hasMeta || hasGoogle) && (
-          <TabsTrigger value="tracking" className="text-xs sm:text-sm whitespace-nowrap">Rastreamento</TabsTrigger>
-        )}
-        {(m.totalInvestment > 0 && m.salesCount > 0) && (
-          <TabsTrigger value="ads-vendas" className="text-xs sm:text-sm whitespace-nowrap">Ads × Vendas</TabsTrigger>
-        )}
-        {m.salesCount > 0 && (
-          <TabsTrigger value="sales-tracking" className="text-xs sm:text-sm whitespace-nowrap">Vendas × Tracking</TabsTrigger>
-        )}
-        {m.salesCount > 0 && (
-          <TabsTrigger value="buyer-profile" className="text-xs sm:text-sm whitespace-nowrap">Perfil Comprador</TabsTrigger>
-        )}
-        {m.refundedSalesCount > 0 && (
-          <TabsTrigger value="refunds" className="text-xs sm:text-sm whitespace-nowrap">Reembolsos</TabsTrigger>
-        )}
-      </TabsList>
+      <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
+        <TabsList className="inline-flex w-max min-w-full sm:w-auto sm:min-w-0 gap-0.5">
+          <TabsTrigger value="overview" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Visão Geral</TabsTrigger>
+          {(m.totalLeads > 0 || m.totalInvestment > 0) && (
+            <TabsTrigger value="acquisition" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Captação</TabsTrigger>
+          )}
+          {m.totalSalesCount > 0 && (
+            <TabsTrigger value="sales" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Vendas</TabsTrigger>
+          )}
+          {m.salesCount > 0 && (
+            <TabsTrigger value="timeline" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Temporal</TabsTrigger>
+          )}
+          {(hasMeta || hasGoogle) && (
+            <TabsTrigger value="tracking" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Rastreamento</TabsTrigger>
+          )}
+          {(m.totalInvestment > 0 && m.salesCount > 0) && (
+            <TabsTrigger value="ads-vendas" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Ads × Vendas</TabsTrigger>
+          )}
+          {m.salesCount > 0 && (
+            <TabsTrigger value="sales-tracking" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Vendas × Track</TabsTrigger>
+          )}
+          {m.salesCount > 0 && (
+            <TabsTrigger value="buyer-profile" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Perfil</TabsTrigger>
+          )}
+          {m.refundedSalesCount > 0 && (
+            <TabsTrigger value="refunds" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Reembolsos</TabsTrigger>
+          )}
+        </TabsList>
+      </div>
 
       <AnimatedTabContent value="overview" className="space-y-6 pt-4">
         {overviewContent}
