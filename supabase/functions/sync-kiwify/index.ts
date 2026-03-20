@@ -196,12 +196,10 @@ Deno.serve(async (req) => {
 
     while (hasMore) {
       const url = `https://public-api.kiwify.com/v1/sales?start_date=${startDate}&end_date=${endDate}&page_number=${page}&page_size=100`;
-      const res = await fetch(url, {
-        headers: {
-          "Authorization": `Bearer ${bearerToken}`,
-          "x-kiwify-account-id": accountId,
-          "Content-Type": "application/json",
-        },
+      const res = await fetchWithRetry(url, {
+        "Authorization": `Bearer ${bearerToken}`,
+        "x-kiwify-account-id": accountId,
+        "Content-Type": "application/json",
       });
 
       if (!res.ok) {
