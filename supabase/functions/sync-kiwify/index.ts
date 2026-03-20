@@ -20,6 +20,26 @@ async function getOAuthToken(clientId: string, clientSecret: string): Promise<st
   return (await res.json()).access_token;
 }
 
+/** Sleep helper */
+function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+/** Fetch with retry on 429 */
+async function fetchWithRetry(url: string, headers: Record<string, string>, retries = 3): Promise<Response> {
+  for (let i = 0; i < retries; i++) {
+    const res = await fetch(url, { headers });
+    if (res.status === 429) {
+      const wait = Math.min(2000 * Math.pow(2, i), 10000);
+      console.warn(`[sync-kiwify] 429 rate limited, waiting ${wait}ms (attempt ${i + 1}/${retries})`);
+      await res.text(); // consume body
+      await sleep(wait);
+      continue;
+    }
+    return res;
+  }
+  // Last attempt
+  return fetch(url, { headers });
+}
+
 /** Fetch individual sale detail to get tracking data */
 async function fetchSaleDetail(
   saleId: string,
@@ -27,26 +47,27 @@ async function fetchSaleDetail(
   accountId: string
 ): Promise<Record<string, any> | null> {
   try {
-    const res = await fetch(`https://public-api.kiwify.com/v1/sales/${saleId}`, {
-      headers: {
-        "Authorization": `Bearer ${bearerToken}`,
-        "x-kiwify-account-id": accountId,
-        "Content-Type": "application/json",
-      },
+    const res = await fetchWithRetry(`https://public-api.kiwify.com/v1/sales/${saleId}`, {
+      "Authorization": `Bearer ${bearerToken}`,
+      "x-kiwify-account-id": accountId,
+      "Content-Type": "application/json",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      await res.text();
+      return null;
+    }
     return await res.json();
   } catch {
     return null;
   }
 }
 
-/** Fetch details for a batch of sale IDs concurrently */
+/** Fetch details for a batch of sale IDs with low concurrency to avoid rate limits */
 async function fetchDetailsBatch(
   saleIds: string[],
   bearerToken: string,
   accountId: string,
-  concurrency = 5
+  concurrency = 3
 ): Promise<Map<string, Record<string, any>>> {
   const results = new Map<string, Record<string, any>>();
   for (let i = 0; i < saleIds.length; i += concurrency) {
@@ -57,6 +78,8 @@ async function fetchDetailsBatch(
     chunk.forEach((id, idx) => {
       if (details[idx]) results.set(id, details[idx]!);
     });
+    // Small delay between batches to respect rate limits
+    if (i + concurrency < saleIds.length) await sleep(300);
   }
   return results;
 }
@@ -173,12 +196,10 @@ Deno.serve(async (req) => {
 
     while (hasMore) {
       const url = `https://public-api.kiwify.com/v1/sales?start_date=${startDate}&end_date=${endDate}&page_number=${page}&page_size=100`;
-      const res = await fetch(url, {
-        headers: {
-          "Authorization": `Bearer ${bearerToken}`,
-          "x-kiwify-account-id": accountId,
-          "Content-Type": "application/json",
-        },
+      const res = await fetchWithRetry(url, {
+        "Authorization": `Bearer ${bearerToken}`,
+        "x-kiwify-account-id": accountId,
+        "Content-Type": "application/json",
       });
 
       if (!res.ok) {
