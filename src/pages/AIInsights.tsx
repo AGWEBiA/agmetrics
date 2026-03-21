@@ -33,9 +33,15 @@ import {
   FileDown,
   History,
   CalendarDays,
+  RotateCcw,
+  Palette,
+  MapPin,
+  Timer,
+  MessageCircle,
+  Mail,
 } from "lucide-react";
 
-type InsightCategory = "vendas" | "anuncios" | "funil" | "leads" | "financeiro" | "tracking" | "produtos";
+type InsightCategory = "vendas" | "anuncios" | "funil" | "leads" | "financeiro" | "tracking" | "produtos" | "recompra" | "reembolsos" | "criativos" | "geografico" | "temporal" | "comunidade" | "email";
 type Impact = "alto" | "medio" | "baixo";
 type Priority = "urgente" | "importante" | "oportunidade";
 
@@ -71,6 +77,13 @@ const categoryConfig: Record<InsightCategory, { label: string; icon: React.Eleme
   financeiro: { label: "Financeiro", icon: DollarSign, color: "text-green-400" },
   tracking: { label: "Tracking", icon: Crosshair, color: "text-cyan-400" },
   produtos: { label: "Produtos", icon: Target, color: "text-pink-400" },
+  recompra: { label: "Recompra/LTV", icon: RotateCcw, color: "text-violet-400" },
+  reembolsos: { label: "Reembolsos", icon: TrendingUp, color: "text-red-400" },
+  criativos: { label: "Fadiga Criativos", icon: Palette, color: "text-orange-400" },
+  geografico: { label: "Geográfico", icon: MapPin, color: "text-teal-400" },
+  temporal: { label: "Temporal", icon: Timer, color: "text-indigo-400" },
+  comunidade: { label: "Comunidade", icon: MessageCircle, color: "text-lime-400" },
+  email: { label: "E-mail", icon: Mail, color: "text-sky-400" },
 };
 
 const impactConfig: Record<Impact, { label: string; variant: "default" | "secondary" | "outline" }> = {
