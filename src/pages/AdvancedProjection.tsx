@@ -340,18 +340,18 @@ export default function AdvancedProjection() {
 
                 {/* Tabs for all analyses */}
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <ScrollArea className="w-full">
-                    <TabsList className="w-full justify-start gap-1 bg-muted/50 p-1">
-                      <TabsTrigger value="overview" className="text-xs gap-1.5"><BarChart3 className="h-3 w-3" />Cenários</TabsTrigger>
-                      <TabsTrigger value="cashflow" className="text-xs gap-1.5"><Wallet className="h-3 w-3" />Fluxo de Caixa</TabsTrigger>
-                      <TabsTrigger value="whatif" className="text-xs gap-1.5"><FlaskConical className="h-3 w-3" />What-If</TabsTrigger>
-                      <TabsTrigger value="growth" className="text-xs gap-1.5"><TrendingUp className="h-3 w-3" />Crescimento</TabsTrigger>
-                      <TabsTrigger value="goals" className="text-xs gap-1.5"><Target className="h-3 w-3" />Metas</TabsTrigger>
-                      <TabsTrigger value="roi" className="text-xs gap-1.5"><PiggyBank className="h-3 w-3" />ROI</TabsTrigger>
-                      <TabsTrigger value="seasonality" className="text-xs gap-1.5"><Calendar className="h-3 w-3" />Sazonalidade</TabsTrigger>
-                      <TabsTrigger value="ai" className="text-xs gap-1.5"><Sparkles className="h-3 w-3" />IA</TabsTrigger>
+                  <div className="w-full overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+                    <TabsList className="inline-flex w-max min-w-full gap-1 bg-muted/50 p-1">
+                      <TabsTrigger value="overview" className="text-xs gap-1.5 whitespace-nowrap"><BarChart3 className="h-3 w-3" />Cenários</TabsTrigger>
+                      <TabsTrigger value="cashflow" className="text-xs gap-1.5 whitespace-nowrap"><Wallet className="h-3 w-3" />Fluxo de Caixa</TabsTrigger>
+                      <TabsTrigger value="whatif" className="text-xs gap-1.5 whitespace-nowrap"><FlaskConical className="h-3 w-3" />What-If</TabsTrigger>
+                      <TabsTrigger value="growth" className="text-xs gap-1.5 whitespace-nowrap"><TrendingUp className="h-3 w-3" />Crescimento</TabsTrigger>
+                      <TabsTrigger value="goals" className="text-xs gap-1.5 whitespace-nowrap"><Target className="h-3 w-3" />Metas</TabsTrigger>
+                      <TabsTrigger value="roi" className="text-xs gap-1.5 whitespace-nowrap"><PiggyBank className="h-3 w-3" />ROI</TabsTrigger>
+                      <TabsTrigger value="seasonality" className="text-xs gap-1.5 whitespace-nowrap"><Calendar className="h-3 w-3" />Sazonalidade</TabsTrigger>
+                      <TabsTrigger value="ai" className="text-xs gap-1.5 whitespace-nowrap"><Sparkles className="h-3 w-3" />IA</TabsTrigger>
                     </TabsList>
-                  </ScrollArea>
+                  </div>
 
                   <TabsContent value="overview" className="space-y-4 mt-4">
                     {/* Scenario Comparison */}
