@@ -34,6 +34,7 @@ import WorkspaceSettings from "./pages/WorkspaceSettings";
 import AdvancedProjection from "./pages/AdvancedProjection";
 import { PermissionGuard } from "./components/PermissionGuard";
 import Index from "./pages/Index";
+import Presentation from "./pages/Presentation";
 
 const queryClient = new QueryClient();
 
@@ -81,6 +82,7 @@ const App = () => (
               <Route path="guide" element={<Guide />} />
             </Route>
             <Route path="/" element={<Index />} />
+            <Route path="/apresentacao" element={<Presentation />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
