@@ -142,10 +142,21 @@ export default function AdvancedProjection() {
                 Selecione os Projetos
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <ScrollArea className="max-h-48">
-                <div className="space-y-2">
-                  {projects?.map(p => (
+            <CardContent className="space-y-3">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar projeto..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="pl-8 h-8 text-sm"
+                />
+              </div>
+              <ScrollArea className="h-52">
+                <div className="space-y-1 pr-3">
+                  {(projects || [])
+                    .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .map(p => (
                     <label
                       key={p.id}
                       className="flex items-center gap-2 p-2 rounded-md hover:bg-accent/50 cursor-pointer transition-colors"
@@ -160,11 +171,14 @@ export default function AdvancedProjection() {
                       )}
                     </label>
                   ))}
-                  {!projects?.length && (
+                  {projects && projects.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
                     <p className="text-xs text-muted-foreground text-center py-4">Nenhum projeto encontrado</p>
                   )}
                 </div>
               </ScrollArea>
+              {selectedProjectIds.length > 0 && (
+                <p className="text-[11px] text-muted-foreground">{selectedProjectIds.length} projeto(s) selecionado(s)</p>
+              )}
             </CardContent>
           </Card>
 
