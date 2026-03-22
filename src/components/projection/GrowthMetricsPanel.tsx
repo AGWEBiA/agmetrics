@@ -73,13 +73,13 @@ export function GrowthMetricsPanel({ historicalData, simulation, projectionDays 
             <CardTitle className="text-sm font-semibold">Receita Projetada por Mês</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-48">
+            <div className="h-40 sm:h-48">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={metrics.projectedMonthlyRevenue}>
+                <BarChart data={metrics.projectedMonthlyRevenue} margin={{ left: -10, right: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                  <XAxis dataKey="month" tick={{ fontSize: 9 }} interval={0} />
+                  <YAxis tick={{ fontSize: 9 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} width={40} />
+                  <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
                   <Bar dataKey="revenue" name="Receita" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} fillOpacity={0.8} />
                 </BarChart>
               </ResponsiveContainer>

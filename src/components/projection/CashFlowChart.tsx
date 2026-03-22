@@ -41,17 +41,17 @@ export function CashFlowChart({ params }: { params: SimulationParams }) {
         )}
       </CardHeader>
       <CardContent>
-        <div className="h-64">
+        <div className="h-48 sm:h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={sampled}>
+            <AreaChart data={sampled} margin={{ left: -10, right: 5 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-              <XAxis dataKey="label" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-              <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+              <XAxis dataKey="label" tick={{ fontSize: 9 }} interval="preserveStartEnd" />
+              <YAxis tick={{ fontSize: 9 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} width={40} />
+              <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
               <Area type="monotone" dataKey="revenueAccum" name="Receita Acum." fill="hsl(var(--primary))" fillOpacity={0.15} stroke="hsl(var(--primary))" />
               <Area type="monotone" dataKey="costAccum" name="Custo Acum." fill="hsl(var(--destructive))" fillOpacity={0.1} stroke="hsl(var(--destructive))" strokeDasharray="4 4" />
               <Area type="monotone" dataKey="profit" name="Lucro" fill="hsl(142 71% 45%)" fillOpacity={0.1} stroke="hsl(142 71% 45%)" />
-              {breakEvenDay && <ReferenceLine x={`Dia ${breakEvenDay}`} stroke="hsl(142 71% 45%)" strokeDasharray="3 3" label={{ value: "Break-even", fontSize: 10 }} />}
+              {breakEvenDay && <ReferenceLine x={`Dia ${breakEvenDay}`} stroke="hsl(142 71% 45%)" strokeDasharray="3 3" label={{ value: "Break-even", fontSize: 9 }} />}
             </AreaChart>
           </ResponsiveContainer>
         </div>

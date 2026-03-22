@@ -62,13 +62,13 @@ export function ROIOptimizationPanel({ params, simulation, historicalData }: {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-48">
+          <div className="h-40 sm:h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={budgetAllocations}>
+              <BarChart data={budgetAllocations} margin={{ left: -10, right: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-                <XAxis dataKey="scenario" tick={{ fontSize: 9 }} angle={-15} />
-                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${v.toFixed(0)}%`} />
-                <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                <XAxis dataKey="scenario" tick={{ fontSize: 8 }} interval={0} angle={-20} textAnchor="end" height={40} />
+                <YAxis tick={{ fontSize: 9 }} tickFormatter={v => `${v.toFixed(0)}%`} width={35} />
+                <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
                 <Bar dataKey="expectedROI" name="ROI Esperado" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -84,16 +84,18 @@ export function ROIOptimizationPanel({ params, simulation, historicalData }: {
         <CardContent>
           <div className="space-y-2">
             {refundCohorts.map((c, i) => (
-              <div key={i} className="flex items-center gap-3 p-2 rounded-md bg-muted/30">
-                <span className="text-xs font-medium w-20">{c.period}</span>
+              <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 p-2 rounded-md bg-muted/30">
+                <span className="text-xs font-medium sm:w-20">{c.period}</span>
                 <div className="flex-1 h-4 bg-muted/50 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-destructive/50 rounded-full"
                     style={{ width: `${Math.min((c.expectedRefunds / (refundCohorts[0]?.expectedRefunds || 1)) * 100, 100)}%` }}
                   />
                 </div>
-                <span className="text-[10px] text-muted-foreground w-20 text-right">{c.expectedRefunds} reemb.</span>
-                <span className="text-[10px] font-medium w-24 text-right">{fmt(c.refundAmount)}</span>
+                <div className="flex justify-between sm:justify-end gap-2">
+                  <span className="text-[10px] text-muted-foreground">{c.expectedRefunds} reemb.</span>
+                  <span className="text-[10px] font-medium">{fmt(c.refundAmount)}</span>
+                </div>
               </div>
             ))}
           </div>

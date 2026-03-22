@@ -37,17 +37,17 @@ export function SeasonalityChart({ data }: { data: SeasonalityPattern[] }) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-48">
+        <div className="h-36 sm:h-48">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data}>
+            <BarChart data={data} margin={{ left: -15, right: 5 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-              <XAxis dataKey="dayOfWeek" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
+              <XAxis dataKey="dayOfWeek" tick={{ fontSize: 9 }} interval={0} />
+              <YAxis tick={{ fontSize: 9 }} width={30} />
               <Tooltip
                 formatter={(v: number, name: string) => name === "Receita" ? fmt(v) : v}
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }}
               />
-              <ReferenceLine y={1} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" label={{ value: "Média", fontSize: 9 }} />
+              <ReferenceLine y={1} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" label={{ value: "Média", fontSize: 8 }} />
               <Bar dataKey="index" name="Índice" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} fillOpacity={0.8} />
             </BarChart>
           </ResponsiveContainer>
