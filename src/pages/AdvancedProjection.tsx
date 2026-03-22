@@ -360,13 +360,13 @@ export default function AdvancedProjection() {
                         <CardTitle className="text-sm font-semibold">Comparação de Cenários</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="h-72">
+                        <div className="h-52 sm:h-72">
                           <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={scenarioChartData}>
+                            <BarChart data={scenarioChartData} margin={{ left: -10, right: 5 }}>
                               <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-                              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                              <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                              <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                              <XAxis dataKey="name" tick={{ fontSize: 9 }} interval={0} />
+                              <YAxis tick={{ fontSize: 9 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} width={40} />
+                              <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
                               <Bar dataKey="receita" name="Receita" radius={[4, 4, 0, 0]}>
                                 {scenarioChartData.map(entry => <Cell key={entry.key} fill={scenarioColors[entry.key]} />)}
                               </Bar>
@@ -406,13 +406,13 @@ export default function AdvancedProjection() {
                         <CardTitle className="text-sm font-semibold">Distribuição de Resultados (2.000 iterações)</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="h-56">
+                        <div className="h-44 sm:h-56">
                           <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={simulationResult.distribution}>
+                            <AreaChart data={simulationResult.distribution} margin={{ left: -10, right: 5 }}>
                               <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-                              <XAxis dataKey="sales" tick={{ fontSize: 10 }} label={{ value: "Vendas", position: "bottom", fontSize: 11 }} />
-                              <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                              <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                              <XAxis dataKey="sales" tick={{ fontSize: 9 }} />
+                              <YAxis tick={{ fontSize: 9 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} width={40} />
+                              <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
                               <Area type="monotone" dataKey="revenue" name="Receita" fill="hsl(var(--primary))" fillOpacity={0.15} stroke="hsl(var(--primary))" />
                               <Area type="monotone" dataKey="profit" name="Lucro" fill="hsl(142 71% 45%)" fillOpacity={0.1} stroke="hsl(142 71% 45%)" />
                             </AreaChart>
@@ -429,8 +429,8 @@ export default function AdvancedProjection() {
                       <CardContent>
                         <div className="space-y-3">
                           {simulationResult.sensitivityMatrix.map((s, i) => (
-                            <div key={i} className="flex items-center gap-3">
-                              <span className="text-xs w-28 truncate font-medium">{s.variable}</span>
+                            <div key={i} className="flex items-center gap-2 sm:gap-3">
+                              <span className="text-[10px] sm:text-xs w-20 sm:w-28 truncate font-medium">{s.variable}</span>
                               <div className="flex-1 h-6 bg-muted/30 rounded-full relative overflow-hidden">
                                 <div className="absolute left-1/2 h-full rounded-full transition-all" style={{
                                   width: `${Math.min(Math.abs(s.impactOnRevenue), 100) / 2}%`,
