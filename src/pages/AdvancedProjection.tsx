@@ -25,6 +25,11 @@ const fmt = (v: number) =>
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
+
+const fmtPct = (v: number) => `${v.toFixed(1)}%`;
+
 export default function AdvancedProjection() {
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
   const [simulationResult, setSimulationResult] = useState<SimulationOutput | null>(null);
