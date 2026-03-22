@@ -49,6 +49,39 @@ export default function AdvancedProjection() {
   const [aiRecommendation, setAiRecommendation] = useState<string | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const saveSimulation = async () => {
+    if (!simulationResult || !historicalData || !simulationParams) return;
+    setIsSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Faça login para salvar"); setIsSaving(false); return; }
+      const { error } = await supabase.from("projection_simulations" as any).insert({
+        user_id: user.id,
+        project_ids: selectedProjectIds,
+        project_names: historicalData.map(d => d.projectName),
+        projection_days: projectionDays,
+        price_variation: priceVar / 100,
+        demand_variation: demandVar / 100,
+        scenarios: simulationResult.scenarios,
+        summary: simulationResult.summary,
+        sensitivity_matrix: simulationResult.sensitivityMatrix,
+        ai_recommendation: aiRecommendation,
+      } as any);
+      if (error) throw error;
+      toast.success("Simulação salva com sucesso!");
+    } catch (err: any) {
+      toast.error("Erro ao salvar: " + (err.message || "Tente novamente"));
+    }
+    setIsSaving(false);
+  };
+
+  const handleExportPDF = () => {
+    if (!simulationResult || !historicalData || !simulationParams) return;
+    exportProjectionPDF(simulationResult, simulationParams, historicalData, aiRecommendation);
+    toast.success("PDF exportado!");
+  };
 
   const { data: projects } = useQuery({
     queryKey: ["all-projects-for-projection"],
