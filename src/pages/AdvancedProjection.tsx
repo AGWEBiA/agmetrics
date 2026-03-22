@@ -19,8 +19,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Brain, TrendingUp, DollarSign, ShoppingCart, Target, Zap, BarChart3, Loader2,
   Sparkles, Activity, Search, FlaskConical, Wallet, PiggyBank, Calendar,
+  Save, FileDown, Check,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { exportProjectionPDF } from "@/lib/exportProjectionPDF";
 
 // Lazy-loaded panels
 import { CashFlowChart } from "@/components/projection/CashFlowChart";
