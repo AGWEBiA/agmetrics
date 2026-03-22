@@ -33,6 +33,7 @@ export default function AdvancedProjection() {
   const [simulationResult, setSimulationResult] = useState<SimulationOutput | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
   const [projectionDays, setProjectionDays] = useState(30);
+  const [searchQuery, setSearchQuery] = useState("");
   const [priceVar, setPriceVar] = useState(15);
   const [demandVar, setDemandVar] = useState(20);
   const [aiRecommendation, setAiRecommendation] = useState<string | null>(null);
