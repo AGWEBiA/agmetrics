@@ -476,35 +476,94 @@ export default function AdvancedProjection() {
                     <SeasonalityChart data={seasonalityData} />
                   </TabsContent>
 
-                  <TabsContent value="ai" className="mt-4">
-                    <Card className="border-primary/30 bg-primary/[0.02]">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                          <Sparkles className="h-4 w-4 text-primary" />
-                          Recomendação Estratégica IA
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {!aiRecommendation && !loadingAI && (
-                          <Button variant="outline" onClick={fetchAIRecommendation} className="w-full">
-                            <Brain className="mr-2 h-4 w-4" />Gerar Recomendação com IA
-                          </Button>
-                        )}
-                        {loadingAI && (
-                          <div className="flex items-center gap-2 py-4 justify-center">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span className="text-sm text-muted-foreground">Analisando cenários...</span>
-                          </div>
-                        )}
-                        {aiRecommendation && (
-                          <div className="prose prose-sm dark:prose-invert max-w-none text-sm whitespace-pre-wrap">
-                            {aiRecommendation}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
                 </Tabs>
+
+                {/* AI Strategic Recommendation - Outside tabs, always visible */}
+                <Card className="border-primary/30 bg-gradient-to-br from-primary/[0.04] to-primary/[0.01] relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base font-bold flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-primary/10">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                        </div>
+                        Recomendação Estratégica IA
+                      </CardTitle>
+                      {!aiRecommendation && !loadingAI && (
+                        <Button variant="default" size="sm" onClick={fetchAIRecommendation} className="gap-1.5">
+                          <Brain className="h-3.5 w-3.5" />Gerar Análise
+                        </Button>
+                      )}
+                      {aiRecommendation && (
+                        <Button variant="ghost" size="sm" onClick={fetchAIRecommendation} disabled={loadingAI} className="gap-1.5 text-xs">
+                          <Brain className="h-3 w-3" />Regenerar
+                        </Button>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingAI && (
+                      <div className="flex flex-col items-center gap-3 py-8">
+                        <div className="relative">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          <Sparkles className="h-3 w-3 text-primary absolute -top-1 -right-1 animate-pulse" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-medium">Analisando cenários...</p>
+                          <p className="text-xs text-muted-foreground mt-1">A IA está processando os dados da simulação</p>
+                        </div>
+                      </div>
+                    )}
+                    {!aiRecommendation && !loadingAI && (
+                      <div className="flex flex-col items-center gap-3 py-6 text-center">
+                        <div className="p-3 rounded-full bg-primary/5">
+                          <Brain className="h-6 w-6 text-primary/40" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Clique em "Gerar Análise" para obter recomendações estratégicas</p>
+                          <p className="text-xs text-muted-foreground/60 mt-1">Baseada nos resultados da sua simulação Monte Carlo</p>
+                        </div>
+                      </div>
+                    )}
+                    {aiRecommendation && (
+                      <div className="space-y-3">
+                        {aiRecommendation.split('\n').filter(l => l.trim()).map((line, i) => {
+                          const trimmed = line.trim();
+                          if (trimmed.startsWith('###') || trimmed.startsWith('**') && trimmed.endsWith('**')) {
+                            const title = trimmed.replace(/^#+\s*/, '').replace(/\*\*/g, '');
+                            return (
+                              <div key={i} className="flex items-center gap-2 pt-3 first:pt-0">
+                                <div className="h-px flex-1 bg-border/50" />
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-primary/80 whitespace-nowrap">{title}</h4>
+                                <div className="h-px flex-1 bg-border/50" />
+                              </div>
+                            );
+                          }
+                          if (trimmed.startsWith('- ') || trimmed.startsWith('• ') || trimmed.startsWith('* ')) {
+                            const content = trimmed.slice(2);
+                            return (
+                              <div key={i} className="flex gap-2 items-start pl-2">
+                                <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary/60 shrink-0" />
+                                <p className="text-sm leading-relaxed text-foreground/90">{content}</p>
+                              </div>
+                            );
+                          }
+                          if (/^\d+\./.test(trimmed)) {
+                            const num = trimmed.match(/^(\d+)\./)?.[1];
+                            const content = trimmed.replace(/^\d+\.\s*/, '');
+                            return (
+                              <div key={i} className="flex gap-2.5 items-start pl-1">
+                                <span className="mt-0.5 flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold shrink-0">{num}</span>
+                                <p className="text-sm leading-relaxed text-foreground/90">{content}</p>
+                              </div>
+                            );
+                          }
+                          return <p key={i} className="text-sm leading-relaxed text-foreground/80 pl-1">{trimmed}</p>;
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </motion.div>
             )}
           </AnimatePresence>
