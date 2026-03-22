@@ -194,9 +194,9 @@ export default function AdvancedProjection() {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-6">
         {/* Left Panel */}
-        <div className="lg:col-span-4 space-y-4">
+        <div className="lg:col-span-4 space-y-3 lg:space-y-4">
           <Card className="border-primary/20">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -209,7 +209,7 @@ export default function AdvancedProjection() {
                 <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                 <Input placeholder="Buscar projeto..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-8 h-8 text-sm" />
               </div>
-              <ScrollArea className="h-52">
+              <ScrollArea className="h-40 sm:h-52">
                 <div className="space-y-1 pr-3">
                   {(projects || []).filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).map(p => (
                     <label key={p.id} className="flex items-center gap-2 p-2 rounded-md hover:bg-accent/50 cursor-pointer transition-colors">
@@ -297,10 +297,10 @@ export default function AdvancedProjection() {
         </div>
 
         {/* Right Panel */}
-        <div className="lg:col-span-8 space-y-4">
+        <div className="lg:col-span-8 space-y-3 lg:space-y-4">
           <AnimatePresence mode="wait">
             {!simulationResult && !isSimulating && (
-              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center py-20 text-center">
+              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center py-10 sm:py-20 text-center">
                 <div className="p-4 rounded-full bg-primary/5 mb-4">
                   <BarChart3 className="h-10 w-10 text-primary/40" />
                 </div>
@@ -312,7 +312,7 @@ export default function AdvancedProjection() {
             )}
 
             {isSimulating && (
-              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center py-20">
+              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center py-10 sm:py-20">
                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
                 <p className="text-sm text-muted-foreground">Calculando cenários...</p>
               </motion.div>
@@ -331,7 +331,7 @@ export default function AdvancedProjection() {
                   </Button>
                 </div>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
                   <SummaryCard icon={DollarSign} label="Receita Média" value={fmt(simulationResult.summary.avgRevenue)} />
                   <SummaryCard icon={TrendingUp} label="Lucro Médio" value={fmt(simulationResult.summary.avgProfit)} positive={simulationResult.summary.avgProfit > 0} />
                   <SummaryCard icon={Target} label="ROI Médio" value={fmtPct(simulationResult.summary.avgROI)} positive={simulationResult.summary.avgROI > 0} />
@@ -349,7 +349,6 @@ export default function AdvancedProjection() {
                       <TabsTrigger value="goals" className="text-xs gap-1.5 whitespace-nowrap"><Target className="h-3 w-3" />Metas</TabsTrigger>
                       <TabsTrigger value="roi" className="text-xs gap-1.5 whitespace-nowrap"><PiggyBank className="h-3 w-3" />ROI</TabsTrigger>
                       <TabsTrigger value="seasonality" className="text-xs gap-1.5 whitespace-nowrap"><Calendar className="h-3 w-3" />Sazonalidade</TabsTrigger>
-                      <TabsTrigger value="seasonality" className="text-xs gap-1.5 whitespace-nowrap"><Calendar className="h-3 w-3" />Sazonalidade</TabsTrigger>
                     </TabsList>
                   </div>
 
@@ -360,7 +359,7 @@ export default function AdvancedProjection() {
                         <CardTitle className="text-sm font-semibold">Comparação de Cenários</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="h-52 sm:h-72">
+                        <div className="h-44 sm:h-72">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={scenarioChartData} margin={{ left: -10, right: 5 }}>
                               <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
@@ -380,7 +379,7 @@ export default function AdvancedProjection() {
                     </Card>
 
                     {/* Scenario Detail Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                       {Object.entries(simulationResult.scenarios).map(([key, s]) => (
                         <Card key={key} className="relative overflow-hidden">
                           <div className="absolute top-0 left-0 w-1 h-full" style={{ background: scenarioColors[key] }} />
@@ -406,7 +405,7 @@ export default function AdvancedProjection() {
                         <CardTitle className="text-sm font-semibold">Distribuição de Resultados (2.000 iterações)</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="h-44 sm:h-56">
+                        <div className="h-36 sm:h-56">
                           <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={simulationResult.distribution} margin={{ left: -10, right: 5 }}>
                               <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
