@@ -349,7 +349,7 @@ export default function AdvancedProjection() {
                       <TabsTrigger value="goals" className="text-xs gap-1.5 whitespace-nowrap"><Target className="h-3 w-3" />Metas</TabsTrigger>
                       <TabsTrigger value="roi" className="text-xs gap-1.5 whitespace-nowrap"><PiggyBank className="h-3 w-3" />ROI</TabsTrigger>
                       <TabsTrigger value="seasonality" className="text-xs gap-1.5 whitespace-nowrap"><Calendar className="h-3 w-3" />Sazonalidade</TabsTrigger>
-                      <TabsTrigger value="ai" className="text-xs gap-1.5 whitespace-nowrap"><Sparkles className="h-3 w-3" />IA</TabsTrigger>
+                      <TabsTrigger value="seasonality" className="text-xs gap-1.5 whitespace-nowrap"><Calendar className="h-3 w-3" />Sazonalidade</TabsTrigger>
                     </TabsList>
                   </div>
 
