@@ -82,6 +82,7 @@ const App = () => (
               <Route path="guide" element={<Guide />} />
             </Route>
             <Route path="/" element={<Index />} />
+            <Route path="/apresentacao" element={<Presentation />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
