@@ -20,13 +20,11 @@ import {
   ChevronRight, Sparkles, Activity,
 } from "lucide-react";
 
-const fmt = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-
-const fmtPct = (v: number) => `${v.toFixed(1)}%`;
-
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+
+const fmt = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
