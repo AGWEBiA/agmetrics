@@ -34,6 +34,7 @@ import WorkspaceSettings from "./pages/WorkspaceSettings";
 import AdvancedProjection from "./pages/AdvancedProjection";
 import { PermissionGuard } from "./components/PermissionGuard";
 import Index from "./pages/Index";
+import Presentation from "./pages/Presentation";
 
 const queryClient = new QueryClient();
 
