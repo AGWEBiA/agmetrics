@@ -1050,6 +1050,51 @@ export type Database = {
           },
         ]
       }
+      projection_simulations: {
+        Row: {
+          ai_recommendation: string | null
+          created_at: string
+          demand_variation: number
+          id: string
+          price_variation: number
+          project_ids: string[]
+          project_names: string[]
+          projection_days: number
+          scenarios: Json
+          sensitivity_matrix: Json
+          summary: Json
+          user_id: string
+        }
+        Insert: {
+          ai_recommendation?: string | null
+          created_at?: string
+          demand_variation?: number
+          id?: string
+          price_variation?: number
+          project_ids: string[]
+          project_names: string[]
+          projection_days?: number
+          scenarios?: Json
+          sensitivity_matrix?: Json
+          summary?: Json
+          user_id: string
+        }
+        Update: {
+          ai_recommendation?: string | null
+          created_at?: string
+          demand_variation?: number
+          id?: string
+          price_variation?: number
+          project_ids?: string[]
+          project_names?: string[]
+          projection_days?: number
+          scenarios?: Json
+          sensitivity_matrix?: Json
+          summary?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           agsell_api_key: string | null

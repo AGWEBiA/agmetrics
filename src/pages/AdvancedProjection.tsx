@@ -19,8 +19,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Brain, TrendingUp, DollarSign, ShoppingCart, Target, Zap, BarChart3, Loader2,
   Sparkles, Activity, Search, FlaskConical, Wallet, PiggyBank, Calendar,
+  Save, FileDown, Check,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { exportProjectionPDF } from "@/lib/exportProjectionPDF";
 
 // Lazy-loaded panels
 import { CashFlowChart } from "@/components/projection/CashFlowChart";
@@ -46,6 +49,39 @@ export default function AdvancedProjection() {
   const [aiRecommendation, setAiRecommendation] = useState<string | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const saveSimulation = async () => {
+    if (!simulationResult || !historicalData || !simulationParams) return;
+    setIsSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Faça login para salvar"); setIsSaving(false); return; }
+      const { error } = await supabase.from("projection_simulations" as any).insert({
+        user_id: user.id,
+        project_ids: selectedProjectIds,
+        project_names: historicalData.map(d => d.projectName),
+        projection_days: projectionDays,
+        price_variation: priceVar / 100,
+        demand_variation: demandVar / 100,
+        scenarios: simulationResult.scenarios,
+        summary: simulationResult.summary,
+        sensitivity_matrix: simulationResult.sensitivityMatrix,
+        ai_recommendation: aiRecommendation,
+      } as any);
+      if (error) throw error;
+      toast.success("Simulação salva com sucesso!");
+    } catch (err: any) {
+      toast.error("Erro ao salvar: " + (err.message || "Tente novamente"));
+    }
+    setIsSaving(false);
+  };
+
+  const handleExportPDF = () => {
+    if (!simulationResult || !historicalData || !simulationParams) return;
+    exportProjectionPDF(simulationResult, simulationParams, historicalData, aiRecommendation);
+    toast.success("PDF exportado!");
+  };
 
   const { data: projects } = useQuery({
     queryKey: ["all-projects-for-projection"],
@@ -284,6 +320,16 @@ export default function AdvancedProjection() {
 
             {simulationResult && simulationParams && (
               <motion.div key="results" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                    <FileDown className="mr-1.5 h-3.5 w-3.5" />Exportar PDF
+                  </Button>
+                  <Button variant="default" size="sm" onClick={saveSimulation} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
+                    Salvar Simulação
+                  </Button>
+                </div>
                 {/* Summary Cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <SummaryCard icon={DollarSign} label="Receita Média" value={fmt(simulationResult.summary.avgRevenue)} />
