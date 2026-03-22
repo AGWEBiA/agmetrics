@@ -320,6 +320,16 @@ export default function AdvancedProjection() {
 
             {simulationResult && simulationParams && (
               <motion.div key="results" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                    <FileDown className="mr-1.5 h-3.5 w-3.5" />Exportar PDF
+                  </Button>
+                  <Button variant="default" size="sm" onClick={saveSimulation} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
+                    Salvar Simulação
+                  </Button>
+                </div>
                 {/* Summary Cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <SummaryCard icon={DollarSign} label="Receita Média" value={fmt(simulationResult.summary.avgRevenue)} />
