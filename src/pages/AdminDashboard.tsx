@@ -183,11 +183,13 @@ export default function AdminDashboard() {
   const overviewContent = (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
-        {sectionOrder.map((id) => {
-          const section = overviewSections[id];
-          if (!section) return null;
-          return <SortableCard key={id} id={id}>{section}</SortableCard>;
-        })}
+        <div className="space-y-4">
+          {sectionOrder.map((id) => {
+            const section = overviewSections[id];
+            if (!section) return null;
+            return <SortableCard key={id} id={id}>{section}</SortableCard>;
+          })}
+        </div>
       </SortableContext>
     </DndContext>
   );
