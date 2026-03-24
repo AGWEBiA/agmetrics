@@ -502,21 +502,51 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
     goals: goalsProgress && goalsProgress.length > 0 ? (
       <AnimatedCard index={0}>
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-lg">🎯 Metas do Projeto</CardTitle></CardHeader>
-          <CardContent className="space-y-5">
-            {goalsProgress.map((g: any, i: number) => (
-              <div key={i}>
-                <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
-                  <span className="font-medium">{GOAL_LABELS[g.type] || g.type}</span>
-                  <span className="text-muted-foreground text-xs">
-                    {g.type === "revenue" ? formatBRL(g.current) : g.type === "roi" || g.type === "margin" ? formatPercent(g.current) : formatNumber(Math.round(g.current))}
-                    {" / "}
-                    {g.type === "revenue" ? formatBRL(g.target) : g.type === "roi" || g.type === "margin" ? formatPercent(g.target) : formatNumber(Math.round(g.target))}
-                  </span>
-                </div>
-                <Progress value={Math.min(g.pct, 100)} className="h-3" />
+          <CardHeader className="pb-3"><CardTitle className="text-lg">🎯 Metas × Atingido</CardTitle></CardHeader>
+          <CardContent className="space-y-6">
+            {/* Status cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {goalsProgress.map((g: any, i: number) => {
+                const status = g.pct >= 100 ? "reached" : g.pct >= 70 ? "close" : "behind";
+                const statusIcon = status === "reached" ? "🟢" : status === "close" ? "🟡" : "🔴";
+                const statusLabel = status === "reached" ? "Atingida" : status === "close" ? "Em progresso" : "Abaixo";
+                const fmtValue = (v: number) =>
+                  g.type === "revenue" ? formatBRL(v) : g.type === "roi" || g.type === "margin" ? formatPercent(v) : formatNumber(Math.round(v));
+                return (
+                  <div key={i} className="rounded-lg border p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium">{GOAL_LABELS[g.type] || g.type}</span>
+                      <span className="text-xs">{statusIcon} {statusLabel}</span>
+                    </div>
+                    <div className="text-lg font-bold">{fmtValue(g.current)}</div>
+                    <div className="text-xs text-muted-foreground">Meta: {fmtValue(g.target)}</div>
+                    <Progress value={Math.min(g.pct, 100)} className="h-2" />
+                    <div className="text-xs text-right font-medium">{formatPercent(Math.min(g.pct, 999))}</div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Bar chart: Meta × Atingido */}
+            <div>
+              <p className="text-sm font-medium mb-2">Comparativo Meta × Atingido</p>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={goalsProgress.map((g: any) => ({
+                    name: GOAL_LABELS[g.type] || g.type,
+                    meta: g.target,
+                    atingido: g.current,
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                    <Tooltip cursor={false} contentStyle={TOOLTIP_STYLE} />
+                    <Legend />
+                    <Bar dataKey="meta" name="Meta" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="atingido" name="Atingido" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-            ))}
+            </div>
           </CardContent>
         </Card>
       </AnimatedCard>
