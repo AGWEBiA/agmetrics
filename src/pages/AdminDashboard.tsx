@@ -205,7 +205,6 @@ export default function AdminDashboard() {
           <p className="text-sm text-muted-foreground">Auto-refresh: 5 min</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="mr-1.5 h-4 w-4" />
             <span className="hidden sm:inline">PDF</span>
