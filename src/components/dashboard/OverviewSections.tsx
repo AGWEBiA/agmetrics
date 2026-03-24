@@ -509,9 +509,9 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
                 <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
                   <span className="font-medium">{GOAL_LABELS[g.type] || g.type}</span>
                   <span className="text-muted-foreground text-xs">
-                    {g.type === "revenue" ? formatBRL(g.current) : g.type === "roi" || g.type === "margin" ? formatPercent(g.current) : formatNumberBR(g.current, 2)}
+                    {g.type === "revenue" ? formatBRL(g.current) : g.type === "roi" || g.type === "margin" ? formatPercent(g.current) : formatNumber(Math.round(g.current))}
                     {" / "}
-                    {g.type === "revenue" ? formatBRL(g.target) : g.type === "roi" || g.type === "margin" ? formatPercent(g.target) : formatNumberBR(g.target, 2)}
+                    {g.type === "revenue" ? formatBRL(g.target) : g.type === "roi" || g.type === "margin" ? formatPercent(g.target) : formatNumber(Math.round(g.target))}
                   </span>
                 </div>
                 <Progress value={Math.min(g.pct, 100)} className="h-3" />
