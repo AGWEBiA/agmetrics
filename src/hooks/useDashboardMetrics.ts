@@ -32,13 +32,29 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     queryKey: ["sales_events", projectId],
     enabled: !!projectId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("sales_events")
-        .select("*")
-        .eq("project_id", projectId!)
-        .eq("is_ignored", false);
-      if (error) throw error;
-      return data as unknown as SalesEvent[];
+      const pageSize = 1000;
+      let from = 0;
+      let allData: SalesEvent[] = [];
+
+      while (true) {
+        const { data, error } = await supabase
+          .from("sales_events")
+          .select("*")
+          .eq("project_id", projectId!)
+          .eq("is_ignored", false)
+          .order("sale_date", { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+
+        const page = (data as unknown as SalesEvent[]) || [];
+        allData = allData.concat(page);
+
+        if (page.length < pageSize) break;
+        from += pageSize;
+      }
+
+      return allData;
     },
     refetchInterval: 300000,
   });
