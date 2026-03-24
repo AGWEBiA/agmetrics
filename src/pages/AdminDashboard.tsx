@@ -168,7 +168,7 @@ export default function AdminDashboard() {
   }, [projectId, savePrefs]);
 
   const overviewSections = useMemo(() => {
-    const sections = buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, leadJourney });
+    const sections = buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress, leadJourney });
     // Add recent_sales (admin-only)
     return {
       ...sections,
