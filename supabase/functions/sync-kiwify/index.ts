@@ -24,11 +24,11 @@ async function getOAuthToken(clientId: string, clientSecret: string): Promise<st
 function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
 /** Fetch with retry on 429 */
-async function fetchWithRetry(url: string, headers: Record<string, string>, retries = 3): Promise<Response> {
+async function fetchWithRetry(url: string, headers: Record<string, string>, retries = 5): Promise<Response> {
   for (let i = 0; i < retries; i++) {
     const res = await fetch(url, { headers });
     if (res.status === 429) {
-      const wait = Math.min(2000 * Math.pow(2, i), 10000);
+      const wait = Math.min(3000 * Math.pow(2, i), 30000);
       console.warn(`[sync-kiwify] 429 rate limited, waiting ${wait}ms (attempt ${i + 1}/${retries})`);
       await res.text(); // consume body
       await sleep(wait);
@@ -67,7 +67,7 @@ async function fetchDetailsBatch(
   saleIds: string[],
   bearerToken: string,
   accountId: string,
-  concurrency = 3
+  concurrency = 2
 ): Promise<Map<string, Record<string, any>>> {
   const results = new Map<string, Record<string, any>>();
   for (let i = 0; i < saleIds.length; i += concurrency) {
@@ -78,8 +78,8 @@ async function fetchDetailsBatch(
     chunk.forEach((id, idx) => {
       if (details[idx]) results.set(id, details[idx]!);
     });
-    // Small delay between batches to respect rate limits
-    if (i + concurrency < saleIds.length) await sleep(300);
+    // Larger delay between batches to respect rate limits
+    if (i + concurrency < saleIds.length) await sleep(500);
   }
   return results;
 }
@@ -204,6 +204,11 @@ Deno.serve(async (req) => {
 
       if (!res.ok) {
         const errText = await res.text();
+        if (res.status === 429) {
+          console.warn("[sync-kiwify] Rate limited on sales listing after all retries, returning partial results");
+          hasMore = false;
+          break;
+        }
         console.error("Kiwify API error:", res.status, errText);
         return new Response(JSON.stringify({ error: "Failed to fetch sales from Kiwify" }), {
           status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
