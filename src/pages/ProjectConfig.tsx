@@ -1413,6 +1413,8 @@ function GoalsTab({ projectId }: { projectId: string }) {
     setEditTargetValue(
       (g.type === "roi" || g.type === "margin")
         ? Number(g.target_value).toFixed(1).replace(".", ",")
+        : (g.type === "sales" || g.type === "leads")
+        ? String(Math.round(Number(g.target_value)))
         : Number(g.target_value).toFixed(2).replace(".", ",")
     );
     setEditPeriod(g.period);
@@ -1463,7 +1465,7 @@ function GoalsTab({ projectId }: { projectId: string }) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1"><Label>Valor Alvo</Label><Input placeholder="30.000,00" value={targetValue} onChange={(e) => setTargetValue(e.target.value)} /></div>
+                <div className="space-y-1"><Label>Valor Alvo {type === "roi" || type === "margin" ? "(%)" : type === "sales" || type === "leads" ? "(número)" : "(R$)"}</Label><Input placeholder={type === "roi" || type === "margin" ? "15,0" : type === "sales" || type === "leads" ? "100" : "30.000,00"} value={targetValue} onChange={(e) => setTargetValue(e.target.value)} /></div>
                 <div className="space-y-1">
                   <Label>Período</Label>
                   <Select value={period} onValueChange={setPeriod}>
@@ -1500,7 +1502,7 @@ function GoalsTab({ projectId }: { projectId: string }) {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1"><Label>Valor Alvo</Label><Input placeholder="30.000,00" value={editTargetValue} onChange={(e) => setEditTargetValue(e.target.value)} /></div>
+              <div className="space-y-1"><Label>Valor Alvo {editType === "roi" || editType === "margin" ? "(%)" : editType === "sales" || editType === "leads" ? "(número)" : "(R$)"}</Label><Input placeholder={editType === "roi" || editType === "margin" ? "15,0" : editType === "sales" || editType === "leads" ? "100" : "30.000,00"} value={editTargetValue} onChange={(e) => setEditTargetValue(e.target.value)} /></div>
               <div className="space-y-1">
                 <Label>Período</Label>
                 <Select value={editPeriod} onValueChange={setEditPeriod}>
@@ -1540,7 +1542,7 @@ function GoalsTab({ projectId }: { projectId: string }) {
                 {goals.map((g) => (
                   <TableRow key={g.id}>
                     <TableCell className="font-medium">{goalLabels[g.type]}</TableCell>
-                    <TableCell>{g.type === "roi" || g.type === "margin" ? `${Number(g.target_value).toFixed(1)}%` : `R$ ${Number(g.target_value).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</TableCell>
+                    <TableCell>{g.type === "roi" || g.type === "margin" ? `${Number(g.target_value).toFixed(1)}%` : g.type === "sales" || g.type === "leads" ? Math.round(Number(g.target_value)).toLocaleString("pt-BR") : `R$ ${Number(g.target_value).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</TableCell>
                     <TableCell>{periodLabels[g.period]}</TableCell>
                     <TableCell>
                       <Switch
