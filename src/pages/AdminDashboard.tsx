@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useProject } from "@/hooks/useProjects";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
+import { useGlobalFilters } from "@/contexts/GlobalFiltersContext";
 import { useLeadJourneyData } from "@/hooks/useLeadJourneyData";
 import { useSalesRealtime } from "@/hooks/useSalesRealtime";
 import { useGoalAlerts } from "@/hooks/useGoalAlerts";
@@ -58,8 +59,10 @@ function SortableCard({ id, children }: { id: string; children: React.ReactNode 
 export default function AdminDashboard() {
   const { projectId } = useParams();
   const { data: project } = useProject(projectId);
-  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
-  const m = useDashboardMetrics(projectId, dateRange, project?.strategy);
+  const { filters: globalFilters, setFilters: setGlobalFilters } = useGlobalFilters();
+  const dateRange: DateRange = { from: globalFilters.dateRange.from, to: globalFilters.dateRange.to };
+  const setDateRange = (range: DateRange) => setGlobalFilters({ dateRange: { from: range.from, to: range.to } });
+  const m = useDashboardMetrics(projectId, dateRange, project?.strategy, globalFilters);
   const { data: whatsappGroups } = useWhatsAppGroups(projectId);
   const leadJourney = useLeadJourneyData(projectId);
   const { data: whatsappHistory } = useQuery({

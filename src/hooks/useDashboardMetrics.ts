@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { SalesEvent, AdDemographic, DateFilter } from "@/types/database";
+import type { GlobalFilters } from "@/contexts/GlobalFiltersContext";
 
 function inRange(dateStr: string | null, filter: DateFilter): boolean {
   if (!filter.from && !filter.to) return true;
@@ -15,7 +16,18 @@ function inRange(dateStr: string | null, filter: DateFilter): boolean {
   return true;
 }
 
-export function useDashboardMetrics(projectId: string | undefined, dateFilter?: DateFilter, strategy?: string) {
+function matchesGlobalFilters(s: SalesEvent, gf?: GlobalFilters): boolean {
+  if (!gf) return true;
+  if (gf.platform !== "all" && s.platform !== gf.platform) return false;
+  if (gf.status !== "all" && s.status !== gf.status) return false;
+  if (gf.utmSource && !(s as any).utm_source?.toLowerCase().includes(gf.utmSource.toLowerCase())) return false;
+  if (gf.utmMedium && !(s as any).utm_medium?.toLowerCase().includes(gf.utmMedium.toLowerCase())) return false;
+  if (gf.utmCampaign && !(s as any).utm_campaign?.toLowerCase().includes(gf.utmCampaign.toLowerCase())) return false;
+  if (gf.productName && !(s.product_name || "").toLowerCase().includes(gf.productName.toLowerCase())) return false;
+  return true;
+}
+
+export function useDashboardMetrics(projectId: string | undefined, dateFilter?: DateFilter, strategy?: string, globalFilters?: GlobalFilters) {
   const salesQuery = useQuery({
     queryKey: ["sales_events", projectId],
     enabled: !!projectId,
@@ -106,9 +118,9 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
 
   const df = dateFilter || {};
 
-  // Apply date filters
+  // Apply date + global filters
   const allSales = salesQuery.data || [];
-  const sales = allSales.filter((s) => inRange(s.sale_date || s.created_at, df));
+  const sales = allSales.filter((s) => inRange(s.sale_date || s.created_at, df) && matchesGlobalFilters(s, globalFilters));
   const metaMetrics = (metaQuery.data || []).filter((m: any) => inRange(m.date, df));
   const googleMetrics = (googleQuery.data || []).filter((m: any) => inRange(m.date, df));
   const manualInvestments = (investmentsQuery.data || []).filter((m: any) => inRange(m.date, df));
