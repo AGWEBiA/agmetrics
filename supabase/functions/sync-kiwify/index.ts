@@ -40,50 +40,6 @@ async function fetchWithRetry(url: string, headers: Record<string, string>, retr
   return fetch(url, { headers });
 }
 
-/** Fetch individual sale detail to get tracking data */
-async function fetchSaleDetail(
-  saleId: string,
-  bearerToken: string,
-  accountId: string
-): Promise<Record<string, any> | null> {
-  try {
-    const res = await fetchWithRetry(`https://public-api.kiwify.com/v1/sales/${saleId}`, {
-      "Authorization": `Bearer ${bearerToken}`,
-      "x-kiwify-account-id": accountId,
-      "Content-Type": "application/json",
-    });
-    if (!res.ok) {
-      await res.text();
-      return null;
-    }
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
-
-/** Fetch details for a batch of sale IDs with low concurrency to avoid rate limits */
-async function fetchDetailsBatch(
-  saleIds: string[],
-  bearerToken: string,
-  accountId: string,
-  concurrency = 2
-): Promise<Map<string, Record<string, any>>> {
-  const results = new Map<string, Record<string, any>>();
-  for (let i = 0; i < saleIds.length; i += concurrency) {
-    const chunk = saleIds.slice(i, i + concurrency);
-    const details = await Promise.all(
-      chunk.map((id) => fetchSaleDetail(id, bearerToken, accountId))
-    );
-    chunk.forEach((id, idx) => {
-      if (details[idx]) results.set(id, details[idx]!);
-    });
-    // Larger delay between batches to respect rate limits
-    if (i + concurrency < saleIds.length) await sleep(500);
-  }
-  return results;
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
