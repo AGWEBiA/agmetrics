@@ -31,7 +31,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { AnimatedCard } from "@/components/AnimatedCard";
 
-const DEFAULT_OVERVIEW_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "sales_chart", "recent_sales", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "lead_journey", "whatsapp", "products", "platform_pie"];
+const DEFAULT_OVERVIEW_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "sales_chart", "recent_sales", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "lead_journey", "whatsapp", "products", "platform_pie", "goals"];
 
 function SortableCard({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -83,6 +83,32 @@ export default function AdminDashboard() {
     roi: m.roi,
     margin: m.margin,
     totalLeads: m.totalLeads,
+  });
+
+  const { data: goalsData } = useQuery({
+    queryKey: ["project_goals", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_goals")
+        .select("type, target_value, period, is_active")
+        .eq("project_id", projectId!)
+        .eq("is_active", true);
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+  });
+
+  const goalsProgress = (goalsData || []).map((g: any) => {
+    let current = 0;
+    switch (g.type) {
+      case "revenue": current = m.totalRevenue; break;
+      case "sales": current = m.salesCount; break;
+      case "roi": current = m.roi; break;
+      case "margin": current = m.margin; break;
+      case "leads": current = m.totalLeads; break;
+    }
+    return { type: g.type, target: g.target_value, current, period: g.period, pct: g.target_value > 0 ? (current / g.target_value) * 100 : 0 };
   });
 
   const budgetData = useBudgetData(project, m.totalInvestment, m.metaMetrics, m.googleMetrics);
