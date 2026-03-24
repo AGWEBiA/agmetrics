@@ -13,7 +13,7 @@ import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { exportDashboardPDF } from "@/lib/exportPDF";
 import { exportCSV } from "@/lib/exportCSV";
-import { DateRangeFilter, type DateRange } from "@/components/DateRangeFilter";
+import { type DateRange } from "@/components/DateRangeFilter";
 import { AnimatedPage } from "@/components/AnimatedCard";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, GripVertical, Download, FileSpreadsheet } from "lucide-react";
