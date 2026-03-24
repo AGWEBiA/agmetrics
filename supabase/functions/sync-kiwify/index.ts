@@ -176,32 +176,15 @@ Deno.serve(async (req) => {
 
       if (transactions.length === 0) { hasMore = false; break; }
 
-      // Filter matched transactions first
-      const matchedTxs: { tx: any; product: any }[] = [];
+      const batch: any[] = [];
+
       for (const tx of transactions) {
         const productName = tx.product?.name || tx.Product?.product_name || tx.product_name || tx.offer?.name || "";
         const matchedProduct = registeredProducts.find(
           (p: any) => p.name.toLowerCase() === productName.toLowerCase()
         );
         if (!matchedProduct) { skipped++; continue; }
-        matchedTxs.push({ tx, product: matchedProduct });
-      }
 
-      // Fetch individual sale details to get tracking data (concurrency = 5)
-      const saleIds = matchedTxs.map(({ tx }) => tx.id).filter(Boolean);
-      console.log(`Page ${page}: fetching details for ${saleIds.length} matched sales...`);
-      const detailsMap = await fetchDetailsBatch(saleIds, bearerToken, accountId);
-      console.log(`Page ${page}: got details for ${detailsMap.size} sales`);
-
-      // Log sample tracking from detail endpoint
-      if (page === 1 && detailsMap.size > 0) {
-        const firstDetail = detailsMap.values().next().value;
-        console.log("Sample detail tracking:", JSON.stringify(firstDetail?.tracking));
-      }
-
-      const batch: any[] = [];
-
-      for (const { tx, product } of matchedTxs) {
         const orderId = tx.reference || tx.id || "";
         const orderStatus = tx.status || "";
         const rawCharge = parseFloat(tx.charge_amount || tx.order_amount || "0") / 100;
@@ -219,16 +202,15 @@ Deno.serve(async (req) => {
           default: status = "pending";
         }
 
-        // Get tracking from individual sale detail endpoint
-        const detail = detailsMap.get(tx.id);
-        const tracking = detail?.tracking || {};
+        // Use tracking from list endpoint if available
+        const tracking = tx.tracking || {};
 
         batch.push({
           project_id,
           platform: "kiwify",
           external_id: orderId,
           product_name: tx.product?.name || tx.Product?.product_name || tx.product_name || "",
-          product_type: product.type || "main",
+          product_type: matchedProduct.type || "main",
           amount: netValue,
           gross_amount: orderAmount,
           platform_fee: Math.max(0, orderAmount - netValue),
@@ -247,7 +229,7 @@ Deno.serve(async (req) => {
           utm_content: tracking.utm_content || undefined,
           tracking_src: tracking.src || undefined,
           tracking_sck: tracking.sck || undefined,
-          payload: detail || tx,
+          payload: tx,
         });
       }
 
