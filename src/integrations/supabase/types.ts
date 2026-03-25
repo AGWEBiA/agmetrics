@@ -1212,6 +1212,7 @@ export type Database = {
       sales_events: {
         Row: {
           amount: number | null
+          base_price: number | null
           buyer_city: string | null
           buyer_country: string | null
           buyer_email: string | null
@@ -1244,6 +1245,7 @@ export type Database = {
         }
         Insert: {
           amount?: number | null
+          base_price?: number | null
           buyer_city?: string | null
           buyer_country?: string | null
           buyer_email?: string | null
@@ -1276,6 +1278,7 @@ export type Database = {
         }
         Update: {
           amount?: number | null
+          base_price?: number | null
           buyer_city?: string | null
           buyer_country?: string | null
           buyer_email?: string | null

@@ -1,0 +1,1 @@
+ALTER TABLE public.sales_events ADD COLUMN base_price numeric NULL DEFAULT 0;
