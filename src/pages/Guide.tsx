@@ -37,6 +37,12 @@ import {
   RefreshCw,
   Shield,
   Search,
+  Brain,
+  Layers,
+  Activity,
+  Zap,
+  PieChart,
+  Network,
 } from "lucide-react";
 
 interface GuideSection {
@@ -733,6 +739,247 @@ const sections: GuideSection[] = [
     ],
     warning: "Por segurança, você **não pode remover seu próprio acesso** de administrador.",
   },
+  {
+    id: "roi-canal",
+    icon: PieChart,
+    title: "22. ROI por Canal",
+    badge: "Avançado",
+    intro: "Descubra o retorno real de cada canal de aquisição usando atribuição de primeiro toque e LTV completo.",
+    content: [
+      "**Passo 1:** No menu lateral, clique em **ROI por Canal** dentro de um projeto.",
+      "**Passo 2:** O sistema identifica automaticamente a **origem de cada comprador** (primeiro lead ou primeira venda).",
+      "**Passo 3:** Analise o retorno por canal com métricas detalhadas.",
+    ],
+    subsections: [
+      {
+        title: "Modelo de Atribuição",
+        steps: [
+          "O sistema usa **First-Touch Attribution**: 100% da receita vitalícia (LTV) é atribuída ao canal que trouxe o cliente pela primeira vez.",
+          "A origem é determinada pelo **lead_event mais antigo** do comprador. Na ausência de leads, utiliza a **primeira venda**.",
+          "Dados de UTM Source, UTM Campaign, SRC e SCK são combinados para identificar o canal.",
+        ],
+      },
+      {
+        title: "Métricas por Canal",
+        steps: [
+          "**LTV Total** → Receita vitalícia de todos os compradores originados pelo canal.",
+          "**Compradores Únicos** → Quantidade de clientes atribuídos ao canal.",
+          "**Compras por Cliente** → Média de recompras por comprador.",
+          "**LTV Médio** → Receita média por comprador do canal.",
+          "**Taxa de Retenção** → % de compradores que fizeram mais de uma compra.",
+        ],
+      },
+      {
+        title: "Tabela de Compradores",
+        steps: [
+          "Clique em um canal para ver o **histórico individual** de cada comprador.",
+          "Visualize: primeira compra, receita total, quantidade de compras e origem exata.",
+        ],
+      },
+    ],
+    tip: "Para dados mais completos, configure o **Pixel de Tracking** e os **webhooks** de vendas. Quanto mais dados de UTM, melhor a atribuição.",
+  },
+  {
+    id: "atribuicao-avancada",
+    icon: Network,
+    title: "23. Atribuição Avançada",
+    badge: "Avançado",
+    intro: "Compare diferentes modelos de atribuição lado a lado para entender como cada canal contribui para suas vendas.",
+    content: [
+      "**Passo 1:** No menu lateral, acesse **Atribuição Avançada** dentro de um projeto.",
+      "**Passo 2:** O sistema calcula automaticamente 4 modelos de atribuição para os mesmos dados.",
+      "**Passo 3:** Compare os resultados e tome decisões mais informadas sobre onde investir.",
+    ],
+    subsections: [
+      {
+        title: "Modelos Disponíveis",
+        steps: [
+          "**First-Touch** → 100% do crédito vai para o primeiro ponto de contato do comprador.",
+          "**Last-Click** → 100% do crédito vai para o último ponto de contato antes da compra.",
+          "**Linear** → O crédito é dividido igualmente entre todos os pontos de contato.",
+          "**Time-Decay** → Mais crédito para interações mais recentes (próximas da conversão).",
+        ],
+        tip: "Nenhum modelo é \"certo\" sozinho. Use a comparação para ter uma visão completa. Se First-Touch e Last-Click concordam, há alta confiança no canal.",
+      },
+      {
+        title: "Visualizações",
+        steps: [
+          "**Gráfico de Barras** → Compare a receita atribuída a cada canal em cada modelo.",
+          "**Gráfico Radar** → Visualize a distribuição relativa dos modelos.",
+          "**Cards de Resumo** → KPIs rápidos por modelo com cores distintas.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "projecao-avancada",
+    icon: TrendingUp,
+    title: "24. Projeção Avançada",
+    badge: "Avançado",
+    intro: "Simule cenários futuros usando Monte Carlo e análise What-If para prever receita e ROI.",
+    content: [
+      "**Passo 1:** Acesse **Projeção Avançada** no menu lateral.",
+      "**Passo 2:** Selecione os projetos e configure o horizonte de projeção (7 a 90 dias).",
+      "**Passo 3:** Ajuste variações de preço e demanda para simular cenários.",
+    ],
+    subsections: [
+      {
+        title: "Motor de Simulação",
+        steps: [
+          "O sistema roda **simulações Monte Carlo** com milhares de iterações para gerar intervalos de confiança.",
+          "São gerados 3 cenários automáticos: **Otimista**, **Realista** e **Pessimista**.",
+          "A **Matriz de Sensibilidade** mostra como variações de preço e demanda afetam o resultado.",
+        ],
+      },
+      {
+        title: "Painel What-If",
+        steps: [
+          "Ajuste **sliders de preço e demanda** para ver o impacto em tempo real.",
+          "Visualize a probabilidade de atingir diferentes metas de receita.",
+          "O sistema sugere **recomendações de IA** com base nos dados históricos e simulações.",
+        ],
+      },
+    ],
+    tip: "As projeções são salvas automaticamente para consulta futura. Compare projeções anteriores com resultados reais.",
+  },
+  {
+    id: "insights-ia",
+    icon: Brain,
+    title: "25. Insights de IA",
+    badge: "IA",
+    badgeColor: "destructive",
+    intro: "Receba análises inteligentes geradas por IA com recomendações acionáveis para melhorar sua performance.",
+    content: [
+      "**Passo 1:** Acesse **Insights de IA** no menu lateral dentro de um projeto.",
+      "**Passo 2:** Clique em **Gerar Insights** para que a IA analise seus dados.",
+      "**Passo 3:** Leia o resumo executivo e os insights detalhados por categoria.",
+    ],
+    subsections: [
+      {
+        title: "O que a IA analisa",
+        steps: [
+          "**Saúde do Projeto** → Score de 0 a 100 baseado em métricas-chave.",
+          "**Tendências** → Identifica padrões de crescimento ou queda nas vendas.",
+          "**Anomalias** → Detecta dias atípicos com vendas muito acima ou abaixo da média.",
+          "**Recomendações** → Sugestões concretas de ações para melhorar ROI, reduzir CPA, etc.",
+        ],
+      },
+      {
+        title: "Histórico de Insights",
+        steps: [
+          "Todos os insights gerados são **salvos automaticamente** com data e hora.",
+          "Compare a evolução do health score ao longo do tempo.",
+          "Use insights anteriores para validar se as recomendações funcionaram.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "cohort-ltv",
+    icon: Layers,
+    title: "26. Cohort & LTV",
+    badge: "Avançado",
+    intro: "Analise a retenção e o valor vitalício dos clientes agrupados por período de aquisição.",
+    content: [
+      "**Passo 1:** Acesse **Cohort & LTV** no menu lateral.",
+      "**Passo 2:** Visualize a tabela de cohorts com retenção e receita por período.",
+      "**Passo 3:** Identifique quais cohorts (períodos de aquisição) geram mais valor ao longo do tempo.",
+    ],
+    subsections: [
+      {
+        title: "Métricas Disponíveis",
+        steps: [
+          "**Tabela de Cohorts** → Compradores agrupados pelo mês/semana da primeira compra.",
+          "**Taxa de Retenção** → % de compradores que retornam em cada período subsequente.",
+          "**LTV por Cohort** → Receita acumulada de cada grupo ao longo do tempo.",
+          "**Curva de Retenção** → Gráfico visual da retenção por cohort.",
+        ],
+      },
+    ],
+    tip: "Use a análise de cohorts para entender se suas estratégias de retenção estão funcionando e para prever receita futura.",
+  },
+  {
+    id: "alertas-anomalia",
+    icon: Activity,
+    title: "27. Alertas de Anomalia",
+    badge: "Monitoramento",
+    intro: "Receba alertas automáticos quando o sistema detecta padrões fora do normal nos seus dados.",
+    content: [
+      "**Passo 1:** Acesse **Alertas de Anomalia** no menu lateral.",
+      "**Passo 2:** Visualize as anomalias detectadas automaticamente.",
+      "**Passo 3:** Tome ações corretivas baseadas nos alertas.",
+    ],
+    subsections: [
+      {
+        title: "Tipos de Anomalias",
+        steps: [
+          "**Quedas bruscas** → Redução significativa de vendas, leads ou receita comparado com a média.",
+          "**Picos atípicos** → Aumentos incomuns que podem indicar viralização ou erros de dados.",
+          "**Desvio de ROI** → Quando o ROI cai abaixo de um limiar crítico.",
+          "**Taxa de reembolso** → Quando reembolsos ultrapassam o padrão histórico.",
+        ],
+      },
+      {
+        title: "Como funciona",
+        steps: [
+          "O sistema calcula **desvios padrão** sobre a média móvel dos últimos dias.",
+          "Anomalias com severidade **Alta** e **Crítica** geram notificações automáticas.",
+          "Clique em uma anomalia para ver detalhes e dados contextuais.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "hub-conectores",
+    icon: Zap,
+    title: "28. Hub de Conectores",
+    badge: "Integração",
+    intro: "Central para gerenciar todas as integrações e conectores disponíveis no sistema.",
+    content: [
+      "**Passo 1:** Acesse o **Hub de Conectores** no menu lateral.",
+      "**Passo 2:** Visualize todos os conectores disponíveis e seu status de configuração.",
+      "**Passo 3:** Clique em um conector para configurá-lo ou ver detalhes.",
+    ],
+    subsections: [
+      {
+        title: "Conectores Disponíveis",
+        steps: [
+          "**Meta Ads** → Importação de métricas de anúncios do Facebook e Instagram.",
+          "**Google Ads** → Importação de métricas do Google Ads.",
+          "**Kiwify** → Captura de vendas via webhook ou CSV.",
+          "**Hotmart** → Captura de vendas via webhook ou CSV.",
+          "**WhatsApp** → Monitoramento de grupos via Evolution API.",
+          "**AGSell** → Integração com formulários e CRM AGSell.",
+          "**API Customizada** → Conexão com qualquer API REST.",
+        ],
+      },
+    ],
+    tip: "O Hub de Conectores é o local central para verificar rapidamente quais integrações estão ativas e configurar novas.",
+  },
+  {
+    id: "dashboard-custom",
+    icon: BarChart3,
+    title: "29. Dashboard Customizado (BI)",
+    badge: "Power BI",
+    intro: "Crie painéis personalizados no estilo Power BI com widgets arrastáveis e redimensionáveis.",
+    content: [
+      "**Passo 1:** Acesse **Dashboard Customizado** no menu lateral.",
+      "**Passo 2:** Clique em **Adicionar Widget** para inserir KPIs, gráficos ou tabelas.",
+      "**Passo 3:** **Arraste e redimensione** os widgets livremente no grid.",
+    ],
+    subsections: [
+      {
+        title: "Funcionalidades",
+        steps: [
+          "**19 tipos de widgets** disponíveis: KPIs financeiros, gráficos de linha/barra/pizza, tabelas e funis.",
+          "**Múltiplas abas** → Crie painéis separados para diferentes análises.",
+          "**Persistência** → Layout e posições são salvos automaticamente por projeto e usuário.",
+          "**Responsivo** → Os widgets se adaptam ao tamanho da tela.",
+        ],
+      },
+    ],
+    tip: "Use o Dashboard Customizado para criar visões específicas para apresentações ou acompanhamento diário com apenas as métricas que importam.",
+  },
 ];
 
 function renderMarkdown(text: string) {
@@ -805,6 +1052,14 @@ export default function Guide() {
             <Badge variant="outline" className="text-xs">🔌 API Customizada</Badge>
             <Badge variant="outline" className="text-xs">👁️ Pixel & Tracking</Badge>
             <Badge variant="outline" className="text-xs">🗺️ Jornada do Lead</Badge>
+            <Badge variant="outline" className="text-xs">🧠 Insights de IA</Badge>
+            <Badge variant="outline" className="text-xs">📊 ROI por Canal</Badge>
+            <Badge variant="outline" className="text-xs">🔀 Atribuição Avançada</Badge>
+            <Badge variant="outline" className="text-xs">🔮 Projeção Avançada</Badge>
+            <Badge variant="outline" className="text-xs">👥 Cohort & LTV</Badge>
+            <Badge variant="outline" className="text-xs">⚡ Alertas de Anomalia</Badge>
+            <Badge variant="outline" className="text-xs">🧩 Hub de Conectores</Badge>
+            <Badge variant="outline" className="text-xs">📋 Dashboard BI</Badge>
           </div>
         </CardContent>
       </Card>
