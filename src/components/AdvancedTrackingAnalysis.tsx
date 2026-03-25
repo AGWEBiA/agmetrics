@@ -23,14 +23,17 @@ interface AdvancedTrackingAnalysisProps {
 }
 
 /**
- * Extracts the real source from a sale prioritizing tracking_src, then UTMs
+ * Extracts the real source from a sale considering all tracking fields
  */
 function getRealSource(sale: any): string {
   return sale.tracking_src || sale.utm_source || "direto";
 }
 
+function getRealCampaign(sale: any): string {
+  return sale.utm_campaign || "(sem campanha)";
+}
+
 function getFirstTouchFromSale(sale: any): string {
-  // tracking_src is typically the original source param
   return sale.tracking_src || sale.utm_source || "direto";
 }
 
