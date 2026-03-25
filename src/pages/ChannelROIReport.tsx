@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useProject } from "@/hooks/useProjects";
 import { useChannelROIData, GroupBy } from "@/hooks/useChannelROIData";
 import { AnimatedPage } from "@/components/AnimatedCard";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, TrendingUp, Users, DollarSign, Repeat, Target, Info, ShoppingCart, PercentIcon } from "lucide-react";
+import { Download, TrendingUp, Users, DollarSign, Repeat, Target, Info, ShoppingCart, GitCompare } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -109,6 +109,14 @@ export default function ChannelROIReport() {
             <Download className="mr-1.5 h-4 w-4" />
             CSV
           </Button>
+          {projectId && (
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/admin/projects/${projectId}/advanced-attribution`}>
+                <GitCompare className="mr-1.5 h-4 w-4" />
+                Atribuição Avançada
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
