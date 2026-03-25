@@ -9,7 +9,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
       // Use only non-PII fields — buyer_email/buyer_name are excluded
       const { data, error } = await supabase
         .from("sales_events")
-        .select("amount, gross_amount, platform_fee, coproducer_commission, product_name, product_type, platform, sale_date, created_at")
+        .select("amount, gross_amount, base_price, platform_fee, coproducer_commission, product_name, product_type, platform, sale_date, created_at")
         .eq("project_id", projectId!)
         .eq("status", "approved")
         .eq("is_ignored", false);
@@ -88,6 +88,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   const totalCoproducerCommission = sales.reduce((s: number, e: any) => s + Number(e.coproducer_commission || 0), 0);
   const totalRevenue = producerRevenue + totalCoproducerCommission;
   const grossRevenue = sales.reduce((s: number, e: any) => s + Number(e.gross_amount || 0), 0);
+  const grossActionRevenue = sales.reduce((s: number, e: any) => s + Number(e.base_price || 0), 0);
   const totalFees = sales.reduce((s: number, e: any) => s + Number(e.platform_fee || 0), 0);
   const totalTaxes = sales.reduce((s: number, e: any) => s + Number((e as any).taxes || 0), 0);
   const salesCount = sales.length;
@@ -208,7 +209,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
 
   return {
     isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || goalsQuery.isLoading,
-    totalRevenue, grossRevenue, totalFees, totalTaxes, totalCoproducerCommission, producerRevenue, salesCount, avgTicket,
+    totalRevenue, grossRevenue, grossActionRevenue, totalFees, totalTaxes, totalCoproducerCommission, producerRevenue, salesCount, avgTicket,
     totalInvestment, metaInvestment, googleInvestment, netProfit, netProfitProject, netProfitProducer, roi, roas, margin,
     metaImpressions, metaClicks, metaResults, metaPurchases, metaLinkClicks, metaLpViews, metaCheckouts,
     metaLeads, metaCostPerLead,
