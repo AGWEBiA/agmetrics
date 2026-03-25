@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,18 +35,19 @@ const COLORS = [
 const fmtBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-async function fetchAllPaginated(table: string, projectId: string, selectCols: string, orderCol: string) {
+async function fetchAllPaginated(table: "sales_events" | "lead_events", projectId: string, selectCols: string, orderCol: string) {
   const PAGE_SIZE = 1000;
   let allData: any[] = [];
   let from = 0;
   let hasMore = true;
   while (hasMore) {
-    const { data, error } = await supabase
-      .from(table as any)
+    const query = supabase
+      .from(table)
       .select(selectCols)
       .eq("project_id", projectId)
       .order(orderCol, { ascending: true })
       .range(from, from + PAGE_SIZE - 1);
+    const { data, error } = await query;
     if (error) throw error;
     if (data) allData = allData.concat(data);
     hasMore = (data?.length || 0) === PAGE_SIZE;
@@ -341,10 +342,10 @@ export default function AdvancedAttribution() {
                         </TableRow>
                         <TableRow>
                           {models.map((m) => (
-                            <>
-                              <TableHead key={`${m}-rev`} className="text-right text-xs border-l border-border">Receita</TableHead>
-                              <TableHead key={`${m}-pct`} className="text-right text-xs">%</TableHead>
-                            </>
+                            <React.Fragment key={m}>
+                              <TableHead className="text-right text-xs border-l border-border">Receita</TableHead>
+                              <TableHead className="text-right text-xs">%</TableHead>
+                            </React.Fragment>
                           ))}
                         </TableRow>
                       </TableHeader>
@@ -353,14 +354,14 @@ export default function AdvancedAttribution() {
                           <TableRow key={row.channel}>
                             <TableCell className="font-medium max-w-[180px] truncate">{row.channel}</TableCell>
                             {models.map((m) => (
-                              <>
-                                <TableCell key={`${row.channel}-${m}-rev`} className="text-right border-l border-border">
+                              <React.Fragment key={`${row.channel}-${m}`}>
+                                <TableCell className="text-right border-l border-border">
                                   {fmtBRL(row[`${m}_revenue`])}
                                 </TableCell>
-                                <TableCell key={`${row.channel}-${m}-pct`} className="text-right">
+                                <TableCell className="text-right">
                                   <Badge variant="outline">{row[`${m}_percent`].toFixed(1)}%</Badge>
                                 </TableCell>
-                              </>
+                              </React.Fragment>
                             ))}
                           </TableRow>
                         ))}
