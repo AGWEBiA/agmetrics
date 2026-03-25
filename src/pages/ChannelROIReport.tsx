@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useProject } from "@/hooks/useProjects";
 import { useChannelROIData, GroupBy } from "@/hooks/useChannelROIData";
@@ -24,11 +24,11 @@ const COLORS = [
   "hsl(var(--chart-3))",
   "hsl(var(--chart-4))",
   "hsl(var(--chart-5))",
-  "#6366f1",
-  "#f59e0b",
-  "#10b981",
-  "#ef4444",
-  "#8b5cf6",
+  "hsl(var(--accent))",
+  "hsl(var(--secondary))",
+  "hsl(var(--muted))",
+  "hsl(var(--destructive))",
+  "hsl(var(--primary))",
 ];
 
 const fmtBRL = (v: number) =>
@@ -315,10 +315,9 @@ export default function ChannelROIReport() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {channelReport.map((ch) => (
-                    <>
+                {channelReport.map((ch) => (
+                    <React.Fragment key={ch.channel}>
                       <TableRow
-                        key={ch.channel}
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => setExpandedChannel(expandedChannel === ch.channel ? null : ch.channel)}
                       >
@@ -387,7 +386,7 @@ export default function ChannelROIReport() {
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </React.Fragment>
                   ))}
                 </TableBody>
               </Table>

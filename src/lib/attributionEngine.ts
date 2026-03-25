@@ -70,8 +70,8 @@ export function computeMultiModelAttribution(
     });
   }
 
-  // Add each sale's own channel as a touchpoint + collect filtered sales
-  salesData.forEach((s) => {
+  // Add each sale's own channel as a touchpoint (from ALL sales, not just filtered)
+  salesData.forEach((s: any) => {
     if (!s.buyer_email) return;
     const email = s.buyer_email.toLowerCase().trim();
     const channel = getField(s);
