@@ -423,7 +423,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || investmentsQuery.isLoading || productsQuery.isLoading,
     totalRevenue, grossRevenue, grossActionRevenue, totalFees, totalTaxes, totalCoproducerCommission, salesCount, avgTicket,
     pendingSalesCount: pendingSales.length, cancelledSalesCount: cancelledSales.length, refundedSalesCount: refundedSales.length,
-    totalSalesCount: sales.length, kiwifySales, hotmartSales,
+    totalSalesCount: sales.length, kiwifySales, hotmartSales, pendingSales, refundedSales,
     metaInvestment, googleInvestment, manualInvestment, totalInvestment,
     roi, roas, margin, netProfit, netProfitProject, netProfitProducer, producerRevenue,
     totalLeads, metaLeads, googleLeads, conversionRate, conversionLabel, conversionBase, avgCpl,

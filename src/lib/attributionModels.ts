@@ -11,6 +11,8 @@ export interface Touchpoint {
   medium: string;
   eventDate: string;
   eventType: string;
+  trackingSrc?: string;
+  trackingSck?: string;
 }
 
 export interface AttributionResult {
@@ -57,17 +59,20 @@ export function buildBuyerJourneys(events: any[]): BuyerJourney[] {
 
   return Array.from(byBuyer.entries()).map(([email, evts]) => {
     const sorted = evts.sort((a: any, b: any) =>
-      new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
+      new Date(a.event_date || a.sale_date || a.created_at).getTime() -
+      new Date(b.event_date || b.sale_date || b.created_at).getTime()
     );
 
     const touchpoints: Touchpoint[] = sorted
       .filter((e: any) => e.event_type !== "purchase" && e.event_type !== "refund")
       .map((e: any) => ({
-        source: e.utm_source || e.event_source || "direto",
+        source: e.utm_source || e.tracking_src || e.event_source || "direto",
         campaign: e.utm_campaign || e.event_detail || "(sem campanha)",
         medium: e.utm_medium || "organic",
-        eventDate: e.event_date,
+        eventDate: e.event_date || e.sale_date || e.created_at,
         eventType: e.event_type,
+        trackingSrc: e.tracking_src || "",
+        trackingSck: e.tracking_sck || "",
       }));
 
     const purchases = sorted.filter((e: any) => e.event_type === "purchase");
@@ -80,6 +85,63 @@ export function buildBuyerJourneys(events: any[]): BuyerJourney[] {
       revenue,
     };
   });
+}
+
+/**
+ * Build buyer journeys directly from sales_events data (for use when lead_events is sparse).
+ * Uses first sale's tracking info as first-touch, and each subsequent sale as additional touchpoints.
+ */
+export function buildJourneysFromSales(sales: any[]): BuyerJourney[] {
+  const byBuyer = new Map<string, any[]>();
+
+  sales.forEach(s => {
+    const key = s.buyer_email || s.buyer_name;
+    if (!key) return;
+    if (!byBuyer.has(key)) byBuyer.set(key, []);
+    byBuyer.get(key)!.push(s);
+  });
+
+  return Array.from(byBuyer.entries()).map(([email, salesList]) => {
+    const sorted = salesList.sort((a: any, b: any) =>
+      new Date(a.sale_date || a.created_at).getTime() -
+      new Date(b.sale_date || b.created_at).getTime()
+    );
+
+    // Build touchpoints from each sale's tracking data
+    const touchpoints: Touchpoint[] = sorted.map((s: any) => ({
+      source: s.utm_source || s.tracking_src || "direto",
+      campaign: s.utm_campaign || "(sem campanha)",
+      medium: s.utm_medium || "organic",
+      eventDate: s.sale_date || s.created_at,
+      eventType: "purchase",
+      trackingSrc: s.tracking_src || "",
+      trackingSck: s.tracking_sck || "",
+    }));
+
+    const revenue = sorted
+      .filter((s: any) => s.status === "approved")
+      .reduce((sum: number, s: any) => sum + Number(s.amount || 0) + Number(s.coproducer_commission || 0), 0);
+
+    return {
+      email,
+      touchpoints,
+      converted: sorted.some((s: any) => s.status === "approved"),
+      revenue,
+    };
+  });
+}
+
+/**
+ * Get the first-touch source for each buyer from their journey
+ */
+export function getFirstTouchSources(journeys: BuyerJourney[]): Map<string, Touchpoint> {
+  const map = new Map<string, Touchpoint>();
+  journeys.forEach(j => {
+    if (j.touchpoints.length > 0) {
+      map.set(j.email, j.touchpoints[0]);
+    }
+  });
+  return map;
 }
 
 /**
