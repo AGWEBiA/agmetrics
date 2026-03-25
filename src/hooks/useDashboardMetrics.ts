@@ -132,6 +132,20 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     refetchInterval: 300000,
   });
 
+  const productsQuery = useQuery({
+    queryKey: ["products", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("name, type, price")
+        .eq("project_id", projectId!);
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+    refetchInterval: 300000,
+  });
+
   const df = dateFilter || {};
 
   // Apply date + global filters
