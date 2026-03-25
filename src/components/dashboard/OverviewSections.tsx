@@ -505,6 +505,19 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
         <Card>
           <CardHeader className="pb-3"><CardTitle className="text-lg">🎯 Metas × Atingido</CardTitle></CardHeader>
           <CardContent className="space-y-6">
+            {/* Revenue summary cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-lg border bg-primary/5 p-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Receita Bruta Total (Preço Base)</p>
+                <p className="text-2xl font-bold mt-1">{formatBRL(m.grossActionRevenue)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Soma do preço base dos produtos vendidos</p>
+              </div>
+              <div className="rounded-lg border bg-primary/5 p-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Receita Bruta Produtor</p>
+                <p className="text-2xl font-bold mt-1">{formatBRL(m.grossRevenue)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Valor bruto recebido pelo produtor</p>
+              </div>
+            </div>
             {/* Status cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {goalsProgress.map((g: any, i: number) => {
