@@ -35,7 +35,7 @@ function getFirstTouchFromSale(sale: any): string {
 }
 
 export function AdvancedTrackingAnalysis({ sales, totalInvestment, metaMetrics = [], googleMetrics = [] }: AdvancedTrackingAnalysisProps) {
-  const [groupBy, setGroupBy] = useState<"first_touch" | "src" | "sck">("first_touch");
+  const [groupBy, setGroupBy] = useState<"first_touch" | "src" | "sck" | "utm_source" | "utm_campaign">("first_touch");
 
   const approvedSales = useMemo(() => sales.filter(s => s.status === "approved"), [sales]);
 
@@ -56,7 +56,11 @@ export function AdvancedTrackingAnalysis({ sales, totalInvestment, metaMetrics =
         ? (s.tracking_sck || "(sem sck)")
         : groupBy === "src"
           ? (s.tracking_src || "(sem src)")
-          : (firstTouch?.source || getFirstTouchFromSale(s));
+          : groupBy === "utm_source"
+            ? (s.utm_source || "(sem utm_source)")
+            : groupBy === "utm_campaign"
+              ? (s.utm_campaign || "(sem campanha)")
+              : (firstTouch?.source || getFirstTouchFromSale(s));
 
       const existing = map.get(source) || { buyers: new Set<string>(), totalRevenue: 0, purchaseCount: 0 };
       existing.buyers.add(email);
@@ -202,6 +206,8 @@ export function AdvancedTrackingAnalysis({ sales, totalInvestment, metaMetrics =
 
   const groupLabels: Record<string, string> = {
     first_touch: "Primeiro Contato (First Touch)",
+    utm_source: "UTM Source",
+    utm_campaign: "UTM Campanha",
     src: "SRC (tracking_src)",
     sck: "SCK (tracking_sck)",
   };
@@ -270,6 +276,8 @@ export function AdvancedTrackingAnalysis({ sales, totalInvestment, metaMetrics =
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="first_touch">Primeiro Contato</SelectItem>
+                  <SelectItem value="utm_source">UTM Source</SelectItem>
+                  <SelectItem value="utm_campaign">UTM Campanha</SelectItem>
                   <SelectItem value="src">SRC</SelectItem>
                   <SelectItem value="sck">SCK</SelectItem>
                 </SelectContent>
