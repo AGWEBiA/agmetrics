@@ -9,9 +9,10 @@ interface PermissionGuardProps {
 }
 
 export function PermissionGuard({ children, permission, adminOnly }: PermissionGuardProps) {
-  const { data: user, isLoading } = useCurrentUser();
+  const { data: user, isLoading, isFetching } = useCurrentUser();
 
-  if (isLoading) {
+  // Show loading while auth session is initializing or query is running
+  if (isLoading || (isFetching && user === undefined)) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
