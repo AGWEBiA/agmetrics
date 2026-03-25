@@ -24,8 +24,15 @@ import {
 } from "@/lib/attributionEngine";
 import type { GroupBy } from "@/hooks/useChannelROIData";
 
+const MODEL_COLORS = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+];
+
 const COLORS = [
-  "hsl(var(--primary))",
+  "hsl(var(--chart-1))",
   "hsl(var(--chart-2))",
   "hsl(var(--chart-3))",
   "hsl(var(--chart-4))",
