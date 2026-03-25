@@ -64,6 +64,20 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
     refetchInterval: 300000,
   });
 
+  const productsQuery = useQuery({
+    queryKey: ["public_products", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("name, type, price")
+        .eq("project_id", projectId!);
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+    refetchInterval: 300000,
+  });
+
   const metaAdsQuery = useQuery({
     queryKey: ["public_meta_ads", projectId],
     enabled: !!projectId,

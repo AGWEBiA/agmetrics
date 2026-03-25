@@ -420,7 +420,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const metaAds = metaAdsQuery.data || [];
 
   return {
-    isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || investmentsQuery.isLoading,
+    isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || investmentsQuery.isLoading || productsQuery.isLoading,
     totalRevenue, grossRevenue, grossActionRevenue, totalFees, totalTaxes, totalCoproducerCommission, salesCount, avgTicket,
     pendingSalesCount: pendingSales.length, cancelledSalesCount: cancelledSales.length, refundedSalesCount: refundedSales.length,
     totalSalesCount: sales.length, kiwifySales, hotmartSales,
