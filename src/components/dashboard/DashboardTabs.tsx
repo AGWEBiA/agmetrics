@@ -7,6 +7,7 @@ import { TimelineTab } from "./TimelineTab";
 import { TrackingTab } from "@/components/TrackingTab";
 import { AdsVendasCrossTab } from "@/components/AdsVendasCrossTab";
 import { SalesTrackingAnalysis } from "@/components/SalesTrackingAnalysis";
+import { AdvancedTrackingAnalysis } from "@/components/AdvancedTrackingAnalysis";
 import { BuyerDemographicProfile } from "@/components/BuyerDemographicProfile";
 import { RefundsSection } from "./RefundsSection";
 
@@ -42,6 +43,9 @@ export function DashboardTabs({ m, project, overviewContent }: DashboardTabsProp
           )}
           {m.salesCount > 0 && (
             <TabsTrigger value="sales-tracking" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Vendas × Track</TabsTrigger>
+          )}
+          {m.salesCount > 0 && (
+            <TabsTrigger value="advanced-tracking" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">LTV × Origem</TabsTrigger>
           )}
           {m.salesCount > 0 && (
             <TabsTrigger value="buyer-profile" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Perfil</TabsTrigger>
@@ -87,6 +91,15 @@ export function DashboardTabs({ m, project, overviewContent }: DashboardTabsProp
         <SalesTrackingAnalysis
           sales={[...(m.kiwifySales || []), ...(m.hotmartSales || [])]}
           totalInvestment={m.totalInvestment}
+        />
+      </AnimatedTabContent>
+
+      <AnimatedTabContent value="advanced-tracking" className="space-y-6 pt-4">
+        <AdvancedTrackingAnalysis
+          sales={[...(m.kiwifySales || []), ...(m.hotmartSales || []), ...(m.pendingSales || []), ...(m.refundedSales || [])]}
+          totalInvestment={m.totalInvestment}
+          metaMetrics={m.metaMetrics}
+          googleMetrics={m.googleMetrics}
         />
       </AnimatedTabContent>
 
