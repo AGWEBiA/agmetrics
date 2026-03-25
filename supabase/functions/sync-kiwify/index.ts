@@ -204,8 +204,15 @@ Deno.serve(async (req) => {
           default: status = "pending";
         }
 
-        // Use tracking from list endpoint if available
+        // Extract tracking from multiple possible locations in the API response
         const tracking = tx.tracking || {};
+        const utmSource = tracking.utm_source || tx.utm_source || tx.utmSource || "";
+        const utmMedium = tracking.utm_medium || tx.utm_medium || tx.utmMedium || "";
+        const utmCampaign = tracking.utm_campaign || tx.utm_campaign || tx.utmCampaign || "";
+        const utmTerm = tracking.utm_term || tx.utm_term || tx.utmTerm || "";
+        const utmContent = tracking.utm_content || tx.utm_content || tx.utmContent || "";
+        const trackingSrc = tracking.src || tx.src || "";
+        const trackingSck = tracking.sck || tx.sck || "";
 
         batch.push({
           project_id,
@@ -222,16 +229,16 @@ Deno.serve(async (req) => {
           buyer_name: customer.name || "",
           sale_date: createdAt,
           payment_method: tx.payment_method || undefined,
-          buyer_state: customer.state || undefined,
-          buyer_city: customer.city || undefined,
+          buyer_state: customer.state || customer.address?.state || undefined,
+          buyer_city: customer.city || customer.address?.city || undefined,
           buyer_country: customer.country || undefined,
-          utm_source: tracking.utm_source || undefined,
-          utm_medium: tracking.utm_medium || undefined,
-          utm_campaign: tracking.utm_campaign || undefined,
-          utm_term: tracking.utm_term || undefined,
-          utm_content: tracking.utm_content || undefined,
-          tracking_src: tracking.src || undefined,
-          tracking_sck: tracking.sck || undefined,
+          utm_source: utmSource || undefined,
+          utm_medium: utmMedium || undefined,
+          utm_campaign: utmCampaign || undefined,
+          utm_term: utmTerm || undefined,
+          utm_content: utmContent || undefined,
+          tracking_src: trackingSrc || undefined,
+          tracking_sck: trackingSck || undefined,
           payload: tx,
         });
       }
