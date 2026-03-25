@@ -41,6 +41,12 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
+    --chart-1: 220 90% 56%;
+    --chart-2: 340 75% 55%;
+    --chart-3: 45 93% 47%;
+    --chart-4: 160 60% 45%;
+    --chart-5: 265 80% 60%;
+
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 220 25% 10%;
     --sidebar-primary: 220 90% 56%;
@@ -84,6 +90,12 @@
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
+
+    --chart-1: 220 90% 60%;
+    --chart-2: 340 75% 60%;
+    --chart-3: 45 93% 52%;
+    --chart-4: 160 60% 50%;
+    --chart-5: 265 80% 65%;
 
     --sidebar-background: 224 28% 9%;
     --sidebar-foreground: 210 20% 90%;
