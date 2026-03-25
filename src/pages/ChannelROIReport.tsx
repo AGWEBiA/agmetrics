@@ -1,18 +1,18 @@
 import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useProject } from "@/hooks/useProjects";
+import { useChannelROIData, GroupBy } from "@/hooks/useChannelROIData";
 import { AnimatedPage } from "@/components/AnimatedCard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, TrendingUp, Users, DollarSign, Repeat, Target, Info } from "lucide-react";
+import { Download, TrendingUp, Users, DollarSign, Repeat, Target, Info, ShoppingCart, PercentIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { exportCSV } from "@/lib/exportCSV";
 import { format } from "date-fns";
@@ -31,160 +31,28 @@ const COLORS = [
   "#8b5cf6",
 ];
 
-type GroupBy = "utm_source" | "utm_campaign" | "tracking_src" | "tracking_sck";
-
-interface ChannelData {
-  channel: string;
-  totalClients: number;
-  avgFirstOrder: number;
-  totalFirstOrderRevenue: number;
-  totalSubsequentRevenue: number;
-  totalRevenue: number;
-  retentionRate: number;
-  repeatBuyers: number;
-  avgLTV: number;
-  adSpend: number;
-  roi: number;
-  clients: { email: string; name: string; firstAmount: number; subsequentAmount: number; totalPurchases: number; firstDate: string }[];
-}
+const fmtBRL = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export default function ChannelROIReport() {
   const { projectId } = useParams();
   const { data: project } = useProject(projectId);
-  const [groupBy, setGroupBy] = useState<GroupBy>("utm_source");
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
 
-  const { data: salesData, isLoading: salesLoading } = useQuery({
-    queryKey: ["channel_roi_sales", projectId],
-    enabled: !!projectId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("sales_events")
-        .select("buyer_email, buyer_name, amount, sale_date, utm_source, utm_campaign, utm_medium, tracking_src, tracking_sck, status")
-        .eq("project_id", projectId!)
-        .eq("is_ignored", false)
-        .eq("status", "approved" as any)
-        .order("sale_date", { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-    refetchInterval: 300000,
-  });
-
-  const { data: metaSpend } = useQuery({
-    queryKey: ["channel_roi_meta_spend", projectId],
-    enabled: !!projectId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("meta_metrics")
-        .select("date, investment")
-        .eq("project_id", projectId!);
-      if (error) throw error;
-      return (data || []).reduce((sum, r) => sum + Number(r.investment || 0), 0);
-    },
-  });
-
-  const { data: googleSpend } = useQuery({
-    queryKey: ["channel_roi_google_spend", projectId],
-    enabled: !!projectId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("google_metrics")
-        .select("date, investment")
-        .eq("project_id", projectId!);
-      if (error) throw error;
-      return (data || []).reduce((sum, r) => sum + Number(r.investment || 0), 0);
-    },
-  });
-
-  const channelReport = useMemo((): ChannelData[] => {
-    if (!salesData || salesData.length === 0) return [];
-
-    const getSource = (sale: any): string => {
-      const val = sale[groupBy] || "";
-      return val.trim() || "direto";
-    };
-
-    // Group by buyer email, find first touch
-    const buyerMap = new Map<string, any[]>();
-    salesData.forEach((s) => {
-      if (!s.buyer_email) return;
-      const key = s.buyer_email.toLowerCase().trim();
-      if (!buyerMap.has(key)) buyerMap.set(key, []);
-      buyerMap.get(key)!.push(s);
-    });
-
-    // Build channel aggregation
-    const channelMap = new Map<string, ChannelData>();
-
-    buyerMap.forEach((sales, email) => {
-      sales.sort((a: any, b: any) => new Date(a.sale_date).getTime() - new Date(b.sale_date).getTime());
-      const firstSale = sales[0];
-      const channel = getSource(firstSale);
-      const firstAmount = Number(firstSale.amount || 0);
-      const subsequentAmount = sales.slice(1).reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
-
-      if (!channelMap.has(channel)) {
-        channelMap.set(channel, {
-          channel,
-          totalClients: 0,
-          avgFirstOrder: 0,
-          totalFirstOrderRevenue: 0,
-          totalSubsequentRevenue: 0,
-          totalRevenue: 0,
-          retentionRate: 0,
-          repeatBuyers: 0,
-          avgLTV: 0,
-          adSpend: 0,
-          roi: 0,
-          clients: [],
-        });
-      }
-
-      const ch = channelMap.get(channel)!;
-      ch.totalClients++;
-      ch.totalFirstOrderRevenue += firstAmount;
-      ch.totalSubsequentRevenue += subsequentAmount;
-      ch.totalRevenue += firstAmount + subsequentAmount;
-      if (sales.length > 1) ch.repeatBuyers++;
-      ch.clients.push({
-        email,
-        name: firstSale.buyer_name || email,
-        firstAmount,
-        subsequentAmount,
-        totalPurchases: sales.length,
-        firstDate: firstSale.sale_date,
-      });
-    });
-
-    // Calculate derived metrics
-    const totalAdSpend = (metaSpend || 0) + (googleSpend || 0);
-
-    return Array.from(channelMap.values())
-      .map((ch) => {
-        ch.avgFirstOrder = ch.totalClients > 0 ? ch.totalFirstOrderRevenue / ch.totalClients : 0;
-        ch.retentionRate = ch.totalClients > 0 ? (ch.repeatBuyers / ch.totalClients) * 100 : 0;
-        ch.avgLTV = ch.totalClients > 0 ? ch.totalRevenue / ch.totalClients : 0;
-        // Distribute ad spend proportionally by client count for channels with known ads
-        const isAdChannel = ch.channel !== "direto";
-        ch.adSpend = isAdChannel ? (totalAdSpend * ch.totalClients) / Math.max(buyerMap.size, 1) : 0;
-        ch.roi = ch.adSpend > 0 ? ((ch.totalRevenue - ch.adSpend) / ch.adSpend) * 100 : 0;
-        ch.clients.sort((a, b) => b.subsequentAmount - a.subsequentAmount);
-        return ch;
-      })
-      .sort((a, b) => b.totalRevenue - a.totalRevenue);
-  }, [salesData, groupBy, metaSpend, googleSpend]);
-
-  const totals = useMemo(() => {
-    if (channelReport.length === 0) return null;
-    return {
-      clients: channelReport.reduce((s, c) => s + c.totalClients, 0),
-      revenue: channelReport.reduce((s, c) => s + c.totalRevenue, 0),
-      subsequent: channelReport.reduce((s, c) => s + c.totalSubsequentRevenue, 0),
-      repeat: channelReport.reduce((s, c) => s + c.repeatBuyers, 0),
-      adSpend: (metaSpend || 0) + (googleSpend || 0),
-    };
-  }, [channelReport, metaSpend, googleSpend]);
+  const {
+    channelReport,
+    totals,
+    isLoading,
+    groupBy,
+    setGroupBy,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    productFilter,
+    setProductFilter,
+    productNames,
+  } = useChannelROIData(projectId);
 
   const chartConfig = useMemo(() => {
     const cfg: Record<string, { label: string; color: string }> = {};
@@ -197,11 +65,14 @@ export default function ChannelROIReport() {
   const handleExportCSV = () => {
     const rows = channelReport.map((ch) => ({
       Canal: ch.channel,
+      Vendas: ch.totalSales,
+      "% Vendas": ch.salesPercent.toFixed(1) + "%",
       Clientes: ch.totalClients,
       "Ticket Médio 1ª Compra": ch.avgFirstOrder.toFixed(2),
       "Receita 1ª Compra": ch.totalFirstOrderRevenue.toFixed(2),
       "Receita Subsequente": ch.totalSubsequentRevenue.toFixed(2),
       "Receita Total": ch.totalRevenue.toFixed(2),
+      "% Receita": ch.revenuePercent.toFixed(1) + "%",
       "Compradores Recorrentes": ch.repeatBuyers,
       "Taxa Retenção (%)": ch.retentionRate.toFixed(1),
       "LTV Médio": ch.avgLTV.toFixed(2),
@@ -211,23 +82,20 @@ export default function ChannelROIReport() {
     exportCSV(rows, `roi-por-canal-${project?.name || "projeto"}`);
   };
 
-  const fmtBRL = (v: number) =>
-    v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
-  const isLoading = salesLoading;
-
   return (
     <AnimatedPage className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">ROI por Canal</h1>
           <p className="text-sm text-muted-foreground">
-            Atribuição first-touch · Dados até {format(new Date(), "dd/MM/yyyy", { locale: ptBR })}
+            Atribuição first-touch (lead/1ª venda) · Dados até {format(new Date(), "dd/MM/yyyy", { locale: ptBR })}
+            {totals && <> · <strong>{totals.sales} vendas</strong> de <strong>{totals.clients} clientes</strong></>}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupBy)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -244,15 +112,56 @@ export default function ChannelROIReport() {
         </div>
       </div>
 
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4 flex flex-wrap gap-3 items-end">
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground font-medium">Data Início</label>
+            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground font-medium">Data Fim</label>
+            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground font-medium">Produto</label>
+            <Select value={productFilter} onValueChange={setProductFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os produtos</SelectItem>
+                {productNames.map((name) => (
+                  <SelectItem key={name} value={name}>{name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {(dateFrom || dateTo || productFilter !== "all") && (
+            <Button variant="ghost" size="sm" onClick={() => { setDateFrom(""); setDateTo(""); setProductFilter("all"); }}>
+              Limpar filtros
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
       {/* KPI Cards */}
       {isLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {Array.from({ length: 5 }).map((_, i) => (
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-24 rounded-xl" />
           ))}
         </div>
       ) : totals ? (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium">
+                <ShoppingCart className="h-3.5 w-3.5" /> Total Vendas
+              </div>
+              <p className="text-2xl font-bold mt-1">{totals.sales}</p>
+            </CardContent>
+          </Card>
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium">
@@ -323,14 +232,14 @@ export default function ChannelROIReport() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Distribuição de Clientes</CardTitle>
+              <CardTitle className="text-base">Distribuição de Vendas por Canal</CardTitle>
             </CardHeader>
             <CardContent>
               <ChartContainer config={chartConfig} className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={channelReport.slice(0, 8).map((ch) => ({ name: ch.channel, value: ch.totalClients }))}
+                      data={channelReport.slice(0, 8).map((ch) => ({ name: ch.channel, value: ch.totalSales }))}
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
@@ -362,11 +271,12 @@ export default function ChannelROIReport() {
                 <Info className="h-4 w-4 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
-                First-touch: agrupa clientes pelo canal da primeira compra. Receita subsequente inclui todas as compras posteriores, independente do canal.
+                First-touch: agrupa clientes pelo canal do primeiro contato (lead capturado ou primeira compra).
+                Todas as vendas subsequentes são atribuídas ao canal de origem, sem dupla contagem.
               </TooltipContent>
             </Tooltip>
           </CardTitle>
-          <CardDescription>Clique em um canal para ver os clientes</CardDescription>
+          <CardDescription>Clique em um canal para ver os clientes · Todas as vendas do projeto estão incluídas</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -376,18 +286,21 @@ export default function ChannelROIReport() {
               ))}
             </div>
           ) : channelReport.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Nenhuma venda aprovada encontrada para este projeto.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">Nenhuma venda encontrada para este projeto.</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Canal</TableHead>
+                    <TableHead className="text-right">Vendas</TableHead>
+                    <TableHead className="text-right">% Vendas</TableHead>
                     <TableHead className="text-right">Clientes</TableHead>
                     <TableHead className="text-right">Ticket 1ª</TableHead>
                     <TableHead className="text-right">Receita 1ª</TableHead>
                     <TableHead className="text-right">Receita Recorrente</TableHead>
                     <TableHead className="text-right">Receita Total</TableHead>
+                    <TableHead className="text-right">% Receita</TableHead>
                     <TableHead className="text-right">Retenção</TableHead>
                     <TableHead className="text-right">LTV Médio</TableHead>
                     <TableHead className="text-right">ROI</TableHead>
@@ -402,11 +315,18 @@ export default function ChannelROIReport() {
                         onClick={() => setExpandedChannel(expandedChannel === ch.channel ? null : ch.channel)}
                       >
                         <TableCell className="font-medium max-w-[200px] truncate">{ch.channel}</TableCell>
+                        <TableCell className="text-right font-semibold">{ch.totalSales}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="outline">{ch.salesPercent.toFixed(1)}%</Badge>
+                        </TableCell>
                         <TableCell className="text-right">{ch.totalClients}</TableCell>
                         <TableCell className="text-right">{fmtBRL(ch.avgFirstOrder)}</TableCell>
                         <TableCell className="text-right">{fmtBRL(ch.totalFirstOrderRevenue)}</TableCell>
                         <TableCell className="text-right">{fmtBRL(ch.totalSubsequentRevenue)}</TableCell>
                         <TableCell className="text-right font-semibold">{fmtBRL(ch.totalRevenue)}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="secondary">{ch.revenuePercent.toFixed(1)}%</Badge>
+                        </TableCell>
                         <TableCell className="text-right">
                           <Badge variant={ch.retentionRate >= 30 ? "default" : ch.retentionRate >= 10 ? "secondary" : "outline"}>
                             {ch.retentionRate.toFixed(1)}%
@@ -425,12 +345,13 @@ export default function ChannelROIReport() {
                       </TableRow>
                       {expandedChannel === ch.channel && (
                         <TableRow key={`${ch.channel}-detail`}>
-                          <TableCell colSpan={9} className="bg-muted/30 p-0">
+                          <TableCell colSpan={12} className="bg-muted/30 p-0">
                             <div className="max-h-60 overflow-y-auto">
                               <Table>
                                 <TableHeader>
                                   <TableRow>
                                     <TableHead className="text-xs">Cliente</TableHead>
+                                    <TableHead className="text-xs">Produtos</TableHead>
                                     <TableHead className="text-xs text-right">1ª Compra</TableHead>
                                     <TableHead className="text-xs text-right">Subsequentes</TableHead>
                                     <TableHead className="text-xs text-right">Nº Compras</TableHead>
@@ -438,9 +359,12 @@ export default function ChannelROIReport() {
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                  {ch.clients.slice(0, 50).map((client) => (
+                                  {ch.clients.slice(0, 100).map((client) => (
                                     <TableRow key={client.email}>
-                                      <TableCell className="text-xs max-w-[200px] truncate">{client.name}</TableCell>
+                                      <TableCell className="text-xs max-w-[180px] truncate">{client.name}</TableCell>
+                                      <TableCell className="text-xs max-w-[150px] truncate text-muted-foreground">
+                                        {client.productNames.join(", ") || "—"}
+                                      </TableCell>
                                       <TableCell className="text-xs text-right">{fmtBRL(client.firstAmount)}</TableCell>
                                       <TableCell className="text-xs text-right">{fmtBRL(client.subsequentAmount)}</TableCell>
                                       <TableCell className="text-xs text-right">{client.totalPurchases}</TableCell>
@@ -475,10 +399,8 @@ export default function ChannelROIReport() {
               const bestRetention = [...channelReport].filter((c) => c.totalClients >= 3).sort((a, b) => b.retentionRate - a.retentionRate)[0];
               const bestLTV = [...channelReport].filter((c) => c.totalClients >= 3).sort((a, b) => b.avgLTV - a.avgLTV)[0];
               const bestROI = [...channelReport].filter((c) => c.adSpend > 0).sort((a, b) => b.roi - a.roi)[0];
-              const tracked = channelReport.filter((c) => c.channel !== "direto");
-              const untrackedPct = totals
-                ? (((channelReport.find((c) => c.channel === "direto")?.totalRevenue || 0) / totals.revenue) * 100)
-                : 0;
+              const direto = channelReport.find((c) => c.channel === "direto");
+              const untrackedPct = totals && direto ? (direto.totalRevenue / totals.revenue) * 100 : 0;
 
               return (
                 <>
@@ -506,10 +428,10 @@ export default function ChannelROIReport() {
                       Padronize o uso de UTMs para melhorar a atribuição.
                     </p>
                   )}
-                  {tracked.length > 0 && (
+                  {totals && totals.sales > 0 && (
                     <p>
-                      💡 <strong>Recomendação:</strong> Considere realocar budget para os canais com maior LTV e retenção,
-                      não apenas os de maior volume.
+                      📦 <strong>Total geral:</strong> {totals.sales} vendas atribuídas a {channelReport.length} canais distintos.
+                      Nenhuma venda foi omitida da análise.
                     </p>
                   )}
                 </>
