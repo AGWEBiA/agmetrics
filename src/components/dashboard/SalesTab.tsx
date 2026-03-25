@@ -11,13 +11,14 @@ export function SalesTab({ m }: SalesTabProps) {
   return (
     <>
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <AnimatedCard index={0}><MetricCard title="Receita Bruta" value={formatBRL(m.grossRevenue)} subtitle="Total cobrado" /></AnimatedCard>
-        <AnimatedCard index={1}><MetricCard title="Receita Líquida (Produtor)" value={formatBRL(m.producerRevenue)} subtitle="Valor do produtor" /></AnimatedCard>
-        <AnimatedCard index={2}><MetricCard title="Comissão Coprodutor" value={formatBRL(m.totalCoproducerCommission)} subtitle="Valor dos coprodutores" /></AnimatedCard>
-        <AnimatedCard index={3}><MetricCard title="Taxas da Plataforma" value={formatBRL(m.totalTaxes)} subtitle="Kiwify + Hotmart" /></AnimatedCard>
-        <AnimatedCard index={4}><MetricCard title="Lucro Líquido Projeto" value={formatBRL(m.netProfitProject)} color={m.netProfitProject >= 0 ? "text-success" : "text-destructive"} subtitle="Receita total - Investimento" /></AnimatedCard>
-        <AnimatedCard index={5}><MetricCard title="Lucro Líquido Produtor" value={formatBRL(m.netProfitProducer)} color={m.netProfitProducer >= 0 ? "text-success" : "text-destructive"} subtitle="Receita produtor - Investimento" /></AnimatedCard>
-        <AnimatedCard index={6}><MetricCard title="Margem" value={formatPercent(m.margin)} color={m.margin >= 0 ? "text-success" : "text-destructive"} /></AnimatedCard>
+        <AnimatedCard index={0}><MetricCard title="Receita Bruta da Ação" value={formatBRL(m.grossActionRevenue)} subtitle="Preço base dos produtos" /></AnimatedCard>
+        <AnimatedCard index={1}><MetricCard title="Receita Bruta" value={formatBRL(m.grossRevenue)} subtitle="Total cobrado" /></AnimatedCard>
+        <AnimatedCard index={2}><MetricCard title="Receita Líquida (Produtor)" value={formatBRL(m.producerRevenue)} subtitle="Valor do produtor" /></AnimatedCard>
+        <AnimatedCard index={3}><MetricCard title="Comissão Coprodutor" value={formatBRL(m.totalCoproducerCommission)} subtitle="Valor dos coprodutores" /></AnimatedCard>
+        <AnimatedCard index={4}><MetricCard title="Taxas da Plataforma" value={formatBRL(m.totalTaxes)} subtitle="Kiwify + Hotmart" /></AnimatedCard>
+        <AnimatedCard index={5}><MetricCard title="Lucro Líquido Projeto" value={formatBRL(m.netProfitProject)} color={m.netProfitProject >= 0 ? "text-success" : "text-destructive"} subtitle="Receita total - Investimento" /></AnimatedCard>
+        <AnimatedCard index={6}><MetricCard title="Lucro Líquido Produtor" value={formatBRL(m.netProfitProducer)} color={m.netProfitProducer >= 0 ? "text-success" : "text-destructive"} subtitle="Receita produtor - Investimento" /></AnimatedCard>
+        <AnimatedCard index={7}><MetricCard title="Margem" value={formatPercent(m.margin)} color={m.margin >= 0 ? "text-success" : "text-destructive"} /></AnimatedCard>
       </div>
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
         <AnimatedCard index={4}>
