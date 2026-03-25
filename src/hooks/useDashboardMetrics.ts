@@ -421,6 +421,11 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
 
   return {
     isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || investmentsQuery.isLoading || productsQuery.isLoading,
+    // Lazy-load triggers for secondary data
+    loadDemographics: demographicsQuery.refetch,
+    loadMetaAds: metaAdsQuery.refetch,
+    demographicsLoaded: demographicsQuery.isFetched,
+    metaAdsLoaded: metaAdsQuery.isFetched,
     totalRevenue, grossRevenue, grossActionRevenue, totalFees, totalTaxes, totalCoproducerCommission, salesCount, avgTicket,
     pendingSalesCount: pendingSales.length, cancelledSalesCount: cancelledSales.length, refundedSalesCount: refundedSales.length,
     totalSalesCount: sales.length, kiwifySales, hotmartSales, pendingSales, refundedSales,
