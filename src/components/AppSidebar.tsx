@@ -23,6 +23,7 @@ import {
   Zap,
   ChevronDown,
   Rocket,
+  TrendingUp,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate } from "react-router-dom";
@@ -86,6 +87,7 @@ export function AppSidebar() {
         { title: "Comportamento", url: `/admin/projects/${projectId}/behavior`, icon: MousePointer2, visible: can("projects.view") },
         { title: "Cohort & LTV", url: `/admin/projects/${projectId}/cohort-ltv`, icon: Users, visible: can("projects.view") },
         { title: "Comparação Temporal", url: `/admin/projects/${projectId}/temporal-comparison`, icon: GitCompare, visible: can("projects.view") },
+        { title: "ROI por Canal", url: `/admin/projects/${projectId}/channel-roi`, icon: TrendingUp, visible: can("projects.view") },
       ].filter((item) => item.visible)
     : [];
 
