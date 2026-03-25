@@ -1052,6 +1052,14 @@ export default function Guide() {
             <Badge variant="outline" className="text-xs">🔌 API Customizada</Badge>
             <Badge variant="outline" className="text-xs">👁️ Pixel & Tracking</Badge>
             <Badge variant="outline" className="text-xs">🗺️ Jornada do Lead</Badge>
+            <Badge variant="outline" className="text-xs">🧠 Insights de IA</Badge>
+            <Badge variant="outline" className="text-xs">📊 ROI por Canal</Badge>
+            <Badge variant="outline" className="text-xs">🔀 Atribuição Avançada</Badge>
+            <Badge variant="outline" className="text-xs">🔮 Projeção Avançada</Badge>
+            <Badge variant="outline" className="text-xs">👥 Cohort & LTV</Badge>
+            <Badge variant="outline" className="text-xs">⚡ Alertas de Anomalia</Badge>
+            <Badge variant="outline" className="text-xs">🧩 Hub de Conectores</Badge>
+            <Badge variant="outline" className="text-xs">📋 Dashboard BI</Badge>
           </div>
         </CardContent>
       </Card>
