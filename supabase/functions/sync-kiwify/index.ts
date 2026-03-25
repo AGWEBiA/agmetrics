@@ -214,7 +214,7 @@ Deno.serve(async (req) => {
         const trackingSrc = tracking.src || tx.src || "";
         const trackingSck = tracking.sck || tx.sck || "";
 
-        batch.push({
+        const record: any = {
           project_id,
           platform: "kiwify",
           external_id: orderId,
@@ -232,15 +232,20 @@ Deno.serve(async (req) => {
           buyer_state: customer.state || customer.address?.state || undefined,
           buyer_city: customer.city || customer.address?.city || undefined,
           buyer_country: customer.country || undefined,
-          utm_source: utmSource || undefined,
-          utm_medium: utmMedium || undefined,
-          utm_campaign: utmCampaign || undefined,
-          utm_term: utmTerm || undefined,
-          utm_content: utmContent || undefined,
-          tracking_src: trackingSrc || undefined,
-          tracking_sck: trackingSck || undefined,
           payload: tx,
-        });
+        };
+
+        // Only include tracking fields if the API actually provides them
+        // This prevents overwriting CSV-imported tracking data with empty values
+        if (utmSource) record.utm_source = utmSource;
+        if (utmMedium) record.utm_medium = utmMedium;
+        if (utmCampaign) record.utm_campaign = utmCampaign;
+        if (utmTerm) record.utm_term = utmTerm;
+        if (utmContent) record.utm_content = utmContent;
+        if (trackingSrc) record.tracking_src = trackingSrc;
+        if (trackingSck) record.tracking_sck = trackingSck;
+
+        batch.push(record);
       }
 
       if (batch.length > 0) {
