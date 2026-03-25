@@ -64,6 +64,20 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
     refetchInterval: 300000,
   });
 
+  const productsQuery = useQuery({
+    queryKey: ["public_products", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("name, type, price")
+        .eq("project_id", projectId!);
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+    refetchInterval: 300000,
+  });
+
   const metaAdsQuery = useQuery({
     queryKey: ["public_meta_ads", projectId],
     enabled: !!projectId,
@@ -88,7 +102,20 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   const totalCoproducerCommission = sales.reduce((s: number, e: any) => s + Number(e.coproducer_commission || 0), 0);
   const totalRevenue = producerRevenue + totalCoproducerCommission;
   const grossRevenue = sales.reduce((s: number, e: any) => s + Number(e.gross_amount || 0), 0);
-  const grossActionRevenue = sales.reduce((s: number, e: any) => s + Number(e.base_price || 0), 0);
+
+  // Receita Bruta da Ação: uses product base price from products table
+  const registeredProducts = productsQuery.data || [];
+  const grossActionRevenue = sales.reduce((sum: number, sale: any) => {
+    const saleName = (sale.product_name || "").toLowerCase();
+    const saleType = sale.product_type || "main";
+    const matched = registeredProducts.find(
+      (p: any) => p.name.toLowerCase() === saleName && p.type === saleType
+    ) || registeredProducts.find(
+      (p: any) => p.name.toLowerCase() === saleName
+    );
+    return sum + Number(matched?.price || sale.gross_amount || 0);
+  }, 0);
+
   const totalFees = sales.reduce((s: number, e: any) => s + Number(e.platform_fee || 0), 0);
   const totalTaxes = sales.reduce((s: number, e: any) => s + Number((e as any).taxes || 0), 0);
   const salesCount = sales.length;
@@ -208,7 +235,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   const gCostPerConversion = gConversions > 0 ? googleInvestment / gConversions : 0;
 
   return {
-    isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || goalsQuery.isLoading,
+    isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || goalsQuery.isLoading || productsQuery.isLoading,
     totalRevenue, grossRevenue, grossActionRevenue, totalFees, totalTaxes, totalCoproducerCommission, producerRevenue, salesCount, avgTicket,
     totalInvestment, metaInvestment, googleInvestment, netProfit, netProfitProject, netProfitProducer, roi, roas, margin,
     metaImpressions, metaClicks, metaResults, metaPurchases, metaLinkClicks, metaLpViews, metaCheckouts,

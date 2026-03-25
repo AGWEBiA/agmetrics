@@ -132,6 +132,20 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     refetchInterval: 300000,
   });
 
+  const productsQuery = useQuery({
+    queryKey: ["products", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("name, type, price")
+        .eq("project_id", projectId!);
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+    refetchInterval: 300000,
+  });
+
   const df = dateFilter || {};
 
   // Apply date + global filters
@@ -168,7 +182,21 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const totalCoproducerCommission = approvedSales.reduce((s, e) => s + Number((e as any).coproducer_commission || 0), 0);
   const totalRevenue = producerRevenue + totalCoproducerCommission;
   const grossRevenue = approvedSales.reduce((s, e) => s + Number(e.gross_amount), 0);
-  const grossActionRevenue = approvedSales.reduce((s, e) => s + Number((e as any).base_price || 0), 0);
+
+  // Receita Bruta da Ação: uses product base price from products table
+  const registeredProducts = productsQuery.data || [];
+  const grossActionRevenue = approvedSales.reduce((sum, sale) => {
+    const saleName = (sale.product_name || "").toLowerCase();
+    const saleType = sale.product_type || "main";
+    // Match by name + type first, then by name only
+    const matched = registeredProducts.find(
+      (p: any) => p.name.toLowerCase() === saleName && p.type === saleType
+    ) || registeredProducts.find(
+      (p: any) => p.name.toLowerCase() === saleName
+    );
+    return sum + Number(matched?.price || sale.gross_amount || 0);
+  }, 0);
+
   const totalFees = approvedSales.reduce((s, e) => s + Number(e.platform_fee), 0);
   const totalTaxes = approvedSales.reduce((s, e) => s + Number((e as any).taxes || 0), 0);
   const salesCount = approvedSales.length;
@@ -392,7 +420,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const metaAds = metaAdsQuery.data || [];
 
   return {
-    isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || investmentsQuery.isLoading,
+    isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || investmentsQuery.isLoading || productsQuery.isLoading,
     totalRevenue, grossRevenue, grossActionRevenue, totalFees, totalTaxes, totalCoproducerCommission, salesCount, avgTicket,
     pendingSalesCount: pendingSales.length, cancelledSalesCount: cancelledSales.length, refundedSalesCount: refundedSales.length,
     totalSalesCount: sales.length, kiwifySales, hotmartSales,
