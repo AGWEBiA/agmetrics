@@ -37,6 +37,12 @@ import {
   RefreshCw,
   Shield,
   Search,
+  Brain,
+  Layers,
+  Activity,
+  Zap,
+  PieChart,
+  Network,
 } from "lucide-react";
 
 interface GuideSection {
