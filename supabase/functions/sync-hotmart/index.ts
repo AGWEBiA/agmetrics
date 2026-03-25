@@ -247,6 +247,7 @@ Deno.serve(async (req) => {
         }
 
         const transactionId = purchase.transaction || "";
+        const basePrice = parseFloat(String(product.price || price.value || "0"));
         const grossValue = parseFloat(String(price.value || "0"));
         const netValue = parseFloat(String(price.net_value || price.value || "0"));
         const buyerEmail = buyer.email || "";
@@ -312,6 +313,7 @@ Deno.serve(async (req) => {
               product_type: matchedProduct.type || "main",
               amount: netValue,
               gross_amount: grossValue,
+              base_price: basePrice,
               platform_fee: platformFee,
               status,
               buyer_email: buyerEmail,
