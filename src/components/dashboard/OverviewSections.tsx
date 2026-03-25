@@ -258,35 +258,72 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
     ) : null,
 
     products: m.productData.length > 0 ? (
-      <AnimatedCard index={2}>
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Vendas por Produto</CardTitle></CardHeader>
-          <CardContent className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Produto</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead className="text-right">Qty</TableHead>
-                  <TableHead className="text-right">Receita</TableHead>
-                  <TableHead className="text-right">%</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {m.productData.map((p: any) => (
-                  <TableRow key={p.name}>
-                    <TableCell className="font-medium">{p.name}</TableCell>
-                    <TableCell><Badge variant="outline">{p.type === "main" ? "Principal" : p.type === "order_bump" ? "Order Bump" : "—"}</Badge></TableCell>
-                    <TableCell className="text-right">{p.count}</TableCell>
-                    <TableCell className="text-right">{formatBRL(p.revenue)}</TableCell>
-                    <TableCell className="text-right">{formatPercent(p.pct)}</TableCell>
+      <div className="space-y-4">
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {m.productData.map((p: any, i: number) => {
+            const typeLabel = p.type === "main" ? "Principal" : p.type === "order_bump" ? "Order Bump" : "Produto";
+            const color = COLORS[i % COLORS.length];
+            return (
+              <AnimatedCard key={p.name} index={i}>
+                <Card className="relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: color }} />
+                  <CardContent className="pt-4 pb-3 pl-5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate">{p.name}</p>
+                        <Badge variant="outline" className="mt-1 text-[10px]">{typeLabel}</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground shrink-0">{formatPercent(p.pct)}</span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Vendas</p>
+                        <p className="text-lg font-bold">{formatNumber(p.count)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Receita</p>
+                        <p className="text-lg font-bold text-success">{formatBRL(p.revenue)}</p>
+                      </div>
+                    </div>
+                    <Progress value={Math.min(p.pct, 100)} className="mt-2 h-1.5" />
+                  </CardContent>
+                </Card>
+              </AnimatedCard>
+            );
+          })}
+        </div>
+        <AnimatedCard index={m.productData.length}>
+          <Card>
+            <CardHeader><CardTitle className="text-lg">Detalhamento por Produto</CardTitle></CardHeader>
+            <CardContent className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Produto</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead className="text-right">Qty</TableHead>
+                    <TableHead className="text-right">Receita</TableHead>
+                    <TableHead className="text-right">Ticket Médio</TableHead>
+                    <TableHead className="text-right">%</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </AnimatedCard>
+                </TableHeader>
+                <TableBody>
+                  {m.productData.map((p: any) => (
+                    <TableRow key={p.name}>
+                      <TableCell className="font-medium">{p.name}</TableCell>
+                      <TableCell><Badge variant="outline">{p.type === "main" ? "Principal" : p.type === "order_bump" ? "Order Bump" : "—"}</Badge></TableCell>
+                      <TableCell className="text-right">{p.count}</TableCell>
+                      <TableCell className="text-right">{formatBRL(p.revenue)}</TableCell>
+                      <TableCell className="text-right">{p.count > 0 ? formatBRL(p.revenue / p.count) : "—"}</TableCell>
+                      <TableCell className="text-right">{formatPercent(p.pct)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </AnimatedCard>
+      </div>
     ) : null,
 
     whatsapp: whatsappGroups && whatsappGroups.length > 0 ? (
