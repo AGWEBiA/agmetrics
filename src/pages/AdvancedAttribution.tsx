@@ -143,10 +143,10 @@ export default function AdvancedAttribution() {
   }, [comparisonData]);
 
   const chartConfig = {
-    "First-touch": { label: "First-touch", color: COLORS[0] },
-    "Last-click": { label: "Last-click", color: COLORS[1] },
-    "Linear": { label: "Linear", color: COLORS[2] },
-    "Time-decay": { label: "Time-decay", color: COLORS[3] },
+    "First-touch": { label: "First-touch", color: MODEL_COLORS[0] },
+    "Last-click": { label: "Last-click", color: MODEL_COLORS[1] },
+    "Linear": { label: "Linear", color: MODEL_COLORS[2] },
+    "Time-decay": { label: "Time-decay", color: MODEL_COLORS[3] },
   };
 
   const handleExportCSV = () => {
