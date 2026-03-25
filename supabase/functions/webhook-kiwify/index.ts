@@ -18,6 +18,9 @@ function extractSaleData(payload: Record<string, any>) {
     const orderId = payload["id da venda"] || "";
     const rawStatus = (payload["status"] || "").toLowerCase();
     const productName = payload["produto"] || "";
+    const basePrice = parseFloat(
+      String(payload["preço base do produto"] || "0").replace(",", ".")
+    );
     const grossAmount = parseFloat(
       String(payload["total com acréscimo"] || payload["preço base do produto"] || "0").replace(",", ".")
     );
@@ -65,7 +68,7 @@ function extractSaleData(payload: Record<string, any>) {
     return {
       orderId, productName, grossAmount, netValue, platformFee,
       taxes, coproducerCommission, buyerEmail, buyerName, status,
-      createdAt, paymentMethod, installments,
+      createdAt, paymentMethod, installments, basePrice,
     };
   }
 
@@ -73,6 +76,7 @@ function extractSaleData(payload: Record<string, any>) {
   const orderId = payload.order_id || payload.subscription_id || "";
   const rawStatus = payload.order_status || "";
   const productName = payload.Product?.product_name || payload.product?.product_name || "";
+  const basePrice = parseFloat(payload.Product?.product_price || payload.product?.product_price || payload.product?.price || "0");
   const grossAmount = parseFloat(payload.order_amount || payload.sale_amount || "0");
   const netValue = parseFloat(payload.net_value || payload.order_amount || "0");
   const platformFee = Math.max(0, grossAmount - netValue);
@@ -97,7 +101,7 @@ function extractSaleData(payload: Record<string, any>) {
   return {
     orderId, productName, grossAmount, netValue, platformFee,
     taxes: 0, coproducerCommission: 0, buyerEmail, buyerName, status,
-    createdAt, paymentMethod, installments,
+    createdAt, paymentMethod, installments, basePrice,
   };
 }
 
@@ -264,6 +268,7 @@ Deno.serve(async (req) => {
           product_type: matchedProduct.type,
           amount: sale.netValue,
           gross_amount: sale.grossAmount,
+          base_price: sale.basePrice,
           platform_fee: sale.platformFee,
           taxes: sale.taxes,
           coproducer_commission: sale.coproducerCommission,

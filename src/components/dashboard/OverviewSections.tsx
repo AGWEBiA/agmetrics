@@ -33,6 +33,7 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
           <CardHeader className="pb-3"><CardTitle className="text-lg">Resumo Financeiro</CardTitle></CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-3 lg:grid-cols-4">
+              <Stat label="Receita Bruta da Ação" value={formatBRL(m.grossActionRevenue)} />
               <Stat label="Receita Bruta" value={formatBRL(m.grossRevenue)} />
               <Stat label="Receita Líquida (Produtor)" value={formatBRL(m.producerRevenue)} />
               <Stat label="Comissão Coprodutor" value={formatBRL(m.totalCoproducerCommission)} />

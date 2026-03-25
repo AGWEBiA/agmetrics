@@ -189,8 +189,10 @@ Deno.serve(async (req) => {
         const orderStatus = tx.status || "";
         const rawCharge = parseFloat(tx.charge_amount || tx.order_amount || "0") / 100;
         const rawNet = parseFloat(tx.net_amount || "0") / 100;
+        const rawBasePrice = parseFloat(tx.product?.price || tx.offer?.price || tx.charge_amount || tx.order_amount || "0") / 100;
         const netValue = rawNet || rawCharge;
         const orderAmount = rawCharge > 0 ? rawCharge : netValue;
+        const basePrice = rawBasePrice > 0 ? rawBasePrice : orderAmount;
         const customer = tx.customer || {};
         const createdAt = tx.created_at || new Date().toISOString();
 
@@ -213,6 +215,7 @@ Deno.serve(async (req) => {
           product_type: matchedProduct.type || "main",
           amount: netValue,
           gross_amount: orderAmount,
+          base_price: basePrice,
           platform_fee: Math.max(0, orderAmount - netValue),
           status,
           buyer_email: customer.email || "",
