@@ -342,7 +342,7 @@ export default function ChannelROIReport() {
                         <TableCell className="text-right">{fmtBRL(ch.avgLTV)}</TableCell>
                         <TableCell className="text-right">
                           {ch.adSpend > 0 ? (
-                            <span className={ch.roi > 0 ? "text-green-600 dark:text-green-400 font-semibold" : "text-destructive font-semibold"}>
+                            <span className={`font-semibold ${ch.roi > 0 ? "text-primary" : "text-destructive"}`}>
                               {ch.roi.toFixed(0)}%
                             </span>
                           ) : (
@@ -430,7 +430,7 @@ export default function ChannelROIReport() {
                     </p>
                   )}
                   {untrackedPct > 50 && (
-                    <p className="text-amber-600 dark:text-amber-400">
+                    <p className="text-destructive">
                       ⚠️ <strong>{untrackedPct.toFixed(0)}% da receita</strong> vem de tráfego sem rastreamento (direto).
                       Padronize o uso de UTMs para melhorar a atribuição.
                     </p>
