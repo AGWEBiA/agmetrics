@@ -5,14 +5,15 @@ import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useLeadJourneyData } from "@/hooks/useLeadJourneyData";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AnimatedPage } from "@/components/AnimatedCard";
-import { BarChart3 } from "lucide-react";
+import { AnimatedPage, AnimatedCard } from "@/components/AnimatedCard";
+import { BarChart3, TrendingUp, TrendingDown, DollarSign, Users, Target, ShoppingCart } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { buildOverviewSections } from "@/components/dashboard/OverviewSections";
 import { useBudgetData } from "@/components/dashboard/BudgetSection";
 import { GOAL_LABELS } from "@/components/dashboard/constants";
 import { formatBRL, formatPercent, formatNumber } from "@/lib/formatters";
+import { MetricCard } from "@/components/dashboard/MetricCard";
 
 export default function PublicDashboard() {
   const { slug } = useParams();
@@ -106,6 +107,11 @@ export default function PublicDashboard() {
     return { type: g.type, target: g.target_value, current, period: g.period, pct: g.target_value > 0 ? (current / g.target_value) * 100 : 0 };
   });
 
+  // Computed KPIs for public summary
+  const cpa = m.salesCount > 0 && m.totalInvestment > 0 ? m.totalInvestment / m.salesCount : 0;
+  const cpl = m.totalLeads > 0 && m.totalInvestment > 0 ? m.totalInvestment / m.totalLeads : 0;
+  const conversionRate = m.totalLeads > 0 ? (m.salesCount / m.totalLeads) * 100 : 0;
+
   const overviewSections = useMemo(() => {
     return buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress, leadJourney });
   }, [m, budgetData, whatsappGroups, whatsappHistory, goalsProgress, leadJourney]);
@@ -114,6 +120,61 @@ export default function PublicDashboard() {
 
   const overviewContent = (
     <>
+      {/* Consolidated Public KPI Summary */}
+      {!m.isLoading && (m.totalInvestment > 0 || m.salesCount > 0) && (
+        <div className="space-y-4">
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+            <AnimatedCard index={0}>
+              <MetricCard
+                title="Receita Total"
+                value={formatBRL(m.totalRevenue)}
+                icon={<DollarSign className="h-4 w-4" />}
+                color="text-success"
+              />
+            </AnimatedCard>
+            <AnimatedCard index={1}>
+              <MetricCard
+                title="Investimento"
+                value={formatBRL(m.totalInvestment)}
+                icon={<TrendingDown className="h-4 w-4" />}
+                color="text-warning"
+              />
+            </AnimatedCard>
+            <AnimatedCard index={2}>
+              <MetricCard
+                title="Vendas"
+                value={formatNumber(m.salesCount)}
+                icon={<ShoppingCart className="h-4 w-4" />}
+              />
+            </AnimatedCard>
+            <AnimatedCard index={3}>
+              <MetricCard
+                title="CPA"
+                value={cpa > 0 ? formatBRL(cpa) : "—"}
+                subtitle="Custo por aquisição"
+                icon={<Target className="h-4 w-4" />}
+              />
+            </AnimatedCard>
+            <AnimatedCard index={4}>
+              <MetricCard
+                title="CPL"
+                value={cpl > 0 ? formatBRL(cpl) : "—"}
+                subtitle="Custo por lead"
+                icon={<Users className="h-4 w-4" />}
+              />
+            </AnimatedCard>
+            <AnimatedCard index={5}>
+              <MetricCard
+                title="Conversão"
+                value={conversionRate > 0 ? formatPercent(conversionRate) : "—"}
+                subtitle="Leads → Vendas"
+                icon={<TrendingUp className="h-4 w-4" />}
+              />
+            </AnimatedCard>
+          </div>
+        </div>
+      )}
+
       {DEFAULT_PUBLIC_ORDER.map((id) => {
         const section = overviewSections[id];
         if (!section) return null;
