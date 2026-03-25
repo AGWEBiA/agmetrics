@@ -237,7 +237,7 @@ export default function AdvancedAttribution() {
       {/* Model legend */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {models.map((model, i) => (
-          <Card key={model} className="border-l-4" style={{ borderLeftColor: COLORS[i] }}>
+          <Card key={model} className="border-l-4" style={{ borderLeftColor: MODEL_COLORS[i] }}>
             <CardContent className="p-3">
               <p className="text-sm font-semibold">{MODEL_LABELS[model]}</p>
               <p className="text-xs text-muted-foreground">{MODEL_DESCRIPTIONS[model]}</p>
@@ -274,10 +274,10 @@ export default function AdvancedAttribution() {
                         <XAxis type="number" tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} className="text-xs fill-muted-foreground" />
                         <YAxis type="category" dataKey="channel" width={130} className="text-xs fill-muted-foreground" tick={{ fontSize: 10 }} />
                         <ChartTooltip content={<ChartTooltipContent formatter={(v) => fmtBRL(Number(v))} />} />
-                        <Bar dataKey="first_touch_revenue" name="First-touch" fill={COLORS[0]} />
-                        <Bar dataKey="last_touch_revenue" name="Last-click" fill={COLORS[1]} />
-                        <Bar dataKey="linear_revenue" name="Linear" fill={COLORS[2]} />
-                        <Bar dataKey="time_decay_revenue" name="Time-decay" fill={COLORS[3]} />
+                        <Bar dataKey="first_touch_revenue" name="First-touch" fill={MODEL_COLORS[0]} />
+                        <Bar dataKey="last_touch_revenue" name="Last-click" fill={MODEL_COLORS[1]} />
+                        <Bar dataKey="linear_revenue" name="Linear" fill={MODEL_COLORS[2]} />
+                        <Bar dataKey="time_decay_revenue" name="Time-decay" fill={MODEL_COLORS[3]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </ChartContainer>
@@ -302,10 +302,10 @@ export default function AdvancedAttribution() {
                         <PolarGrid className="stroke-muted" />
                         <PolarAngleAxis dataKey="channel" className="text-xs fill-muted-foreground" tick={{ fontSize: 10 }} />
                         <PolarRadiusAxis className="text-xs fill-muted-foreground" />
-                        <Radar name="First-touch" dataKey="First-touch" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.15} />
-                        <Radar name="Last-click" dataKey="Last-click" stroke={COLORS[1]} fill={COLORS[1]} fillOpacity={0.15} />
-                        <Radar name="Linear" dataKey="Linear" stroke={COLORS[2]} fill={COLORS[2]} fillOpacity={0.15} />
-                        <Radar name="Time-decay" dataKey="Time-decay" stroke={COLORS[3]} fill={COLORS[3]} fillOpacity={0.15} />
+                        <Radar name="First-touch" dataKey="First-touch" stroke={MODEL_COLORS[0]} fill={MODEL_COLORS[0]} fillOpacity={0.15} />
+                        <Radar name="Last-click" dataKey="Last-click" stroke={MODEL_COLORS[1]} fill={MODEL_COLORS[1]} fillOpacity={0.15} />
+                        <Radar name="Linear" dataKey="Linear" stroke={MODEL_COLORS[2]} fill={MODEL_COLORS[2]} fillOpacity={0.15} />
+                        <Radar name="Time-decay" dataKey="Time-decay" stroke={MODEL_COLORS[3]} fill={MODEL_COLORS[3]} fillOpacity={0.15} />
                         <Legend />
                         <ChartTooltip content={<ChartTooltipContent formatter={(v) => `${Number(v).toFixed(1)}%`} />} />
                       </RadarChart>
