@@ -1,15 +1,31 @@
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedTabContent } from "@/components/AnimatedTabContent";
 import { AcquisitionTab } from "./AcquisitionTab";
 import { SalesTab } from "./SalesTab";
 import { TimelineTab } from "./TimelineTab";
-import { TrackingTab } from "@/components/TrackingTab";
-import { AdsVendasCrossTab } from "@/components/AdsVendasCrossTab";
-import { SalesTrackingAnalysis } from "@/components/SalesTrackingAnalysis";
-import { AdvancedTrackingAnalysis } from "@/components/AdvancedTrackingAnalysis";
-import { BuyerDemographicProfile } from "@/components/BuyerDemographicProfile";
 import { RefundsSection } from "./RefundsSection";
+
+// Lazy-loaded heavy tab components
+const TrackingTab = lazy(() => import("@/components/TrackingTab").then(m => ({ default: m.TrackingTab })));
+const AdsVendasCrossTab = lazy(() => import("@/components/AdsVendasCrossTab").then(m => ({ default: m.AdsVendasCrossTab })));
+const SalesTrackingAnalysis = lazy(() => import("@/components/SalesTrackingAnalysis").then(m => ({ default: m.SalesTrackingAnalysis })));
+const AdvancedTrackingAnalysis = lazy(() => import("@/components/AdvancedTrackingAnalysis").then(m => ({ default: m.AdvancedTrackingAnalysis })));
+const BuyerDemographicProfile = lazy(() => import("@/components/BuyerDemographicProfile").then(m => ({ default: m.BuyerDemographicProfile })));
+
+function TabSkeleton() {
+  return (
+    <div className="space-y-4 pt-4">
+      <Skeleton className="h-8 w-48" />
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24" />)}
+      </div>
+      <Skeleton className="h-64" />
+    </div>
+  );
+}
 
 interface DashboardTabsProps {
   m: any;
@@ -17,12 +33,27 @@ interface DashboardTabsProps {
   overviewContent: React.ReactNode;
 }
 
+// Tabs that need secondary data to be loaded
+const TABS_NEEDING_DEMOGRAPHICS = ["buyer-profile"];
+const TABS_NEEDING_META_ADS = ["tracking", "ads-vendas"];
+
 export function DashboardTabs({ m, project, overviewContent }: DashboardTabsProps) {
+  const [activeTab, setActiveTab] = useState("overview");
   const hasMeta = m.metaInvestment > 0 || m.metaImpressions > 0;
   const hasGoogle = m.googleInvestment > 0 || m.gImpressions > 0;
 
+  // Trigger deferred queries when relevant tabs are activated
+  useEffect(() => {
+    if (TABS_NEEDING_DEMOGRAPHICS.includes(activeTab) && !m.demographicsLoaded) {
+      m.loadDemographics();
+    }
+    if (TABS_NEEDING_META_ADS.includes(activeTab) && !m.metaAdsLoaded) {
+      m.loadMetaAds();
+    }
+  }, [activeTab, m.demographicsLoaded, m.metaAdsLoaded]);
+
   return (
-    <Tabs defaultValue="overview">
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
       <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 styled-scrollbar">
         <TabsList className="inline-flex w-max min-w-full sm:w-auto sm:min-w-0 gap-0.5">
           <TabsTrigger value="overview" className="text-[11px] sm:text-sm whitespace-nowrap px-2.5 sm:px-3">Visão Geral</TabsTrigger>
@@ -79,36 +110,56 @@ export function DashboardTabs({ m, project, overviewContent }: DashboardTabsProp
         <TimelineTab salesChartData={m.salesChartData} />
       </AnimatedTabContent>
 
-      <AnimatedTabContent value="tracking" className="space-y-6 pt-4">
-        <TrackingTab m={m} project={project} />
-      </AnimatedTabContent>
+      {activeTab === "tracking" && (
+        <AnimatedTabContent value="tracking" className="space-y-6 pt-4">
+          <Suspense fallback={<TabSkeleton />}>
+            <TrackingTab m={m} project={project} />
+          </Suspense>
+        </AnimatedTabContent>
+      )}
 
-      <AnimatedTabContent value="ads-vendas" className="space-y-6 pt-4">
-        <AdsVendasCrossTab m={m} strategy={project?.strategy} />
-      </AnimatedTabContent>
+      {activeTab === "ads-vendas" && (
+        <AnimatedTabContent value="ads-vendas" className="space-y-6 pt-4">
+          <Suspense fallback={<TabSkeleton />}>
+            <AdsVendasCrossTab m={m} strategy={project?.strategy} />
+          </Suspense>
+        </AnimatedTabContent>
+      )}
 
-      <AnimatedTabContent value="sales-tracking" className="space-y-6 pt-4">
-        <SalesTrackingAnalysis
-          sales={[...(m.kiwifySales || []), ...(m.hotmartSales || [])]}
-          totalInvestment={m.totalInvestment}
-        />
-      </AnimatedTabContent>
+      {activeTab === "sales-tracking" && (
+        <AnimatedTabContent value="sales-tracking" className="space-y-6 pt-4">
+          <Suspense fallback={<TabSkeleton />}>
+            <SalesTrackingAnalysis
+              sales={[...(m.kiwifySales || []), ...(m.hotmartSales || [])]}
+              totalInvestment={m.totalInvestment}
+            />
+          </Suspense>
+        </AnimatedTabContent>
+      )}
 
-      <AnimatedTabContent value="advanced-tracking" className="space-y-6 pt-4">
-        <AdvancedTrackingAnalysis
-          sales={[...(m.kiwifySales || []), ...(m.hotmartSales || []), ...(m.pendingSales || []), ...(m.refundedSales || [])]}
-          totalInvestment={m.totalInvestment}
-          metaMetrics={m.metaMetrics}
-          googleMetrics={m.googleMetrics}
-        />
-      </AnimatedTabContent>
+      {activeTab === "advanced-tracking" && (
+        <AnimatedTabContent value="advanced-tracking" className="space-y-6 pt-4">
+          <Suspense fallback={<TabSkeleton />}>
+            <AdvancedTrackingAnalysis
+              sales={[...(m.kiwifySales || []), ...(m.hotmartSales || []), ...(m.pendingSales || []), ...(m.refundedSales || [])]}
+              totalInvestment={m.totalInvestment}
+              metaMetrics={m.metaMetrics}
+              googleMetrics={m.googleMetrics}
+            />
+          </Suspense>
+        </AnimatedTabContent>
+      )}
 
-      <AnimatedTabContent value="buyer-profile" className="space-y-6 pt-4">
-        <BuyerDemographicProfile
-          sales={[...(m.kiwifySales || []), ...(m.hotmartSales || [])]}
-          adDemographics={[...(m.metaDemographics || []), ...(m.googleDemographics || [])]}
-        />
-      </AnimatedTabContent>
+      {activeTab === "buyer-profile" && (
+        <AnimatedTabContent value="buyer-profile" className="space-y-6 pt-4">
+          <Suspense fallback={<TabSkeleton />}>
+            <BuyerDemographicProfile
+              sales={[...(m.kiwifySales || []), ...(m.hotmartSales || [])]}
+              adDemographics={[...(m.metaDemographics || []), ...(m.googleDemographics || [])]}
+            />
+          </Suspense>
+        </AnimatedTabContent>
+      )}
 
       <AnimatedTabContent value="refunds" className="space-y-6 pt-4">
         <RefundsSection
