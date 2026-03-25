@@ -235,7 +235,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   const gCostPerConversion = gConversions > 0 ? googleInvestment / gConversions : 0;
 
   return {
-    isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || goalsQuery.isLoading,
+    isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || goalsQuery.isLoading || productsQuery.isLoading,
     totalRevenue, grossRevenue, grossActionRevenue, totalFees, totalTaxes, totalCoproducerCommission, producerRevenue, salesCount, avgTicket,
     totalInvestment, metaInvestment, googleInvestment, netProfit, netProfitProject, netProfitProducer, roi, roas, margin,
     metaImpressions, metaClicks, metaResults, metaPurchases, metaLinkClicks, metaLpViews, metaCheckouts,
