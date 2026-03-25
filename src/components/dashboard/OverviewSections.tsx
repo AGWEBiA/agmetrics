@@ -505,19 +505,48 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
         <Card>
           <CardHeader className="pb-3"><CardTitle className="text-lg">🎯 Metas × Atingido</CardTitle></CardHeader>
           <CardContent className="space-y-6">
-            {/* Revenue summary cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="rounded-lg border bg-primary/5 p-4">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Receita Bruta Total (Preço Base)</p>
-                <p className="text-2xl font-bold mt-1">{formatBRL(m.grossActionRevenue)}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Soma do preço base dos produtos vendidos</p>
-              </div>
-              <div className="rounded-lg border bg-primary/5 p-4">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Receita Bruta Produtor</p>
-                <p className="text-2xl font-bold mt-1">{formatBRL(m.grossRevenue)}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Valor bruto recebido pelo produtor</p>
-              </div>
-            </div>
+            {/* Revenue vs Goal cards */}
+            {(() => {
+              const revenueGoal = goalsProgress.find((g: any) => g.type === "revenue");
+              const target = revenueGoal?.target || 0;
+              const grossActionPct = target > 0 ? (m.grossActionRevenue / target) * 100 : 0;
+              const grossRevPct = target > 0 ? (m.grossRevenue / target) * 100 : 0;
+              const getStatus = (pct: number) => pct >= 100 ? "🟢" : pct >= 70 ? "🟡" : "🔴";
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="rounded-lg border p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Receita Bruta Total (Preço Base)</p>
+                      {target > 0 && <span className="text-xs">{getStatus(grossActionPct)}</span>}
+                    </div>
+                    <p className="text-2xl font-bold">{formatBRL(m.grossActionRevenue)}</p>
+                    {target > 0 && (
+                      <>
+                        <div className="text-xs text-muted-foreground">Meta: {formatBRL(target)}</div>
+                        <Progress value={Math.min(grossActionPct, 100)} className="h-2" />
+                        <div className="text-xs text-right font-medium">{formatPercent(Math.min(grossActionPct, 999))}</div>
+                      </>
+                    )}
+                    {!target && <p className="text-xs text-muted-foreground">Soma do preço base dos produtos vendidos</p>}
+                  </div>
+                  <div className="rounded-lg border p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Receita Bruta Produtor</p>
+                      {target > 0 && <span className="text-xs">{getStatus(grossRevPct)}</span>}
+                    </div>
+                    <p className="text-2xl font-bold">{formatBRL(m.grossRevenue)}</p>
+                    {target > 0 && (
+                      <>
+                        <div className="text-xs text-muted-foreground">Meta: {formatBRL(target)}</div>
+                        <Progress value={Math.min(grossRevPct, 100)} className="h-2" />
+                        <div className="text-xs text-right font-medium">{formatPercent(Math.min(grossRevPct, 999))}</div>
+                      </>
+                    )}
+                    {!target && <p className="text-xs text-muted-foreground">Valor bruto recebido pelo produtor</p>}
+                  </div>
+                </div>
+              );
+            })()}
             {/* Status cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {goalsProgress.map((g: any, i: number) => {
