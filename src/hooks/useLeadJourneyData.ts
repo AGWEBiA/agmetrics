@@ -9,7 +9,7 @@ export function useLeadJourneyData(projectId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("lead_events")
-        .select("event_type, utm_source, event_source, amount, buyer_email")
+        .select("event_type, utm_source, utm_campaign, utm_medium, event_source, amount, buyer_email, tracking_src, tracking_sck, event_date, event_detail")
         .eq("project_id", projectId!);
       if (error) throw error;
       return data || [];
