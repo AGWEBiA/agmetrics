@@ -33,6 +33,7 @@ import AIInsights from "./pages/AIInsights";
 import WorkspaceSettings from "./pages/WorkspaceSettings";
 import AdvancedProjection from "./pages/AdvancedProjection";
 import ChannelROIReport from "./pages/ChannelROIReport";
+import AdvancedAttribution from "./pages/AdvancedAttribution";
 import { PermissionGuard } from "./components/PermissionGuard";
 import Index from "./pages/Index";
 import Presentation from "./pages/Presentation";
@@ -78,6 +79,7 @@ const App = () => (
               <Route path="projects/:projectId/agsell" element={<PermissionGuard permission="integrations.manage"><AGSellConfig /></PermissionGuard>} />
               <Route path="projects/:projectId/ai-insights" element={<PermissionGuard permission="projects.view"><AIInsights /></PermissionGuard>} />
               <Route path="projects/:projectId/channel-roi" element={<PermissionGuard permission="projects.view"><ChannelROIReport /></PermissionGuard>} />
+              <Route path="projects/:projectId/advanced-attribution" element={<PermissionGuard permission="projects.view"><AdvancedAttribution /></PermissionGuard>} />
               <Route path="projection" element={<PermissionGuard permission="projects.view"><AdvancedProjection /></PermissionGuard>} />
               <Route path="users" element={<PermissionGuard adminOnly><UserManagement /></PermissionGuard>} />
               <Route path="settings" element={<PermissionGuard adminOnly><WorkspaceSettings /></PermissionGuard>} />

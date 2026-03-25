@@ -88,6 +88,7 @@ export function AppSidebar() {
         { title: "Cohort & LTV", url: `/admin/projects/${projectId}/cohort-ltv`, icon: Users, visible: can("projects.view") },
         { title: "Comparação Temporal", url: `/admin/projects/${projectId}/temporal-comparison`, icon: GitCompare, visible: can("projects.view") },
         { title: "ROI por Canal", url: `/admin/projects/${projectId}/channel-roi`, icon: TrendingUp, visible: can("projects.view") },
+        { title: "Atribuição Avançada", url: `/admin/projects/${projectId}/advanced-attribution`, icon: GitCompare, visible: can("projects.view") },
       ].filter((item) => item.visible)
     : [];
 
