@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { formatBRL, formatDateBR } from "@/lib/formatters";
+import { formatBRL, formatDateBR, formatDateTimeBR } from "@/lib/formatters";
 import { exportCSV } from "@/lib/exportCSV";
 import { AnimatedPage } from "@/components/AnimatedCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -184,7 +184,7 @@ export default function SalesTable() {
                       return (
                         <TableRow key={s.id}>
                           <TableCell className="whitespace-nowrap text-sm">
-                            {formatDateBR(s.sale_date)}
+                            {formatDateTimeBR(s.sale_date)}
                           </TableCell>
                           <TableCell>
                             <div>
@@ -232,7 +232,7 @@ export default function SalesTable() {
                         </p>
                       )}
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{formatDateBR(s.sale_date)}</span>
+                        <span>{formatDateTimeBR(s.sale_date)}</span>
                         <Badge variant="outline" className="capitalize text-[10px]">{s.platform}</Badge>
                       </div>
                     </div>
