@@ -105,7 +105,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
 
   const demographicsQuery = useQuery({
     queryKey: ["ad_demographics", projectId],
-    enabled: !!projectId,
+    enabled: false, // loaded on demand via refetch
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ad_demographics")
@@ -119,7 +119,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
 
   const metaAdsQuery = useQuery({
     queryKey: ["meta_ads", projectId],
-    enabled: !!projectId,
+    enabled: false, // loaded on demand via refetch
     queryFn: async () => {
       const { data, error } = await supabase
         .from("meta_ads")
