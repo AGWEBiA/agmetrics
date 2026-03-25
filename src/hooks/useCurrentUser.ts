@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { AppPermission } from "@/hooks/useAdminUsers";
 
@@ -10,6 +9,7 @@ export interface CurrentUser {
 }
 
 async function fetchCurrentUser(): Promise<CurrentUser | null> {
+  // getSession waits for the auth to be initialized
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
 
@@ -27,21 +27,9 @@ async function fetchCurrentUser(): Promise<CurrentUser | null> {
 }
 
 export function useCurrentUser() {
-  const [sessionReady, setSessionReady] = useState(false);
-
-  useEffect(() => {
-    // Wait for auth to be initialized before enabling the query
-    supabase.auth.getSession().then(() => setSessionReady(true));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      setSessionReady(true);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
   return useQuery<CurrentUser | null>({
     queryKey: ["current-user"],
     queryFn: fetchCurrentUser,
-    enabled: sessionReady,
     staleTime: 5 * 60 * 1000,
     retry: 2,
     retryDelay: 1000,
