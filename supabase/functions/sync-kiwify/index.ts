@@ -195,6 +195,8 @@ Deno.serve(async (req) => {
         const basePrice = rawBasePrice > 0 ? rawBasePrice : orderAmount;
         const customer = tx.customer || {};
         const createdAt = tx.created_at || new Date().toISOString();
+        const updatedAt = tx.updated_at || createdAt;
+        const approvedAt = tx.approved_date || tx.approved_at || tx.paid_at || null;
 
         let status: string;
         switch (orderStatus) {
@@ -203,6 +205,10 @@ Deno.serve(async (req) => {
           case "cancelled": case "canceled": status = "cancelled"; break;
           default: status = "pending";
         }
+
+        const saleTimestamp = status === "approved"
+          ? (approvedAt || updatedAt || createdAt)
+          : createdAt;
 
         // Extract tracking from multiple possible locations in the API response
         const tracking = tx.tracking || {};
@@ -227,7 +233,7 @@ Deno.serve(async (req) => {
           status,
           buyer_email: customer.email || "",
           buyer_name: customer.name || "",
-          sale_date: createdAt,
+          sale_date: saleTimestamp,
           payment_method: tx.payment_method || undefined,
           buyer_state: customer.state || customer.address?.state || undefined,
           buyer_city: customer.city || customer.address?.city || undefined,
