@@ -309,7 +309,7 @@ Deno.serve(async (req) => {
           tracking_src: trackingSrc,
           tracking_sck: trackingSck,
           refund_reason: sale.status === "refunded" ? refundReason : null,
-          payload,
+          payload: rawPayload,
         },
         { onConflict: "platform,external_id,project_id" }
       )
