@@ -117,8 +117,9 @@ export default function AdminDashboard() {
 
   const budgetData = useBudgetData(project, m.totalInvestment, m.metaMetrics, m.googleMetrics);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!project) return;
+    const { exportDashboardPDF } = await exportPDFModule();
     exportDashboardPDF({
       projectName: project.name,
       totalRevenue: m.totalRevenue,
@@ -136,7 +137,8 @@ export default function AdminDashboard() {
     });
   };
 
-  const handleCSVExport = () => {
+  const handleCSVExport = async () => {
+    const { exportCSV } = await exportCSVModule();
     const csvData = m.salesChartData.map((d) => ({
       Data: d.date,
       Vendas: d.vendas,
