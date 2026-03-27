@@ -80,7 +80,7 @@ export function useCurrentOrganization() {
           .select("*")
           .eq("id", orgId)
           .single();
-        return org as Organization | null;
+        return org as unknown as Organization | null;
       }
 
       const { data: org } = await supabase
@@ -88,7 +88,7 @@ export function useCurrentOrganization() {
         .select("*")
         .eq("id", profile.current_organization_id)
         .single();
-      return org as Organization | null;
+      return org as unknown as Organization | null;
     },
     staleTime: 5 * 60 * 1000,
   });
