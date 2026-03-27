@@ -9,9 +9,25 @@ export interface CurrentUser {
 }
 
 async function fetchCurrentUser(): Promise<CurrentUser | null> {
-  // getSession waits for the auth to be initialized
+  // First try getSession (cached), then fall back to getUser (network)
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return null;
+  
+  if (!session) {
+    // Session might not be ready yet — try getUser which forces a network call
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    
+    const [{ data: roleData }, { data: permData }] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", user.id).single(),
+      supabase.from("user_permissions").select("permission").eq("user_id", user.id),
+    ]);
+
+    return {
+      id: user.id,
+      role: (roleData?.role as "admin" | "user") || "user",
+      permissions: (permData || []).map((p) => p.permission as AppPermission),
+    };
+  }
 
   const userId = session.user.id;
 
@@ -31,8 +47,8 @@ export function useCurrentUser() {
     queryKey: ["current-user"],
     queryFn: fetchCurrentUser,
     staleTime: 5 * 60 * 1000,
-    retry: 2,
-    retryDelay: 1000,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 3000),
   });
 }
 

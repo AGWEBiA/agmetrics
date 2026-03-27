@@ -9,10 +9,19 @@ interface PermissionGuardProps {
 }
 
 export function PermissionGuard({ children, permission, adminOnly }: PermissionGuardProps) {
-  const { data: user, isLoading, isFetching } = useCurrentUser();
+  const { data: user, isLoading, isFetching, isError } = useCurrentUser();
 
-  // Show loading while auth session is initializing or query is running
-  if (isLoading || (isFetching && user === undefined)) {
+  // Show loading while query is running or user data not yet available
+  if (isLoading || (isFetching && !user)) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  // If query finished but user is null and not errored, still loading (race condition with auth)
+  if (!user && !isError) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
