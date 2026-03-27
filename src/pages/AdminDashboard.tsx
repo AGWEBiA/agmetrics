@@ -11,8 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDashboardPreferences, useSaveDashboardPreferences } from "@/hooks/useDashboardPreferences";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
-import { exportDashboardPDF } from "@/lib/exportPDF";
-import { exportCSV } from "@/lib/exportCSV";
+// Dynamic imports for heavy libs
+const exportPDFModule = () => import("@/lib/exportPDF");
+const exportCSVModule = () => import("@/lib/exportCSV");
 import { type DateRange } from "@/components/DateRangeFilter";
 import { AnimatedPage } from "@/components/AnimatedCard";
 import { Button } from "@/components/ui/button";
@@ -116,8 +117,9 @@ export default function AdminDashboard() {
 
   const budgetData = useBudgetData(project, m.totalInvestment, m.metaMetrics, m.googleMetrics);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!project) return;
+    const { exportDashboardPDF } = await exportPDFModule();
     exportDashboardPDF({
       projectName: project.name,
       totalRevenue: m.totalRevenue,
@@ -135,7 +137,8 @@ export default function AdminDashboard() {
     });
   };
 
-  const handleCSVExport = () => {
+  const handleCSVExport = async () => {
+    const { exportCSV } = await exportCSVModule();
     const csvData = m.salesChartData.map((d) => ({
       Data: d.date,
       Vendas: d.vendas,
