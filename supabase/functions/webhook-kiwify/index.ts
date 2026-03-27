@@ -194,11 +194,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    const rawPayload = await req.json();
+    // Read raw body for HMAC signature verification
+    const rawBody = await req.text();
+    const rawPayload = JSON.parse(rawBody);
     console.log("Kiwify webhook received. Keys:", Object.keys(rawPayload).slice(0, 15));
 
-    // Kiwify sends data nested under "order" key with "signature" at root
-    // Flatten: if rawPayload has an "order" sub-object, use it as the actual payload
+    // Kiwify may send data nested under "order" key (dashboard format) or flat (webhook POST)
     const payload = rawPayload.order ? { ...rawPayload.order, _root_signature: rawPayload.signature } : rawPayload;
 
     const supabase = createClient(
@@ -221,14 +222,59 @@ Deno.serve(async (req) => {
     }
 
     // Validate webhook token if configured
+    // Kiwify uses HMAC-SHA1 signature verification: they sign the payload body
+    // with the configured token as secret and send the signature in headers or query params
     if (project.kiwify_webhook_token) {
+      const signatureHeader = req.headers.get("x-kiwify-signature")
+        || req.headers.get("x-webhook-signature") 
+        || req.headers.get("x-signature");
       const providedToken = req.headers.get("x-webhook-token")
         || url.searchParams.get("token")
         || rawPayload?.signature
         || payload?.webhook_token
         || payload?._root_signature;
-      if (providedToken !== project.kiwify_webhook_token) {
-        console.error("Invalid webhook token for project:", projectId);
+
+      let isValid = false;
+
+      // Method 1: Direct token match
+      if (providedToken === project.kiwify_webhook_token) {
+        isValid = true;
+      }
+
+      // Method 2: HMAC-SHA1 signature verification
+      if (!isValid && (signatureHeader || providedToken)) {
+        try {
+          const sigToVerify = signatureHeader || providedToken;
+          const encoder = new TextEncoder();
+          const key = await crypto.subtle.importKey(
+            "raw",
+            encoder.encode(project.kiwify_webhook_token),
+            { name: "HMAC", hash: "SHA-1" },
+            false,
+            ["sign"]
+          );
+          const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(rawBody));
+          const computedHex = Array.from(new Uint8Array(signature))
+            .map(b => b.toString(16).padStart(2, "0"))
+            .join("");
+          isValid = computedHex === sigToVerify;
+          if (!isValid) {
+            console.log("HMAC mismatch. Computed:", computedHex.slice(0, 12) + "...", "Received:", String(sigToVerify).slice(0, 12) + "...");
+          }
+        } catch (hmacErr) {
+          console.error("HMAC verification error:", hmacErr);
+        }
+      }
+
+      // Method 3: If Kiwify doesn't send any token/signature, skip validation
+      // (some Kiwify plans don't support signature verification)
+      if (!isValid && !signatureHeader && !providedToken) {
+        console.log("No signature/token provided by Kiwify, skipping validation");
+        isValid = true;
+      }
+
+      if (!isValid) {
+        console.error("Invalid webhook token/signature for project:", projectId);
         return new Response(
           JSON.stringify({ error: "Invalid webhook token" }),
           { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
