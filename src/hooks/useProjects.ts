@@ -2,14 +2,19 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Project } from "@/types/database";
 import type { Database } from "@/integrations/supabase/types";
+import { useCurrentOrganization } from "@/hooks/useOrganization";
 
 export function useProjects() {
+  const { data: currentOrg } = useCurrentOrganization();
+
   return useQuery({
-    queryKey: ["projects"],
+    queryKey: ["projects", currentOrg?.id],
+    enabled: !!currentOrg?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
         .select("*")
+        .eq("organization_id", currentOrg!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as Project[];
@@ -78,6 +83,8 @@ export function useProjectBySlug(slug: string | undefined) {
 
 export function useCreateProject() {
   const queryClient = useQueryClient();
+  const { data: currentOrg } = useCurrentOrganization();
+
   return useMutation({
     mutationFn: async (project: {
       name: string;
@@ -89,11 +96,12 @@ export function useCreateProject() {
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
+      if (!currentOrg?.id) throw new Error("Nenhuma organização selecionada");
 
       const slug = generateSlug(project.name);
       const { data, error } = await supabase
         .from("projects")
-        .insert({ ...project, owner_id: user.id, slug })
+        .insert({ ...project, owner_id: user.id, organization_id: currentOrg.id, slug })
         .select()
         .single();
       if (error) throw error;

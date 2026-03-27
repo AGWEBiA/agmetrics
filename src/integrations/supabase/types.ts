@@ -891,6 +891,65 @@ export type Database = {
           },
         ]
       }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          role: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          slug: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          slug?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          slug?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           created_at: string
@@ -940,6 +999,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          current_organization_id: string | null
           email: string | null
           id: string
           name: string
@@ -948,6 +1008,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          current_organization_id?: string | null
           email?: string | null
           id: string
           name?: string
@@ -956,12 +1017,21 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          current_organization_id?: string | null
           email?: string | null
           id?: string
           name?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_current_organization_id_fkey"
+            columns: ["current_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_domains: {
         Row: {
@@ -1126,6 +1196,7 @@ export type Database = {
           manual_investment: number | null
           meta_leads_enabled: boolean
           name: string
+          organization_id: string | null
           owner_id: string | null
           slug: string | null
           start_date: string | null
@@ -1163,6 +1234,7 @@ export type Database = {
           manual_investment?: number | null
           meta_leads_enabled?: boolean
           name: string
+          organization_id?: string | null
           owner_id?: string | null
           slug?: string | null
           start_date?: string | null
@@ -1200,6 +1272,7 @@ export type Database = {
           manual_investment?: number | null
           meta_leads_enabled?: boolean
           name?: string
+          organization_id?: string | null
           owner_id?: string | null
           slug?: string | null
           start_date?: string | null
@@ -1207,7 +1280,15 @@ export type Database = {
           updated_at?: string
           view_token?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sales_events: {
         Row: {
@@ -1663,6 +1744,7 @@ export type Database = {
           manual_investment: number | null
           meta_leads_enabled: boolean | null
           name: string | null
+          organization_id: string | null
           owner_id: string | null
           slug: string | null
           start_date: string | null
@@ -1682,6 +1764,7 @@ export type Database = {
           manual_investment?: number | null
           meta_leads_enabled?: boolean | null
           name?: string | null
+          organization_id?: string | null
           owner_id?: string | null
           slug?: string | null
           start_date?: string | null
@@ -1701,6 +1784,7 @@ export type Database = {
           manual_investment?: number | null
           meta_leads_enabled?: boolean | null
           name?: string | null
+          organization_id?: string | null
           owner_id?: string | null
           slug?: string | null
           start_date?: string | null
@@ -1708,7 +1792,15 @@ export type Database = {
           updated_at?: string | null
           view_token?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       public_sales_summary: {
         Row: {
@@ -1769,6 +1861,14 @@ export type Database = {
       }
     }
     Functions: {
+      has_org_role: {
+        Args: {
+          _org_id: string
+          _role: Database["public"]["Enums"]["org_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_permission: {
         Args: {
           _permission: Database["public"]["Enums"]["app_permission"]
@@ -1783,7 +1883,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_org_member: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
       owns_project: { Args: { _project_id: string }; Returns: boolean }
+      user_org_ids: { Args: { _user_id: string }; Returns: string[] }
     }
     Enums: {
       app_permission:
@@ -1796,6 +1901,7 @@ export type Database = {
       dashboard_type: "public" | "admin"
       goal_period: "daily" | "weekly" | "monthly" | "total"
       goal_type: "revenue" | "sales" | "roi" | "leads" | "margin"
+      org_role: "owner" | "admin" | "member" | "viewer"
       product_platform: "kiwify" | "hotmart" | "both"
       product_type: "main" | "order_bump"
       project_strategy:
@@ -1945,6 +2051,7 @@ export const Constants = {
       dashboard_type: ["public", "admin"],
       goal_period: ["daily", "weekly", "monthly", "total"],
       goal_type: ["revenue", "sales", "roi", "leads", "margin"],
+      org_role: ["owner", "admin", "member", "viewer"],
       product_platform: ["kiwify", "hotmart", "both"],
       product_type: ["main", "order_bump"],
       project_strategy: [

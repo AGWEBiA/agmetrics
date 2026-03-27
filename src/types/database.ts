@@ -5,6 +5,7 @@ export interface Project {
   name: string;
   description: string | null;
   owner_id: string;
+  organization_id: string | null;
   view_token: string;
   slug: string | null;
   start_date: string | null;
