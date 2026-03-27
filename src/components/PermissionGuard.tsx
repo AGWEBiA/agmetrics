@@ -11,8 +11,9 @@ interface PermissionGuardProps {
 export function PermissionGuard({ children, permission, adminOnly }: PermissionGuardProps) {
   const { data: user, isLoading, isFetching } = useCurrentUser();
 
-  // Show loading while auth session is initializing or query is running
-  if (isLoading || (isFetching && user === undefined)) {
+  // Show loading while auth session is initializing, query is running,
+  // or user is null (race condition: session not yet available to react-query)
+  if (isLoading || isFetching || user === undefined || user === null) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
