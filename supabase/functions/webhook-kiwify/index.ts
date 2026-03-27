@@ -182,8 +182,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    const payload = await req.json();
-    console.log("Kiwify webhook received. Keys:", Object.keys(payload).slice(0, 15));
+    const rawPayload = await req.json();
+    console.log("Kiwify webhook received. Keys:", Object.keys(rawPayload).slice(0, 15));
+
+    // Kiwify sends data nested under "order" key with "signature" at root
+    // Flatten: if rawPayload has an "order" sub-object, use it as the actual payload
+    const payload = rawPayload.order ? { ...rawPayload.order, _root_signature: rawPayload.signature } : rawPayload;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -206,7 +210,11 @@ Deno.serve(async (req) => {
 
     // Validate webhook token if configured
     if (project.kiwify_webhook_token) {
-      const providedToken = req.headers.get("x-webhook-token") || url.searchParams.get("token") || payload?.webhook_token;
+      const providedToken = req.headers.get("x-webhook-token")
+        || url.searchParams.get("token")
+        || rawPayload?.signature
+        || payload?.webhook_token
+        || payload?._root_signature;
       if (providedToken !== project.kiwify_webhook_token) {
         console.error("Invalid webhook token for project:", projectId);
         return new Response(
