@@ -76,15 +76,26 @@ function extractSaleData(payload: Record<string, any>) {
   const orderId = payload.order_id || payload.subscription_id || "";
   const rawStatus = payload.order_status || "";
   const productName = payload.Product?.product_name || payload.product?.product_name || "";
-  const basePrice = parseFloat(payload.Product?.product_price || payload.product?.product_price || payload.product?.price || "0");
-  const grossAmount = parseFloat(payload.order_amount || payload.sale_amount || "0");
-  const netValue = parseFloat(payload.net_value || payload.order_amount || "0");
-  const platformFee = Math.max(0, grossAmount - netValue);
+  const basePrice = parseFloat(payload.Commissions?.product_base_price || payload.Product?.product_price || payload.product?.product_price || payload.product?.price || "0") / (payload.Commissions?.product_base_price ? 100 : 1);
+  const grossAmount = payload.Commissions?.charge_amount
+    ? parseFloat(payload.Commissions.charge_amount) / 100
+    : parseFloat(payload.order_amount || payload.sale_amount || "0");
+  const kiwifyFee = payload.Commissions?.kiwify_fee
+    ? parseFloat(payload.Commissions.kiwify_fee) / 100
+    : 0;
+  const myCommission = payload.Commissions?.my_commission
+    ? parseFloat(payload.Commissions.my_commission) / 100
+    : 0;
+  const netValue = myCommission || parseFloat(payload.net_value || payload.order_amount || "0");
+  const platformFee = kiwifyFee || Math.max(0, grossAmount - netValue);
   const buyerEmail = payload.Customer?.email || payload.customer?.email || "";
   const buyerName = payload.Customer?.full_name || payload.customer?.full_name || "";
-  const createdAt = payload.created_at || new Date().toISOString();
-  const paymentMethod = payload.pagamento || payload.payment_method || "";
-  const installments = parseInt(payload.parcelas || payload.installments || "1", 10);
+  const createdAt = payload.approved_date || payload.updated_at || payload.created_at || new Date().toISOString();
+  const paymentMethod = payload.payment_method || payload.pagamento || "";
+  const installments = parseInt(payload.installments || payload.parcelas || "1", 10);
+
+  // Extract tracking from nested TrackingParameters (new Kiwify format)
+  const trackingParams = payload.TrackingParameters || {};
 
   let status: string;
   switch (rawStatus) {
@@ -102,6 +113,7 @@ function extractSaleData(payload: Record<string, any>) {
     orderId, productName, grossAmount, netValue, platformFee,
     taxes: 0, coproducerCommission: 0, buyerEmail, buyerName, status,
     createdAt, paymentMethod, installments, basePrice,
+    trackingParams,
   };
 }
 
