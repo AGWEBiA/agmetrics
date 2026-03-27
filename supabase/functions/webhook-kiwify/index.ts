@@ -261,18 +261,19 @@ Deno.serve(async (req) => {
     console.log("Matched product:", matchedProduct.name, "type:", matchedProduct.type);
 
     // Extract buyer location from payload
+    const buyerCountry = payload.Customer?.country || payload["país"] || payload["country"] || "br";
     const buyerState = payload["estado"] || payload["state"] || "";
     const buyerCity = payload["cidade"] || payload["city"] || "";
-    const buyerCountry = payload["país"] || payload["country"] || "br";
 
-    // Extract UTM tracking data from Kiwify payload
-    const utmSource = payload["tracking utm_source"] || payload["utm_source"] || "";
-    const utmMedium = payload["tracking utm_medium"] || payload["utm_medium"] || "";
-    const utmCampaign = payload["tracking utm_campaign"] || payload["utm_campaign"] || "";
-    const utmTerm = payload["tracking utm_term"] || payload["utm_term"] || "";
-    const utmContent = payload["tracking utm_content"] || payload["utm_content"] || "";
-    const trackingSrc = payload["tracking src"] || payload["src"] || "";
-    const trackingSck = payload["tracking sck"] || payload["sck"] || "";
+    // Extract UTM tracking data from Kiwify payload (supports nested TrackingParameters and flat keys)
+    const tp = sale.trackingParams || {};
+    const utmSource = tp.utm_source || payload["tracking utm_source"] || payload["utm_source"] || "";
+    const utmMedium = tp.utm_medium || payload["tracking utm_medium"] || payload["utm_medium"] || "";
+    const utmCampaign = tp.utm_campaign || payload["tracking utm_campaign"] || payload["utm_campaign"] || "";
+    const utmTerm = tp.utm_term || payload["tracking utm_term"] || payload["utm_term"] || "";
+    const utmContent = tp.utm_content || payload["tracking utm_content"] || payload["utm_content"] || "";
+    const trackingSrc = tp.src || payload["tracking src"] || payload["src"] || "";
+    const trackingSck = tp.sck || payload["tracking sck"] || payload["sck"] || "";
 
     // Extract refund reason from Kiwify payload
     const refundReason = payload.refund_reason || payload.cancellation_reason || payload.reason || payload["motivo do reembolso"] || payload["motivo"] || null;
