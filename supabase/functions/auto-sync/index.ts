@@ -74,6 +74,8 @@ Deno.serve(async (req) => {
       })
     );
 
+    const results: Record<string, any> = {};
+
     // Fire all syncs in parallel across all projects
     const allSyncPromises = credChecks.flatMap(({ projectId, projectName, syncs }) =>
       syncs.map(async ({ fn, label }) => {
