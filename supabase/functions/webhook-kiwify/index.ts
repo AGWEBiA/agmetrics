@@ -76,15 +76,26 @@ function extractSaleData(payload: Record<string, any>) {
   const orderId = payload.order_id || payload.subscription_id || "";
   const rawStatus = payload.order_status || "";
   const productName = payload.Product?.product_name || payload.product?.product_name || "";
-  const basePrice = parseFloat(payload.Product?.product_price || payload.product?.product_price || payload.product?.price || "0");
-  const grossAmount = parseFloat(payload.order_amount || payload.sale_amount || "0");
-  const netValue = parseFloat(payload.net_value || payload.order_amount || "0");
-  const platformFee = Math.max(0, grossAmount - netValue);
+  const basePrice = parseFloat(payload.Commissions?.product_base_price || payload.Product?.product_price || payload.product?.product_price || payload.product?.price || "0") / (payload.Commissions?.product_base_price ? 100 : 1);
+  const grossAmount = payload.Commissions?.charge_amount
+    ? parseFloat(payload.Commissions.charge_amount) / 100
+    : parseFloat(payload.order_amount || payload.sale_amount || "0");
+  const kiwifyFee = payload.Commissions?.kiwify_fee
+    ? parseFloat(payload.Commissions.kiwify_fee) / 100
+    : 0;
+  const myCommission = payload.Commissions?.my_commission
+    ? parseFloat(payload.Commissions.my_commission) / 100
+    : 0;
+  const netValue = myCommission || parseFloat(payload.net_value || payload.order_amount || "0");
+  const platformFee = kiwifyFee || Math.max(0, grossAmount - netValue);
   const buyerEmail = payload.Customer?.email || payload.customer?.email || "";
   const buyerName = payload.Customer?.full_name || payload.customer?.full_name || "";
-  const createdAt = payload.created_at || new Date().toISOString();
-  const paymentMethod = payload.pagamento || payload.payment_method || "";
-  const installments = parseInt(payload.parcelas || payload.installments || "1", 10);
+  const createdAt = payload.approved_date || payload.updated_at || payload.created_at || new Date().toISOString();
+  const paymentMethod = payload.payment_method || payload.pagamento || "";
+  const installments = parseInt(payload.installments || payload.parcelas || "1", 10);
+
+  // Extract tracking from nested TrackingParameters (new Kiwify format)
+  const trackingParams = payload.TrackingParameters || {};
 
   let status: string;
   switch (rawStatus) {
@@ -102,6 +113,7 @@ function extractSaleData(payload: Record<string, any>) {
     orderId, productName, grossAmount, netValue, platformFee,
     taxes: 0, coproducerCommission: 0, buyerEmail, buyerName, status,
     createdAt, paymentMethod, installments, basePrice,
+    trackingParams,
   };
 }
 
@@ -182,8 +194,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    const payload = await req.json();
-    console.log("Kiwify webhook received. Keys:", Object.keys(payload).slice(0, 15));
+    const rawPayload = await req.json();
+    console.log("Kiwify webhook received. Keys:", Object.keys(rawPayload).slice(0, 15));
+
+    // Kiwify sends data nested under "order" key with "signature" at root
+    // Flatten: if rawPayload has an "order" sub-object, use it as the actual payload
+    const payload = rawPayload.order ? { ...rawPayload.order, _root_signature: rawPayload.signature } : rawPayload;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -206,7 +222,11 @@ Deno.serve(async (req) => {
 
     // Validate webhook token if configured
     if (project.kiwify_webhook_token) {
-      const providedToken = req.headers.get("x-webhook-token") || url.searchParams.get("token") || payload?.webhook_token;
+      const providedToken = req.headers.get("x-webhook-token")
+        || url.searchParams.get("token")
+        || rawPayload?.signature
+        || payload?.webhook_token
+        || payload?._root_signature;
       if (providedToken !== project.kiwify_webhook_token) {
         console.error("Invalid webhook token for project:", projectId);
         return new Response(
@@ -241,18 +261,19 @@ Deno.serve(async (req) => {
     console.log("Matched product:", matchedProduct.name, "type:", matchedProduct.type);
 
     // Extract buyer location from payload
+    const buyerCountry = payload.Customer?.country || payload["país"] || payload["country"] || "br";
     const buyerState = payload["estado"] || payload["state"] || "";
     const buyerCity = payload["cidade"] || payload["city"] || "";
-    const buyerCountry = payload["país"] || payload["country"] || "br";
 
-    // Extract UTM tracking data from Kiwify payload
-    const utmSource = payload["tracking utm_source"] || payload["utm_source"] || "";
-    const utmMedium = payload["tracking utm_medium"] || payload["utm_medium"] || "";
-    const utmCampaign = payload["tracking utm_campaign"] || payload["utm_campaign"] || "";
-    const utmTerm = payload["tracking utm_term"] || payload["utm_term"] || "";
-    const utmContent = payload["tracking utm_content"] || payload["utm_content"] || "";
-    const trackingSrc = payload["tracking src"] || payload["src"] || "";
-    const trackingSck = payload["tracking sck"] || payload["sck"] || "";
+    // Extract UTM tracking data from Kiwify payload (supports nested TrackingParameters and flat keys)
+    const tp = sale.trackingParams || {};
+    const utmSource = tp.utm_source || payload["tracking utm_source"] || payload["utm_source"] || "";
+    const utmMedium = tp.utm_medium || payload["tracking utm_medium"] || payload["utm_medium"] || "";
+    const utmCampaign = tp.utm_campaign || payload["tracking utm_campaign"] || payload["utm_campaign"] || "";
+    const utmTerm = tp.utm_term || payload["tracking utm_term"] || payload["utm_term"] || "";
+    const utmContent = tp.utm_content || payload["tracking utm_content"] || payload["utm_content"] || "";
+    const trackingSrc = tp.src || payload["tracking src"] || payload["src"] || "";
+    const trackingSck = tp.sck || payload["tracking sck"] || payload["sck"] || "";
 
     // Extract refund reason from Kiwify payload
     const refundReason = payload.refund_reason || payload.cancellation_reason || payload.reason || payload["motivo do reembolso"] || payload["motivo"] || null;
@@ -288,7 +309,7 @@ Deno.serve(async (req) => {
           tracking_src: trackingSrc,
           tracking_sck: trackingSck,
           refund_reason: sale.status === "refunded" ? refundReason : null,
-          payload,
+          payload: rawPayload,
         },
         { onConflict: "platform,external_id,project_id" }
       )

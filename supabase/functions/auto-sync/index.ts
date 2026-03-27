@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     // Fetch all active projects
     const { data: projects, error: projectsError } = await supabaseAdmin
       .from("projects")
-      .select("id, name, kiwify_client_id, hotmart_webhook_token, evolution_api_url, evolution_api_key, evolution_instance_name, custom_api_url, custom_api_key")
+      .select("id, name, kiwify_client_id, custom_api_url, custom_api_name")
       .eq("is_active", true);
 
     if (projectsError) throw projectsError;
@@ -47,34 +47,34 @@ Deno.serve(async (req) => {
     const projectList = projects || [];
     console.log(`[auto-sync] Starting sync for ${projectList.length} active projects`);
 
-    // For each project, check integrations and run syncs in parallel per-project
-    // but process projects sequentially to avoid overall timeout
-    const results: Record<string, any> = {};
-
-    // Check all credentials in parallel first
+    // Check integration credentials existence (not values) for each project
     const credChecks = await Promise.all(
       projectList.map(async (project) => {
         const projectId = project.id;
-        const [metaCredsRes, googleCredsRes] = await Promise.all([
+        const [metaCredsRes, googleCredsRes, projectSecrets] = await Promise.all([
           supabaseAdmin.from("meta_credentials").select("id").eq("project_id", projectId).limit(1),
           supabaseAdmin.from("google_credentials").select("id").eq("project_id", projectId).maybeSingle(),
+          supabaseAdmin.from("projects").select("hotmart_webhook_token, evolution_api_url, evolution_api_key, evolution_instance_name, custom_api_key").eq("id", projectId).single(),
         ]);
 
+        const ps = projectSecrets.data;
         const syncs: { fn: string; label: string }[] = [];
         if ((metaCredsRes.data || []).length > 0) syncs.push({ fn: "sync-meta", label: "Meta Ads" });
         if (googleCredsRes.data) syncs.push({ fn: "sync-google", label: "Google Ads" });
         if (project.kiwify_client_id) syncs.push({ fn: "sync-kiwify", label: "Kiwify" });
-        if (project.hotmart_webhook_token) syncs.push({ fn: "sync-hotmart", label: "Hotmart" });
-        if (project.evolution_api_url && project.evolution_api_key && project.evolution_instance_name) {
+        if (ps?.hotmart_webhook_token) syncs.push({ fn: "sync-hotmart", label: "Hotmart" });
+        if (ps?.evolution_api_url && ps?.evolution_api_key && ps?.evolution_instance_name) {
           syncs.push({ fn: "sync-whatsapp", label: "WhatsApp" });
         }
-        if (project.custom_api_url && project.custom_api_key) {
+        if (project.custom_api_url && ps?.custom_api_key) {
           syncs.push({ fn: "sync-custom-api", label: "API Customizada" });
         }
 
         return { projectId, projectName: project.name, syncs };
       })
     );
+
+    const results: Record<string, any> = {};
 
     // Fire all syncs in parallel across all projects
     const allSyncPromises = credChecks.flatMap(({ projectId, projectName, syncs }) =>
