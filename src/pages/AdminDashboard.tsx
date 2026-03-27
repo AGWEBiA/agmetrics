@@ -11,8 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDashboardPreferences, useSaveDashboardPreferences } from "@/hooks/useDashboardPreferences";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
-import { exportDashboardPDF } from "@/lib/exportPDF";
-import { exportCSV } from "@/lib/exportCSV";
+// Dynamic imports for heavy libs
+const exportPDFModule = () => import("@/lib/exportPDF");
+const exportCSVModule = () => import("@/lib/exportCSV");
 import { type DateRange } from "@/components/DateRangeFilter";
 import { AnimatedPage } from "@/components/AnimatedCard";
 import { Button } from "@/components/ui/button";
