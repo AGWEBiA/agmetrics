@@ -160,6 +160,40 @@ export function useInviteToOrg() {
   });
 }
 
+/** Bulk invite users to an organization */
+export function useBulkInviteToOrg() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ orgId, users }: { orgId: string; users: { userId: string; role: "admin" | "member" | "viewer" }[] }) => {
+      const rows = users.map((u) => ({ organization_id: orgId, user_id: u.userId, role: u.role }));
+      const { error } = await supabase
+        .from("organization_members" as any)
+        .insert(rows as any);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["org-members", vars.orgId] });
+    },
+  });
+}
+
+/** Update a member's role */
+export function useUpdateOrgMemberRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ memberId, orgId, role }: { memberId: string; orgId: string; role: "owner" | "admin" | "member" | "viewer" }) => {
+      const { error } = await supabase
+        .from("organization_members" as any)
+        .update({ role } as any)
+        .eq("id", memberId);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["org-members", vars.orgId] });
+    },
+  });
+}
+
 /** Remove a member from organization */
 export function useRemoveFromOrg() {
   const qc = useQueryClient();

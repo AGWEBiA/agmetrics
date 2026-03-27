@@ -8,9 +8,10 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
-import { Paintbrush, Globe, Palette, Type, Shield, Save, Eye, Users, UserPlus, Trash2, Building2 } from "lucide-react";
-import { useCurrentOrganization, useOrgMembers, useInviteToOrg, useRemoveFromOrg } from "@/hooks/useOrganization";
+import { Paintbrush, Globe, Palette, Type, Shield, Save, Eye, UserPlus, Trash2, Building2, Users, CheckCheck } from "lucide-react";
+import { useCurrentOrganization, useOrgMembers, useBulkInviteToOrg, useRemoveFromOrg, useUpdateOrgMemberRole } from "@/hooks/useOrganization";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
@@ -52,11 +53,12 @@ export default function WorkspaceSettings() {
   const { data: members } = useOrgMembers(currentOrg?.id);
   const { data: allUsers } = useAdminUsers();
   const { data: currentUser } = useCurrentUser();
-  const inviteToOrg = useInviteToOrg();
+  const bulkInvite = useBulkInviteToOrg();
   const removeFromOrg = useRemoveFromOrg();
+  const updateRole = useUpdateOrgMemberRole();
 
-  const [inviteUserId, setInviteUserId] = useState("");
-  const [inviteRole, setInviteRole] = useState<"admin" | "member" | "viewer">("member");
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [bulkRole, setBulkRole] = useState<"admin" | "member" | "viewer">("member");
 
   const [branding, setBranding] = useState<BrandingConfig>(() => {
     const saved = localStorage.getItem("workspace_branding");
@@ -83,12 +85,13 @@ export default function WorkspaceSettings() {
     setBranding((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleInvite = async () => {
-    if (!inviteUserId || !currentOrg?.id) return;
+  const handleBulkInvite = async () => {
+    if (selectedUserIds.size === 0 || !currentOrg?.id) return;
     try {
-      await inviteToOrg.mutateAsync({ orgId: currentOrg.id, userId: inviteUserId, role: inviteRole });
-      toast({ title: "Membro adicionado", description: "O usuário foi adicionado à organização." });
-      setInviteUserId("");
+      const users = Array.from(selectedUserIds).map((userId) => ({ userId, role: bulkRole }));
+      await bulkInvite.mutateAsync({ orgId: currentOrg.id, users });
+      toast({ title: "Membros adicionados", description: `${users.length} usuário(s) adicionado(s) à organização.` });
+      setSelectedUserIds(new Set());
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
@@ -104,9 +107,35 @@ export default function WorkspaceSettings() {
     }
   };
 
-  // Users not yet in org
+  const handleRoleChange = async (memberId: string, newRole: string) => {
+    if (!currentOrg?.id) return;
+    try {
+      await updateRole.mutateAsync({ memberId, orgId: currentOrg.id, role: newRole as any });
+      toast({ title: "Papel atualizado" });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const toggleUser = (userId: string) => {
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  };
+
   const memberUserIds = new Set((members || []).map((m) => m.user_id));
   const availableUsers = (allUsers || []).filter((u) => !memberUserIds.has(u.id));
+
+  const selectAll = () => {
+    if (selectedUserIds.size === availableUsers.length) {
+      setSelectedUserIds(new Set());
+    } else {
+      setSelectedUserIds(new Set(availableUsers.map((u) => u.id)));
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -130,8 +159,12 @@ export default function WorkspaceSettings() {
           <CardDescription>Gerencie os membros da sua organização. Todos os membros terão acesso aos projetos.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Member list */}
+          {/* Member list with inline role editing */}
           <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              <Users className="h-4 w-4" />
+              Membros ({(members || []).length})
+            </Label>
             {(members || []).map((member) => (
               <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
                 <div className="flex items-center gap-3">
@@ -146,9 +179,24 @@ export default function WorkspaceSettings() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {orgRoleLabels[member.role] || member.role}
-                  </Badge>
+                  {member.role === "owner" ? (
+                    <Badge variant="default" className="text-xs">Dono</Badge>
+                  ) : (
+                    <Select
+                      value={member.role}
+                      onValueChange={(v) => handleRoleChange(member.id, v)}
+                      disabled={member.user_id === currentUser?.id}
+                    >
+                      <SelectTrigger className="h-7 w-[120px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="member">Membro</SelectItem>
+                        <SelectItem value="viewer">Visualizador</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                   {member.role !== "owner" && member.user_id !== currentUser?.id && (
                     <Button
                       variant="ghost"
@@ -166,40 +214,76 @@ export default function WorkspaceSettings() {
 
           <Separator />
 
-          {/* Add member */}
-          <div className="space-y-2">
+          {/* Multi-select add members */}
+          <div className="space-y-3">
             <Label className="text-sm font-medium flex items-center gap-1.5">
               <UserPlus className="h-4 w-4" />
-              Adicionar membro
+              Adicionar membros
             </Label>
-            <div className="flex gap-2">
-              <Select value={inviteUserId} onValueChange={setInviteUserId}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Selecione um usuário" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableUsers.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.name} ({u.email})
-                    </SelectItem>
+
+            {availableUsers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Todos os usuários já fazem parte desta organização.</p>
+            ) : (
+              <>
+                {/* Select all + role picker */}
+                <div className="flex items-center justify-between">
+                  <Button variant="ghost" size="sm" className="text-xs gap-1.5 h-7" onClick={selectAll}>
+                    <CheckCheck className="h-3.5 w-3.5" />
+                    {selectedUserIds.size === availableUsers.length ? "Desmarcar todos" : "Selecionar todos"}
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Papel:</span>
+                    <Select value={bulkRole} onValueChange={(v) => setBulkRole(v as any)}>
+                      <SelectTrigger className="h-7 w-[120px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="member">Membro</SelectItem>
+                        <SelectItem value="viewer">Visualizador</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* User checklist */}
+                <div className="max-h-[240px] overflow-y-auto rounded-lg border divide-y">
+                  {availableUsers.map((user) => (
+                    <label
+                      key={user.id}
+                      className="flex items-center gap-3 p-2.5 hover:bg-muted/50 cursor-pointer transition-colors"
+                    >
+                      <Checkbox
+                        checked={selectedUserIds.has(user.id)}
+                        onCheckedChange={() => toggleUser(user.id)}
+                      />
+                      <Avatar className="h-7 w-7">
+                        <AvatarFallback className="text-[10px]">
+                          {(user.name || "?").charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{user.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      </div>
+                    </label>
                   ))}
-                </SelectContent>
-              </Select>
-              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as any)}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="member">Membro</SelectItem>
-                  <SelectItem value="viewer">Visualizador</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button onClick={handleInvite} disabled={!inviteUserId || inviteToOrg.isPending} size="sm">
-                <UserPlus className="h-4 w-4 mr-1" />
-                Adicionar
-              </Button>
-            </div>
+                </div>
+
+                {/* Add button */}
+                <Button
+                  onClick={handleBulkInvite}
+                  disabled={selectedUserIds.size === 0 || bulkInvite.isPending}
+                  size="sm"
+                  className="w-full"
+                >
+                  <UserPlus className="h-4 w-4 mr-1.5" />
+                  {bulkInvite.isPending
+                    ? "Adicionando..."
+                    : `Adicionar ${selectedUserIds.size > 0 ? `${selectedUserIds.size} usuário(s)` : ""}`}
+                </Button>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
