@@ -4,6 +4,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { GlobalFiltersBar } from "@/components/GlobalFiltersBar";
+import { OrganizationSwitcher } from "@/components/OrganizationSwitcher";
 import { Outlet, useParams } from "react-router-dom";
 
 export function DashboardLayout() {
@@ -14,7 +15,10 @@ export function DashboardLayout() {
         <AppSidebar />
         <main className="flex-1 overflow-auto">
           <header className="sticky top-0 z-30 flex h-12 sm:h-14 items-center justify-between gap-4 border-b bg-background/80 backdrop-blur-sm px-4 sm:px-6">
-            <SidebarTrigger />
+            <div className="flex items-center gap-2">
+              <SidebarTrigger />
+              <OrganizationSwitcher />
+            </div>
             <div className="flex items-center gap-2">
               <PushNotificationToggle />
               <NotificationBell />
