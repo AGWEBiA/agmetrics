@@ -121,8 +121,8 @@ export default function PublicDashboard() {
   const conversionRate = m.totalLeads > 0 ? (m.salesCount / m.totalLeads) * 100 : 0;
 
   const overviewSections = useMemo(() => {
-    return buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress, leadJourney });
-  }, [m, budgetData, whatsappGroups, whatsappHistory, goalsProgress, leadJourney]);
+    return buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress });
+  }, [m, budgetData, whatsappGroups, whatsappHistory, goalsProgress]);
 
   const DEFAULT_PUBLIC_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "sales_chart", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "lead_journey", "whatsapp", "products", "platform_pie", "goals"];
 
