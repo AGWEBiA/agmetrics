@@ -2032,6 +2032,29 @@ export type Database = {
       }
     }
     Functions: {
+      get_project_by_view_token: {
+        Args: { _token: string }
+        Returns: {
+          budget: number
+          cart_open_date: string
+          created_at: string
+          description: string
+          end_date: string
+          google_leads_enabled: boolean
+          id: string
+          is_active: boolean
+          manual_investment: number
+          meta_leads_enabled: boolean
+          name: string
+          organization_id: string
+          owner_id: string
+          slug: string
+          start_date: string
+          strategy: Database["public"]["Enums"]["project_strategy"]
+          updated_at: string
+          view_token: string
+        }[]
+      }
       has_org_role: {
         Args: {
           _org_id: string
