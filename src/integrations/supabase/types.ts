@@ -1883,6 +1883,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_valid_view_token: { Args: { _project_id: string }; Returns: boolean }
       is_org_member: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
