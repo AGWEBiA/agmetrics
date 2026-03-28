@@ -5,6 +5,7 @@ import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useLeadJourneyData } from "@/hooks/useLeadJourneyData";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { setPublicViewToken } from "@/lib/publicSupabaseHeaders";
 import { AnimatedPage, AnimatedCard } from "@/components/AnimatedCard";
 import { BarChart3, TrendingUp, TrendingDown, DollarSign, Users, Target, ShoppingCart } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
