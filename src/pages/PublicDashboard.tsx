@@ -50,6 +50,14 @@ export default function PublicDashboard() {
   const projectLoading = slugQuery.isLoading || (!slugQuery.data && tokenQuery.isLoading);
   const error = slugQuery.error && tokenQuery.error;
 
+  // Set the view_token header so RLS policies can validate public access
+  useEffect(() => {
+    if (project?.view_token) {
+      setPublicViewToken(project.view_token);
+    }
+    return () => setPublicViewToken(null);
+  }, [project?.view_token]);
+
   const m = useDashboardMetrics(project?.id, undefined, project?.strategy);
   const leadJourney = useLeadJourneyData(project?.id);
   const { data: whatsappGroups } = useQuery({
