@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useProjectBySlug, useProjectByToken } from "@/hooks/useProjects";
-import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
-import { useLeadJourneyData } from "@/hooks/useLeadJourneyData";
+import { usePublicDashboardMetrics } from "@/hooks/usePublicDashboardMetrics";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { setPublicViewToken } from "@/lib/publicSupabaseHeaders";
@@ -58,8 +57,8 @@ export default function PublicDashboard() {
     return () => setPublicViewToken(null);
   }, [project?.view_token]);
 
-  const m = useDashboardMetrics(project?.id, undefined, project?.strategy);
-  const leadJourney = useLeadJourneyData(project?.id);
+  const viewToken = project?.view_token;
+  const m = usePublicDashboardMetrics(project?.id, viewToken);
   const { data: whatsappGroups } = useQuery({
     queryKey: ["public_whatsapp_groups", project?.id],
     enabled: !!project?.id,
@@ -122,8 +121,8 @@ export default function PublicDashboard() {
   const conversionRate = m.totalLeads > 0 ? (m.salesCount / m.totalLeads) * 100 : 0;
 
   const overviewSections = useMemo(() => {
-    return buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress, leadJourney });
-  }, [m, budgetData, whatsappGroups, whatsappHistory, goalsProgress, leadJourney]);
+    return buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress });
+  }, [m, budgetData, whatsappGroups, whatsappHistory, goalsProgress]);
 
   const DEFAULT_PUBLIC_ORDER = ["budget_provisioning", "financial", "roi", "sales_overview", "sales_chart", "funnel", "meta_ads", "google_ads", "payment_methods", "temporal_analysis", "lead_journey", "whatsapp", "products", "platform_pie", "goals"];
 

@@ -1,18 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export function usePublicDashboardMetrics(projectId: string | undefined) {
+export function usePublicDashboardMetrics(projectId: string | undefined, viewToken: string | undefined) {
   const salesQuery = useQuery({
-    queryKey: ["public_sales", projectId],
-    enabled: !!projectId,
+    queryKey: ["public_sales", projectId, viewToken],
+    enabled: !!projectId && !!viewToken,
     queryFn: async () => {
-      // Use only non-PII fields — buyer_email/buyer_name are excluded
-      const { data, error } = await supabase
-        .from("sales_events")
-        .select("amount, gross_amount, base_price, platform_fee, coproducer_commission, product_name, product_type, platform, sale_date, created_at")
-        .eq("project_id", projectId!)
-        .eq("status", "approved")
-        .eq("is_ignored", false);
+      const { data, error } = await supabase.rpc("get_public_sales", {
+        _project_id: projectId!,
+        _token: viewToken!,
+      });
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+    refetchInterval: 300000,
+  });
+
+  const leadEventsQuery = useQuery({
+    queryKey: ["public_lead_events", projectId, viewToken],
+    enabled: !!projectId && !!viewToken,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_public_lead_events", {
+        _project_id: projectId!,
+        _token: viewToken!,
+      });
       if (error) throw error;
       return (data as any[]) || [];
     },
@@ -93,17 +104,31 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
     refetchInterval: 300000,
   });
 
-  const sales = salesQuery.data || [];
+  const manualInvestmentsQuery = useQuery({
+    queryKey: ["public_manual_investments", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("manual_investments")
+        .select("amount")
+        .eq("project_id", projectId!);
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+    refetchInterval: 300000,
+  });
+
+  const sales = (salesQuery.data || []).filter((s: any) => s.status === "approved" && !s.is_ignored);
   const meta = metaQuery.data || [];
   const google = googleQuery.data || [];
   const goals = goalsQuery.data || [];
+  const leadEvents = leadEventsQuery.data || [];
 
   const producerRevenue = sales.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
   const totalCoproducerCommission = sales.reduce((s: number, e: any) => s + Number(e.coproducer_commission || 0), 0);
   const totalRevenue = producerRevenue + totalCoproducerCommission;
   const grossRevenue = sales.reduce((s: number, e: any) => s + Number(e.gross_amount || 0), 0);
 
-  // Receita Bruta da Ação: uses product base price from products table
   const registeredProducts = productsQuery.data || [];
   const grossActionRevenue = sales.reduce((sum: number, sale: any) => {
     const saleName = (sale.product_name || "").toLowerCase();
@@ -117,13 +142,14 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   }, 0);
 
   const totalFees = sales.reduce((s: number, e: any) => s + Number(e.platform_fee || 0), 0);
-  const totalTaxes = sales.reduce((s: number, e: any) => s + Number((e as any).taxes || 0), 0);
+  const totalTaxes = sales.reduce((s: number, e: any) => s + Number(e.taxes || 0), 0);
   const salesCount = sales.length;
   const avgTicket = salesCount > 0 ? totalRevenue / salesCount : 0;
 
   const metaInvestment = meta.reduce((s: number, m: any) => s + Number(m.investment || 0), 0);
   const googleInvestment = google.reduce((s: number, m: any) => s + Number(m.investment || 0), 0);
-  const totalInvestment = metaInvestment + googleInvestment;
+  const manualInvestment = (manualInvestmentsQuery.data || []).reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+  const totalInvestment = metaInvestment + googleInvestment + manualInvestment;
 
   const netProfitProject = totalRevenue - totalInvestment;
   const netProfitProducer = producerRevenue - totalInvestment;
@@ -132,7 +158,6 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   const roas = totalInvestment > 0 ? totalRevenue / totalInvestment : 0;
   const margin = grossRevenue > 0 ? (netProfitProject / grossRevenue) * 100 : 0;
 
-  // Meta Ads aggregate metrics (excluding leads/CPL for privacy)
   const metaImpressions = meta.reduce((s: number, m: any) => s + (m.impressions || 0), 0);
   const metaClicks = meta.reduce((s: number, m: any) => s + (m.clicks || 0), 0);
   const metaResults = meta.reduce((s: number, m: any) => s + (m.results || 0), 0);
@@ -154,21 +179,19 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   const metaPageConversion = metaLpViews > 0 ? (metaCheckouts / metaLpViews) * 100 : 0;
   const metaCheckoutConversion = metaCheckouts > 0 ? (metaPurchases / metaCheckouts) * 100 : 0;
 
-  // Top ads from meta_ads table
   const metaAds = (metaAdsQuery.data || []).map((ad: any) => ({
-    id: ad.ad_id,
-    name: ad.ad_name,
-    status: ad.status,
-    spend: Number(ad.spend || 0),
-    impressions: Number(ad.impressions || 0),
-    clicks: Number(ad.clicks || 0),
-    purchases: Number(ad.purchases || 0),
-    leads: Number(ad.leads || 0),
-    preview_link: ad.preview_link,
-    hook_rate: Number(ad.hook_rate || 0),
-    hold_rate: Number(ad.hold_rate || 0),
+    id: ad.ad_id, name: ad.ad_name, status: ad.status,
+    spend: Number(ad.spend || 0), impressions: Number(ad.impressions || 0),
+    clicks: Number(ad.clicks || 0), purchases: Number(ad.purchases || 0),
+    leads: Number(ad.leads || 0), preview_link: ad.preview_link,
+    hook_rate: Number(ad.hook_rate || 0), hold_rate: Number(ad.hold_rate || 0),
   }));
   const topAds = metaAds.slice(0, 10);
+
+  // Lead journey data (no PII)
+  const totalLeads = leadEvents.filter((e: any) => e.event_type === "lead").length;
+  const conversionRate = totalLeads > 0 ? (salesCount / totalLeads) * 100 : 0;
+  const avgCpl = totalLeads > 0 ? totalInvestment / totalLeads : 0;
 
   // Sales by date
   const salesByDate = new Map<string, { count: number; revenue: number }>();
@@ -201,18 +224,14 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   });
 
   const productData = Array.from(productBreakdown.entries()).map(([name, data]) => ({
-    name,
-    ...data,
-    pct: totalRevenue > 0 ? (data.revenue / totalRevenue) * 100 : 0,
+    name, ...data, pct: totalRevenue > 0 ? (data.revenue / totalRevenue) * 100 : 0,
   }));
 
-  // Platform chart
   const platformChartData = [
     { name: "Kiwify", value: sales.filter((s: any) => s.platform === "kiwify").reduce((sum: number, e: any) => sum + Number(e.amount || 0), 0) },
     { name: "Hotmart", value: sales.filter((s: any) => s.platform === "hotmart").reduce((sum: number, e: any) => sum + Number(e.amount || 0), 0) },
   ].filter((d) => d.value > 0);
 
-  // Goals progress
   const goalsProgress = goals.map((g: any) => {
     let current = 0;
     switch (g.type) {
@@ -220,11 +239,12 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
       case "sales": current = salesCount; break;
       case "roi": current = roi; break;
       case "margin": current = margin; break;
+      case "leads": current = totalLeads; break;
     }
     return { type: g.type, target: g.target_value, current, period: g.period, pct: g.target_value > 0 ? (current / g.target_value) * 100 : 0 };
   });
 
-  // Google Ads aggregate metrics
+  // Google Ads aggregate
   const gImpressions = google.reduce((s: number, m: any) => s + (m.impressions || 0), 0);
   const gClicks = google.reduce((s: number, m: any) => s + (m.clicks || 0), 0);
   const gConversions = google.reduce((s: number, m: any) => s + (m.conversions || 0), 0);
@@ -234,16 +254,58 @@ export function usePublicDashboardMetrics(projectId: string | undefined) {
   const gConversionRate = gClicks > 0 ? (gConversions / gClicks) * 100 : 0;
   const gCostPerConversion = gConversions > 0 ? googleInvestment / gConversions : 0;
 
+  // Sales by day of week
+  const salesByDayOfWeek = (() => {
+    const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    const dayData = Array(7).fill(null).map((_, i) => ({ name: days[i], vendas: 0, revenue: 0 }));
+    sales.forEach((s: any) => {
+      const raw = s.sale_date || s.created_at;
+      if (!raw) return;
+      const dayIdx = new Date(raw).getDay();
+      dayData[dayIdx].vendas += 1;
+      dayData[dayIdx].revenue += Number(s.amount || 0);
+    });
+    return dayData;
+  })();
+
+  // Kiwify/Hotmart splits
+  const kiwifySales = sales.filter((s: any) => s.platform === "kiwify");
+  const hotmartSales = sales.filter((s: any) => s.platform === "hotmart");
+
+  // Payment methods
+  const paymentBreakdown = new Map<string, { count: number; revenue: number }>();
+  sales.forEach((s: any) => {
+    const method = s.payment_method || "Outro";
+    const existing = paymentBreakdown.get(method) || { count: 0, revenue: 0 };
+    paymentBreakdown.set(method, { count: existing.count + 1, revenue: existing.revenue + Number(s.amount || 0) });
+  });
+  const paymentMethodData = Array.from(paymentBreakdown.entries()).map(([method, data]) => ({
+    method, ...data, pct: salesCount > 0 ? (data.count / salesCount) * 100 : 0,
+  }));
+
+  // Meta metrics per date for charts
+  const metaMetrics = meta;
+  const googleMetrics = google;
+
   return {
-    isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || goalsQuery.isLoading || productsQuery.isLoading,
-    totalRevenue, grossRevenue, grossActionRevenue, totalFees, totalTaxes, totalCoproducerCommission, producerRevenue, salesCount, avgTicket,
-    totalInvestment, metaInvestment, googleInvestment, netProfit, netProfitProject, netProfitProducer, roi, roas, margin,
+    isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || goalsQuery.isLoading || productsQuery.isLoading || leadEventsQuery.isLoading,
+    totalRevenue, grossRevenue, grossActionRevenue, totalFees, totalTaxes, totalCoproducerCommission, producerRevenue,
+    salesCount, avgTicket,
+    totalInvestment, metaInvestment, googleInvestment, manualInvestment,
+    netProfit, netProfitProject, netProfitProducer, roi, roas, margin,
     metaImpressions, metaClicks, metaResults, metaPurchases, metaLinkClicks, metaLpViews, metaCheckouts,
-    metaLeads, metaCostPerLead,
-    metaCpm, metaCtr, metaCpc, metaCostPerResult, metaCostPerPurchase,
+    metaLeads, metaCostPerLead, metaCpm, metaCtr, metaCpc, metaCostPerResult, metaCostPerPurchase,
     metaLinkCtr, metaLinkCpc, metaConnectRate, metaPageConversion, metaCheckoutConversion,
     gImpressions, gClicks, gConversions, gCpm, gCtr, gCpc, gConversionRate, gCostPerConversion,
-    topAds,
-    salesChartData, productData, platformChartData, goalsProgress,
+    topAds, salesChartData, productData, platformChartData, goalsProgress,
+    totalLeads, conversionRate, avgCpl, metaLeadsCost: metaCostPerLead,
+    salesByDayOfWeek, kiwifySales, hotmartSales, paymentMethodData,
+    metaMetrics, googleMetrics,
+    // Compatibility fields expected by DashboardTabs / OverviewSections
+    pendingSalesCount: 0, cancelledSalesCount: 0, refundedSalesCount: 0, totalSalesCount: sales.length,
+    pendingSales: [], refundedSales: [],
+    conversionLabel: "lead → venda", conversionBase: totalLeads,
+    demographicsLoaded: false, metaAdsLoaded: metaAdsQuery.isFetched,
+    revenueChange: 0, salesCountChange: 0, roiChange: 0, investmentChange: 0,
   };
 }

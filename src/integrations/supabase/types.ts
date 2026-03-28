@@ -2055,6 +2055,82 @@ export type Database = {
           view_token: string
         }[]
       }
+      get_project_safe: {
+        Args: { _project_id: string }
+        Returns: {
+          budget: number
+          cart_open_date: string
+          created_at: string
+          description: string
+          end_date: string
+          google_leads_enabled: boolean
+          id: string
+          is_active: boolean
+          manual_investment: number
+          meta_leads_enabled: boolean
+          name: string
+          organization_id: string
+          owner_id: string
+          slug: string
+          start_date: string
+          strategy: Database["public"]["Enums"]["project_strategy"]
+          updated_at: string
+          view_token: string
+        }[]
+      }
+      get_public_lead_events: {
+        Args: { _project_id: string; _token: string }
+        Returns: {
+          ad_id: string
+          ad_name: string
+          amount: number
+          created_at: string
+          event_date: string
+          event_detail: string
+          event_source: string
+          event_type: string
+          id: string
+          metadata: Json
+          project_id: string
+          sale_id: string
+          tracking_sck: string
+          tracking_src: string
+          utm_campaign: string
+          utm_content: string
+          utm_medium: string
+          utm_source: string
+          utm_term: string
+        }[]
+      }
+      get_public_sales: {
+        Args: { _project_id: string; _token: string }
+        Returns: {
+          amount: number
+          base_price: number
+          coproducer_commission: number
+          created_at: string
+          external_id: string
+          gross_amount: number
+          id: string
+          is_ignored: boolean
+          payment_method: string
+          platform: Database["public"]["Enums"]["sales_platform"]
+          platform_fee: number
+          product_name: string
+          product_type: Database["public"]["Enums"]["product_type"]
+          project_id: string
+          sale_date: string
+          status: Database["public"]["Enums"]["sale_status"]
+          taxes: number
+          tracking_sck: string
+          tracking_src: string
+          utm_campaign: string
+          utm_content: string
+          utm_medium: string
+          utm_source: string
+          utm_term: string
+        }[]
+      }
       has_org_role: {
         Args: {
           _org_id: string
