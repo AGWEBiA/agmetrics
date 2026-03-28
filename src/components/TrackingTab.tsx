@@ -531,7 +531,7 @@ export function TrackingTab({ m, project }: TrackingTabProps) {
                 <KPICard label="Investimento" value={formatBRL(m.metaInvestment)} comparisonPct={m.investmentChange} comparisonDays={periodDays} />
               </AnimatedCard>
               <AnimatedCard index={1}>
-                <KPICard label="Faturamento" value={formatBRL(m.totalRevenue)} comparisonPct={m.revenueChange} comparisonDays={periodDays} />
+                <KPICard label="Fat. Líquido (Produtor)" value={formatBRL(m.producerRevenue)} comparisonPct={m.revenueChange} comparisonDays={periodDays} />
               </AnimatedCard>
               <AnimatedCard index={2}>
                 <KPICard label="Compras" value={formatNumber(m.salesCount)} comparisonPct={m.salesCountChange} comparisonDays={periodDays} />
