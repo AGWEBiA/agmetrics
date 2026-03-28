@@ -69,9 +69,10 @@ export function useProjectBySlug(slug: string | undefined) {
     queryKey: ["projects", "slug", slug],
     enabled: !!slug,
     queryFn: async () => {
+      // First try projects_public (no view_token), then fall back to token lookup
       const { data, error } = await supabase
         .from("projects_public" as any)
-        .select("id, name, description, strategy, start_date, end_date, cart_open_date, budget, manual_investment, is_active, created_at, updated_at, view_token, meta_leads_enabled, google_leads_enabled, owner_id, slug")
+        .select("id, name, description, strategy, start_date, end_date, cart_open_date, budget, manual_investment, is_active, created_at, updated_at, meta_leads_enabled, google_leads_enabled, owner_id, slug, organization_id")
         .eq("slug", slug!)
         .single();
       if (error) throw error;
