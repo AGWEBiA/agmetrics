@@ -1750,7 +1750,6 @@ export type Database = {
           start_date: string | null
           strategy: Database["public"]["Enums"]["project_strategy"] | null
           updated_at: string | null
-          view_token: string | null
         }
         Insert: {
           budget?: number | null
@@ -1770,7 +1769,6 @@ export type Database = {
           start_date?: string | null
           strategy?: Database["public"]["Enums"]["project_strategy"] | null
           updated_at?: string | null
-          view_token?: string | null
         }
         Update: {
           budget?: number | null
@@ -1790,7 +1788,6 @@ export type Database = {
           start_date?: string | null
           strategy?: Database["public"]["Enums"]["project_strategy"] | null
           updated_at?: string | null
-          view_token?: string | null
         }
         Relationships: [
           {
@@ -1798,6 +1795,87 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_lead_events_view: {
+        Row: {
+          ad_id: string | null
+          ad_name: string | null
+          amount: number | null
+          created_at: string | null
+          event_date: string | null
+          event_detail: string | null
+          event_source: string | null
+          event_type: string | null
+          id: string | null
+          metadata: Json | null
+          project_id: string | null
+          sale_id: string | null
+          tracking_sck: string | null
+          tracking_src: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          ad_id?: string | null
+          ad_name?: string | null
+          amount?: number | null
+          created_at?: string | null
+          event_date?: string | null
+          event_detail?: string | null
+          event_source?: string | null
+          event_type?: string | null
+          id?: string | null
+          metadata?: Json | null
+          project_id?: string | null
+          sale_id?: string | null
+          tracking_sck?: string | null
+          tracking_src?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          ad_id?: string | null
+          ad_name?: string | null
+          amount?: number | null
+          created_at?: string | null
+          event_date?: string | null
+          event_detail?: string | null
+          event_source?: string | null
+          event_type?: string | null
+          id?: string | null
+          metadata?: Json | null
+          project_id?: string | null
+          sale_id?: string | null
+          tracking_sck?: string | null
+          tracking_src?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1859,8 +1937,124 @@ export type Database = {
           },
         ]
       }
+      public_sales_view: {
+        Row: {
+          amount: number | null
+          base_price: number | null
+          coproducer_commission: number | null
+          created_at: string | null
+          external_id: string | null
+          gross_amount: number | null
+          id: string | null
+          is_ignored: boolean | null
+          platform: Database["public"]["Enums"]["sales_platform"] | null
+          platform_fee: number | null
+          product_name: string | null
+          product_type: Database["public"]["Enums"]["product_type"] | null
+          project_id: string | null
+          sale_date: string | null
+          status: Database["public"]["Enums"]["sale_status"] | null
+          taxes: number | null
+          tracking_sck: string | null
+          tracking_src: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          amount?: number | null
+          base_price?: number | null
+          coproducer_commission?: number | null
+          created_at?: string | null
+          external_id?: string | null
+          gross_amount?: number | null
+          id?: string | null
+          is_ignored?: boolean | null
+          platform?: Database["public"]["Enums"]["sales_platform"] | null
+          platform_fee?: number | null
+          product_name?: string | null
+          product_type?: Database["public"]["Enums"]["product_type"] | null
+          project_id?: string | null
+          sale_date?: string | null
+          status?: Database["public"]["Enums"]["sale_status"] | null
+          taxes?: number | null
+          tracking_sck?: string | null
+          tracking_src?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          amount?: number | null
+          base_price?: number | null
+          coproducer_commission?: number | null
+          created_at?: string | null
+          external_id?: string | null
+          gross_amount?: number | null
+          id?: string | null
+          is_ignored?: boolean | null
+          platform?: Database["public"]["Enums"]["sales_platform"] | null
+          platform_fee?: number | null
+          product_name?: string | null
+          product_type?: Database["public"]["Enums"]["product_type"] | null
+          project_id?: string | null
+          sale_date?: string | null
+          status?: Database["public"]["Enums"]["sale_status"] | null
+          taxes?: number | null
+          tracking_sck?: string | null
+          tracking_src?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      get_project_by_view_token: {
+        Args: { _token: string }
+        Returns: {
+          budget: number
+          cart_open_date: string
+          created_at: string
+          description: string
+          end_date: string
+          google_leads_enabled: boolean
+          id: string
+          is_active: boolean
+          manual_investment: number
+          meta_leads_enabled: boolean
+          name: string
+          organization_id: string
+          owner_id: string
+          slug: string
+          start_date: string
+          strategy: Database["public"]["Enums"]["project_strategy"]
+          updated_at: string
+          view_token: string
+        }[]
+      }
       has_org_role: {
         Args: {
           _org_id: string
@@ -1883,6 +2077,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_valid_view_token: { Args: { _project_id: string }; Returns: boolean }
       is_org_member: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean

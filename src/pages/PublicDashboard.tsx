@@ -5,6 +5,7 @@ import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useLeadJourneyData } from "@/hooks/useLeadJourneyData";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { setPublicViewToken } from "@/lib/publicSupabaseHeaders";
 import { AnimatedPage, AnimatedCard } from "@/components/AnimatedCard";
 import { BarChart3, TrendingUp, TrendingDown, DollarSign, Users, Target, ShoppingCart } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,6 +49,14 @@ export default function PublicDashboard() {
   const project = slugQuery.data || tokenQuery.data;
   const projectLoading = slugQuery.isLoading || (!slugQuery.data && tokenQuery.isLoading);
   const error = slugQuery.error && tokenQuery.error;
+
+  // Set the view_token header so RLS policies can validate public access
+  useEffect(() => {
+    if (project?.view_token) {
+      setPublicViewToken(project.view_token);
+    }
+    return () => setPublicViewToken(null);
+  }, [project?.view_token]);
 
   const m = useDashboardMetrics(project?.id, undefined, project?.strategy);
   const leadJourney = useLeadJourneyData(project?.id);
