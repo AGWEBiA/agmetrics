@@ -41,6 +41,7 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
               <Stat label="Lucro Líquido Projeto" value={formatBRL(m.netProfitProject)} />
               <Stat label="Lucro Líquido Produtor" value={formatBRL(m.netProfitProducer)} />
               <Stat label="Ticket Médio" value={formatBRL(m.avgTicket)} />
+              {m.rpl > 0 && <Stat label="RPL (Receita/Lead)" value={formatBRL(m.rpl)} />}
             </div>
           </CardContent>
         </Card>
