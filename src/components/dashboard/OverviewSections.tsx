@@ -158,7 +158,7 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
     funnel: (m.totalLeads > 0 || m.totalInvestment > 0 || m.rplLeads > 0) ? (
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         <AnimatedCard index={0}><MetricCard title={m.isRplStrategy ? "Leads (Compradores Únicos)" : "Total de Leads"} value={formatNumber(m.isRplStrategy ? m.rplLeads : m.totalLeads)} subtitle={m.isRplStrategy ? "Emails únicos" : "Meta + Google"} change={m.leadsChange} /></AnimatedCard>
-        <AnimatedCard index={1}><MetricCard title="CPL Médio" value={formatBRL(m.avgCpl)} subtitle="Custo por lead" /></AnimatedCard>
+        <AnimatedCard index={1}><MetricCard title="CPL Médio" value={formatBRL(m.avgCpl)} subtitle={m.isRplStrategy ? "Investimento ÷ compradores únicos" : "Custo por lead"} /></AnimatedCard>
         <AnimatedCard index={2}><MetricCard title="RPL" value={formatBRL(m.rpl)} subtitle="Receita por lead" color={m.rpl > (m.avgCpl || 0) ? "text-success" : m.avgCpl > 0 ? "text-destructive" : undefined} /></AnimatedCard>
         <AnimatedCard index={3}><MetricCard title="Investimento Total" value={formatBRL(m.totalInvestment)} change={m.investmentChange} /></AnimatedCard>
         <AnimatedCard index={4}><MetricCard title="Receita Líquida" value={formatBRL(m.totalRevenue)} change={m.revenueChange} /></AnimatedCard>
