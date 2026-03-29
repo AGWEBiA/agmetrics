@@ -239,6 +239,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   );
   const rplLeads = isRplStrategy ? uniqueBuyerEmails.size : totalLeads;
   const rpl = rplLeads > 0 ? totalRevenue / rplLeads : 0;
+  const rplGross = rplLeads > 0 ? grossRevenue / rplLeads : 0;
   const cplBase = isRplStrategy ? rplLeads : totalLeads;
   const avgCpl = cplBase > 0 ? totalInvestment / cplBase : 0;
   const avgPurchasesPerLead = cplBase > 0 ? salesCount / cplBase : 0;
