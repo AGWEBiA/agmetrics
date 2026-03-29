@@ -229,6 +229,16 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const conversionBase = isPerpertuo ? totalPageViews : totalLeads;
   const conversionRate = conversionBase > 0 ? (salesCount / conversionBase) * 100 : 0;
   const conversionLabel = isPerpertuo ? "Views → Compras" : "Leads → Compras";
+
+  // RPL (Revenue Per Lead) - for perpétuo and lançamento pago, each unique buyer = 1 lead
+  const isRplStrategy = strategy === "perpetuo" || strategy === "lancamento_pago";
+  const uniqueBuyerEmails = new Set(
+    approvedSales
+      .map((s) => (s.buyer_email || "").toLowerCase().trim())
+      .filter((e) => e.length > 0)
+  );
+  const rplLeads = isRplStrategy ? uniqueBuyerEmails.size : totalLeads;
+  const rpl = rplLeads > 0 ? totalRevenue / rplLeads : 0;
   const avgCpl = totalLeads > 0 ? totalInvestment / totalLeads : 0;
 
   const metaImpressions = metaMetrics.reduce((s: number, m: any) => s + (m.impressions || 0), 0);
@@ -432,6 +442,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     metaInvestment, googleInvestment, manualInvestment, totalInvestment,
     roi, roas, margin, netProfit, netProfitProject, netProfitProducer, producerRevenue,
     totalLeads, metaLeads, googleLeads, conversionRate, conversionLabel, conversionBase, avgCpl,
+    rpl, rplLeads, isRplStrategy,
     metaImpressions, metaClicks, metaResults, metaPurchases, metaLinkClicks, metaLpViews, metaCheckouts,
     metaInvestment_total: metaInvestment,
     metaCpm: metaImpressions > 0 ? (metaInvestment / metaImpressions) * 1000 : 0,
