@@ -129,6 +129,9 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
 
   const registeredProducts = productsQuery.data || [];
   const grossActionRevenue = sales.reduce((sum: number, sale: any) => {
+    const saleBasePrice = Number(sale.base_price || 0);
+    if (saleBasePrice > 0) return sum + saleBasePrice;
+
     const saleName = (sale.product_name || "").toLowerCase();
     const saleType = sale.product_type || "main";
     const matched = registeredProducts.find(

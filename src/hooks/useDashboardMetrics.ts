@@ -181,9 +181,13 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const producerRevenue = approvedSales.reduce((s, e) => s + Number(e.amount), 0);
   const grossRevenue = approvedSales.reduce((s, e) => s + Number(e.gross_amount), 0);
 
-  // Receita Bruta da Ação: usa o preço base cadastrado do produto; fallback para gross_amount
+  // Receita Bruta da Ação: prioriza o preço base salvo na venda (ex.: Kiwify),
+  // com fallback para o preço cadastrado do produto e por último gross_amount.
   const registeredProducts = productsQuery.data || [];
   const grossActionRevenue = approvedSales.reduce((sum, sale) => {
+    const saleBasePrice = Number((sale as any).base_price || 0);
+    if (saleBasePrice > 0) return sum + saleBasePrice;
+
     const saleName = (sale.product_name || "").toLowerCase();
     const saleType = sale.product_type || "main";
     const matched = registeredProducts.find(
