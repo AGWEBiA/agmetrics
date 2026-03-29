@@ -176,7 +176,6 @@ Deno.serve(async (req) => {
         }
 
         // Merge detail into existing payload
-        const existingPayload = (sale.payload && typeof sale.payload === 'object') ? sale.payload as Record<string, unknown> : {};
         const updatedPayload = { ...existingPayload, _detail: detail };
 
         const updateData: Record<string, unknown> = {
