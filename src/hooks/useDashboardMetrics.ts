@@ -179,7 +179,14 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const refundedSales = sales.filter((s) => s.status === "refunded");
 
   const producerRevenue = approvedSales.reduce((s, e) => s + Number(e.amount), 0);
-  const totalCoproducerCommission = approvedSales.reduce((s, e) => s + Number((e as any).coproducer_commission || 0), 0);
+  // Comissão de coprodutores = preço bruto - taxa da plataforma - valor líquido do produtor
+  const totalCoproducerCommission = approvedSales.reduce((s, e) => {
+    const gross = Number(e.gross_amount || 0);
+    const fee = Number(e.platform_fee || 0);
+    const producerNet = Number(e.amount || 0);
+    const coproducerValue = gross - fee - producerNet;
+    return s + Math.max(coproducerValue, 0);
+  }, 0);
   const totalRevenue = producerRevenue + totalCoproducerCommission;
   const grossRevenue = approvedSales.reduce((s, e) => s + Number(e.gross_amount), 0);
 
