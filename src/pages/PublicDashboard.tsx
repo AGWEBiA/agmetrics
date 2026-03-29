@@ -106,7 +106,7 @@ export default function PublicDashboard() {
   const goalsProgress = (goals || []).map((g: any) => {
     let current = 0;
     switch (g.type) {
-      case "revenue": current = m.totalRevenue; break;
+      case "revenue": current = m.grossActionRevenue; break;
       case "sales": current = m.salesCount; break;
       case "roi": current = m.roi; break;
       case "margin": current = m.margin; break;
