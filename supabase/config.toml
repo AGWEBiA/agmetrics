@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.webhook-agsell]
 verify_jwt = false
+
+[functions.backfill-kiwify-fees]
+verify_jwt = false
