@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getNormalizedPlatformFee } from "@/lib/salesFinancials";
 
 export function usePublicDashboardMetrics(projectId: string | undefined, viewToken: string | undefined) {
   const salesQuery = useQuery({
@@ -139,7 +140,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
     return sum + Number(matched?.price || sale.gross_amount || 0);
   }, 0);
 
-  const totalFees = sales.reduce((s: number, e: any) => s + Number(e.platform_fee || 0), 0);
+  const totalFees = sales.reduce((s: number, e: any) => s + getNormalizedPlatformFee(e), 0);
   const totalTaxes = sales.reduce((s: number, e: any) => s + Number(e.taxes || 0), 0);
   // Use stored coproducer_commission from DB — each gateway stores this separately
   const totalCoproducerCommission = sales.reduce((s: number, e: any) => s + Number(e.coproducer_commission || 0), 0);

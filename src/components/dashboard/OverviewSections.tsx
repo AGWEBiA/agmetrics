@@ -436,7 +436,7 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
                         <Cell fill={COLORS[0]} />
                         <Cell fill="hsl(152, 60%, 42%)" />
                       </Pie>
-                      <Tooltip cursor={false} />
+                      <Tooltip cursor={false} formatter={(v: number) => formatNumber(v)} contentStyle={TOOLTIP_STYLE} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -449,7 +449,7 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                       <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <Tooltip cursor={false} contentStyle={TOOLTIP_STYLE} />
+                      <Tooltip cursor={false} formatter={(v: number) => formatNumber(v)} contentStyle={TOOLTIP_STYLE} />
                       <Bar dataKey="avista" name="À vista" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="parcelado" name="Parcelado" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
                     </BarChart>
@@ -497,7 +497,7 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={10} />
                       <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                      <Tooltip cursor={false} contentStyle={TOOLTIP_STYLE} />
+                      <Tooltip cursor={false} formatter={(v: number) => formatNumber(v)} contentStyle={TOOLTIP_STYLE} />
                       <Bar dataKey="vendas" name="Vendas" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
