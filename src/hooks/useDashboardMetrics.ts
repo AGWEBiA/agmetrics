@@ -222,13 +222,11 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const totalLeads = metaLeads + googleLeads;
 
   // Perpétuo: conversão = views de página → compras
-  // Lançamento/outros: conversão = leads → compras
+  // Lançamento pago: conversão = compradores únicos → compras
+  // Outros: conversão = leads (Meta+Google) → compras
   const isPerpertuo = strategy === "perpetuo";
   const totalPageViews = metaMetrics.reduce((s: number, m: any) => s + (m.landing_page_views || 0), 0)
     + googleMetrics.reduce((s: number, m: any) => s + (m.clicks || 0), 0);
-  const conversionBase = isPerpertuo ? totalPageViews : totalLeads;
-  const conversionRate = conversionBase > 0 ? (salesCount / conversionBase) * 100 : 0;
-  const conversionLabel = isPerpertuo ? "Views → Compras" : "Leads → Compras";
 
   // RPL (Revenue Per Lead) - for perpétuo and lançamento pago, each unique buyer = 1 lead
   const isRplStrategy = strategy === "perpetuo" || strategy === "lancamento_pago";
