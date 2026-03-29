@@ -30,13 +30,12 @@ async function fetchWithRetry(url: string, headers: Record<string, string>, retr
     if (res.status === 429) {
       const wait = Math.min(3000 * Math.pow(2, i), 30000);
       console.warn(`[sync-kiwify] 429 rate limited, waiting ${wait}ms (attempt ${i + 1}/${retries})`);
-      await res.text(); // consume body
+      await res.text();
       await sleep(wait);
       continue;
     }
     return res;
   }
-  // Last attempt
   return fetch(url, { headers });
 }
 
@@ -145,6 +144,12 @@ Deno.serve(async (req) => {
     const startDate = spFormatter.format(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
     const endDate = spFormatter.format(new Date(now.getTime() + 24 * 60 * 60 * 1000));
 
+    const apiHeaders = {
+      "Authorization": `Bearer ${bearerToken}`,
+      "x-kiwify-account-id": accountId,
+      "Content-Type": "application/json",
+    };
+
     let page = 1;
     let imported = 0;
     let skipped = 0;
@@ -152,11 +157,7 @@ Deno.serve(async (req) => {
 
     while (hasMore) {
       const url = `https://public-api.kiwify.com/v1/sales?start_date=${startDate}&end_date=${endDate}&page_number=${page}&page_size=100`;
-      const res = await fetchWithRetry(url, {
-        "Authorization": `Bearer ${bearerToken}`,
-        "x-kiwify-account-id": accountId,
-        "Content-Type": "application/json",
-      });
+      const res = await fetchWithRetry(url, apiHeaders);
 
       if (!res.ok) {
         const errText = await res.text();
@@ -187,12 +188,7 @@ Deno.serve(async (req) => {
 
         const orderId = tx.reference || tx.id || "";
         const orderStatus = tx.status || "";
-        const rawCharge = parseFloat(tx.charge_amount || tx.order_amount || "0") / 100;
         const rawNet = parseFloat(tx.net_amount || "0") / 100;
-        const rawBasePrice = parseFloat(tx.product?.price || tx.offer?.price || tx.charge_amount || tx.order_amount || "0") / 100;
-        const netValue = rawNet || rawCharge;
-        const orderAmount = rawCharge > 0 ? rawCharge : netValue;
-        const basePrice = rawBasePrice > 0 ? rawBasePrice : orderAmount;
         const customer = tx.customer || {};
         const createdAt = tx.created_at || new Date().toISOString();
         const updatedAt = tx.updated_at || createdAt;
@@ -210,7 +206,7 @@ Deno.serve(async (req) => {
           ? (approvedAt || updatedAt || createdAt)
           : createdAt;
 
-        // Extract tracking from multiple possible locations in the API response
+        // Extract tracking
         const tracking = tx.tracking || {};
         const utmSource = tracking.utm_source || tx.utm_source || tx.utmSource || "";
         const utmMedium = tracking.utm_medium || tx.utm_medium || tx.utmMedium || "";
@@ -220,23 +216,51 @@ Deno.serve(async (req) => {
         const trackingSrc = tracking.src || tx.src || "";
         const trackingSck = tracking.sck || tx.sck || "";
 
-        // Calculate platform fee and coproducer commission separately
-        // If the API provides kiwify_fee, use it for accurate breakdown
-        const rawKiwifyFee = parseFloat(tx.kiwify_fee || tx.Commissions?.kiwify_fee || "0") / 100;
-        const rawMyCommission = parseFloat(tx.Commissions?.my_commission || "0") / 100;
+        // Try to get charge_amount from list response
+        let rawCharge = parseFloat(tx.charge_amount || tx.order_amount || "0") / 100;
+        let rawKiwifyFee = parseFloat(tx.kiwify_fee || tx.Commissions?.kiwify_fee || "0") / 100;
+        let rawMyCommission = parseFloat(tx.Commissions?.my_commission || "0") / 100;
+        let detailPayload = tx;
+
+        // If charge_amount missing from list, fetch individual sale detail endpoint
+        if (rawCharge <= 0 && orderId) {
+          try {
+            const detailUrl = `https://public-api.kiwify.com/v1/sales/${orderId}`;
+            const detailRes = await fetchWithRetry(detailUrl, apiHeaders);
+            if (detailRes.ok) {
+              const detail = await detailRes.json();
+              const payment = detail.payment || detail.Payment || {};
+              rawCharge = parseFloat(payment.charge_amount || detail.charge_amount || "0") / 100;
+              const commissions = detail.Commissions || detail.commissions || {};
+              if (!rawKiwifyFee) rawKiwifyFee = parseFloat(commissions.kiwify_fee || "0") / 100;
+              if (!rawMyCommission) rawMyCommission = parseFloat(commissions.my_commission || "0") / 100;
+              detailPayload = { ...tx, _detail: detail };
+            }
+          } catch (e) {
+            console.warn(`[sync-kiwify] Failed to fetch detail for ${orderId}:`, e);
+          }
+          await sleep(200);
+        }
+
+        const netValue = rawNet || rawCharge;
+        const orderAmount = rawCharge > 0 ? rawCharge : netValue;
+        const rawBasePrice = parseFloat(tx.product?.price || tx.offer?.price || "0") / 100;
+        const basePrice = rawBasePrice > 0 ? rawBasePrice : orderAmount;
+
         const hasCommissionsBreakdown = rawKiwifyFee > 0 || rawMyCommission > 0;
 
         let platformFee: number;
         let coproducerCommission = 0;
 
         if (hasCommissionsBreakdown) {
-          // Kiwify fee is the platform fee; the rest goes to coproducers/affiliates
           platformFee = rawKiwifyFee;
           const producerNet = rawMyCommission || netValue;
           coproducerCommission = Math.max(0, orderAmount - rawKiwifyFee - producerNet);
-        } else {
-          // No breakdown available — store gross-net as platform_fee (lumped)
+        } else if (rawCharge > 0 && rawNet > 0 && rawCharge > rawNet) {
+          // We have both charge and net — derive total deductions
           platformFee = Math.max(0, orderAmount - netValue);
+        } else {
+          platformFee = 0;
         }
 
         const record: any = {
@@ -258,11 +282,10 @@ Deno.serve(async (req) => {
           buyer_state: customer.state || customer.address?.state || undefined,
           buyer_city: customer.city || customer.address?.city || undefined,
           buyer_country: customer.country || undefined,
-          payload: tx,
+          payload: detailPayload,
         };
 
         // Only include tracking fields if the API actually provides them
-        // This prevents overwriting CSV-imported tracking data with empty values
         if (utmSource) record.utm_source = utmSource;
         if (utmMedium) record.utm_medium = utmMedium;
         if (utmCampaign) record.utm_campaign = utmCampaign;
