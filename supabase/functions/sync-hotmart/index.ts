@@ -280,7 +280,27 @@ Deno.serve(async (req) => {
           saleDate = new Date().toISOString();
         }
 
-        const platformFee = Math.max(0, grossValue - netValue);
+        // Hotmart: extract commission breakdown from API response if available
+        const commissions = item.commissions || purchase.commissions || [];
+        let coproducerTotal = 0;
+        let hasCommissionBreakdown = false;
+
+        if (Array.isArray(commissions) && commissions.length > 0) {
+          hasCommissionBreakdown = true;
+          for (const c of commissions) {
+            const role = (c.source || c.role || "").toUpperCase();
+            const commValue = parseFloat(String(c.value || c.amount || "0"));
+            if (role !== "PRODUCER" && role !== "SELLER" && role !== "") {
+              coproducerTotal += commValue;
+            }
+          }
+        }
+
+        const totalDeduction = Math.max(0, grossValue - netValue);
+        const platformFee = hasCommissionBreakdown
+          ? Math.max(0, totalDeduction - coproducerTotal)
+          : totalDeduction;
+        const coproducerCommission = hasCommissionBreakdown ? coproducerTotal : 0;
 
         // Extract tracking data from Hotmart API response
         const tracking = purchase.tracking || item.tracking || {};
@@ -315,6 +335,7 @@ Deno.serve(async (req) => {
               gross_amount: grossValue,
               base_price: basePrice,
               platform_fee: platformFee,
+              coproducer_commission: coproducerCommission,
               status,
               buyer_email: buyerEmail,
               buyer_name: buyerName,
