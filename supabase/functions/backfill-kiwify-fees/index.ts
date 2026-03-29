@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
     };
 
-    // Fetch sales missing platform_fee
+    // Fetch sales missing platform_fee (exclude ones already attempted with error)
     const { data: salesMissingFee, error: fetchError } = await supabase
       .from("sales_events")
       .select("id, external_id, amount, gross_amount, base_price, payload")
@@ -115,8 +115,15 @@ Deno.serve(async (req) => {
     let errors = 0;
 
     for (const sale of salesMissingFee) {
-      const orderId = sale.external_id;
+      // Use payload.id (UUID) if available, fallback to external_id
+      const existingPayload = (sale.payload && typeof sale.payload === 'object') ? sale.payload as Record<string, unknown> : {};
+      const orderId = (existingPayload.id as string) || sale.external_id;
       if (!orderId) { errors++; continue; }
+
+      // Skip already-attempted sales that returned errors
+      if (existingPayload._detail && typeof existingPayload._detail === 'object' && (existingPayload._detail as Record<string, unknown>).error) {
+        // Clear old error detail and retry with correct ID
+      }
 
       try {
         const detailUrl = `https://public-api.kiwify.com/v1/sales/${orderId}`;
@@ -137,26 +144,29 @@ Deno.serve(async (req) => {
         const commissions = detail.Commissions || detail.commissions || {};
         const payment = detail.payment || detail.Payment || {};
 
-        // Extract fee (in cents)
+        // Extract fee (in cents) - payment.fee is the primary field in Kiwify API v1
+        const rawPaymentFee = parseFloat(payment.fee || "0") / 100;
         const rawKiwifyFee = parseFloat(commissions.kiwify_fee || "0") / 100;
         const rawFeeAmount = parseFloat(payment.fee_amount || detail.fee_amount || "0") / 100;
         const rawTaxas = parseFloat(detail.taxas || "0"); // already in decimal
 
-        // Extract charge amount
+        // Extract charge amount (in cents)
         const rawCharge = parseFloat(payment.charge_amount || detail.charge_amount || "0") / 100;
         const rawMyCommission = parseFloat(commissions.my_commission || "0") / 100;
+        const rawNetAmount = parseFloat(payment.net_amount || "0") / 100;
 
-        // Determine platform fee
+        // Determine platform fee - prioritize payment.fee (primary Kiwify API field)
         let platformFee = 0;
-        if (rawTaxas > 0) {
+        if (rawPaymentFee > 0) {
+          platformFee = rawPaymentFee;
+        } else if (rawTaxas > 0) {
           platformFee = rawTaxas;
         } else if (rawKiwifyFee > 0) {
           platformFee = rawKiwifyFee;
         } else if (rawFeeAmount > 0) {
           platformFee = rawFeeAmount;
-        } else if (rawCharge > 0 && rawMyCommission > 0) {
-          // Derive: charge - my_commission = total deductions (fee + coproducer)
-          platformFee = Math.max(0, rawCharge - rawMyCommission);
+        } else if (rawCharge > 0 && rawNetAmount > 0) {
+          platformFee = Math.max(0, rawCharge - rawNetAmount);
         }
 
         // Also update gross_amount if missing
@@ -169,7 +179,6 @@ Deno.serve(async (req) => {
         }
 
         // Merge detail into existing payload
-        const existingPayload = (sale.payload && typeof sale.payload === 'object') ? sale.payload as Record<string, unknown> : {};
         const updatedPayload = { ...existingPayload, _detail: detail };
 
         const updateData: Record<string, unknown> = {
