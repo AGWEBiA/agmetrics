@@ -155,17 +155,18 @@ Deno.serve(async (req) => {
         const rawMyCommission = parseFloat(commissions.my_commission || "0") / 100;
         const rawNetAmount = parseFloat(payment.net_amount || "0") / 100;
 
-        // Determine platform fee
+        // Determine platform fee - prioritize payment.fee (primary Kiwify API field)
         let platformFee = 0;
-        if (rawTaxas > 0) {
+        if (rawPaymentFee > 0) {
+          platformFee = rawPaymentFee;
+        } else if (rawTaxas > 0) {
           platformFee = rawTaxas;
         } else if (rawKiwifyFee > 0) {
           platformFee = rawKiwifyFee;
         } else if (rawFeeAmount > 0) {
           platformFee = rawFeeAmount;
-        } else if (rawCharge > 0 && rawMyCommission > 0) {
-          // Derive: charge - my_commission = total deductions (fee + coproducer)
-          platformFee = Math.max(0, rawCharge - rawMyCommission);
+        } else if (rawCharge > 0 && rawNetAmount > 0) {
+          platformFee = Math.max(0, rawCharge - rawNetAmount);
         }
 
         // Also update gross_amount if missing
