@@ -181,7 +181,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const producerRevenue = approvedSales.reduce((s, e) => s + Number(e.amount), 0);
   // Comissão de coprodutores = soma do preço base dos produtos - soma das taxas - soma do valor líquido do produtor
   const totalCoproducerCommission = approvedSales.reduce((s, e) => {
-    const basePrice = Number(e.base_price || 0);
+    const basePrice = Number((e as any).base_price || 0);
     const fee = Number(e.platform_fee || 0);
     const producerNet = Number(e.amount || 0);
     return s + (basePrice - fee - producerNet);
