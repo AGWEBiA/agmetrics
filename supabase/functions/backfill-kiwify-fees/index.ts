@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
     };
 
-    // Fetch sales missing platform_fee
+    // Fetch sales missing platform_fee (exclude ones already attempted with error)
     const { data: salesMissingFee, error: fetchError } = await supabase
       .from("sales_events")
       .select("id, external_id, amount, gross_amount, base_price, payload")
