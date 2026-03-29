@@ -144,14 +144,16 @@ Deno.serve(async (req) => {
         const commissions = detail.Commissions || detail.commissions || {};
         const payment = detail.payment || detail.Payment || {};
 
-        // Extract fee (in cents)
+        // Extract fee (in cents) - payment.fee is the primary field in Kiwify API v1
+        const rawPaymentFee = parseFloat(payment.fee || "0") / 100;
         const rawKiwifyFee = parseFloat(commissions.kiwify_fee || "0") / 100;
         const rawFeeAmount = parseFloat(payment.fee_amount || detail.fee_amount || "0") / 100;
         const rawTaxas = parseFloat(detail.taxas || "0"); // already in decimal
 
-        // Extract charge amount
+        // Extract charge amount (in cents)
         const rawCharge = parseFloat(payment.charge_amount || detail.charge_amount || "0") / 100;
         const rawMyCommission = parseFloat(commissions.my_commission || "0") / 100;
+        const rawNetAmount = parseFloat(payment.net_amount || "0") / 100;
 
         // Determine platform fee
         let platformFee = 0;
