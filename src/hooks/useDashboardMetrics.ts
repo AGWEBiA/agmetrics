@@ -222,13 +222,11 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const totalLeads = metaLeads + googleLeads;
 
   // Perpétuo: conversão = views de página → compras
-  // Lançamento/outros: conversão = leads → compras
+  // Lançamento pago: conversão = compradores únicos → compras
+  // Outros: conversão = leads (Meta+Google) → compras
   const isPerpertuo = strategy === "perpetuo";
   const totalPageViews = metaMetrics.reduce((s: number, m: any) => s + (m.landing_page_views || 0), 0)
     + googleMetrics.reduce((s: number, m: any) => s + (m.clicks || 0), 0);
-  const conversionBase = isPerpertuo ? totalPageViews : totalLeads;
-  const conversionRate = conversionBase > 0 ? (salesCount / conversionBase) * 100 : 0;
-  const conversionLabel = isPerpertuo ? "Views → Compras" : "Leads → Compras";
 
   // RPL (Revenue Per Lead) - for perpétuo and lançamento pago, each unique buyer = 1 lead
   const isRplStrategy = strategy === "perpetuo" || strategy === "lancamento_pago";
@@ -243,6 +241,11 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const cplBase = isRplStrategy ? rplLeads : totalLeads;
   const avgCpl = cplBase > 0 ? totalInvestment / cplBase : 0;
   const avgPurchasesPerLead = cplBase > 0 ? salesCount / cplBase : 0;
+
+  // Conversion rate uses same base as CPL/RPL for consistency
+  const conversionBase = isPerpertuo ? totalPageViews : cplBase;
+  const conversionRate = conversionBase > 0 ? (salesCount / conversionBase) * 100 : 0;
+  const conversionLabel = isPerpertuo ? "Views → Compras" : (isRplStrategy ? "Compradores únicos → Compras" : "Leads → Compras");
 
   const metaImpressions = metaMetrics.reduce((s: number, m: any) => s + (m.impressions || 0), 0);
   const metaClicks = metaMetrics.reduce((s: number, m: any) => s + (m.clicks || 0), 0);
