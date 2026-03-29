@@ -239,7 +239,8 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   );
   const rplLeads = isRplStrategy ? uniqueBuyerEmails.size : totalLeads;
   const rpl = rplLeads > 0 ? totalRevenue / rplLeads : 0;
-  const avgCpl = totalLeads > 0 ? totalInvestment / totalLeads : 0;
+  const cplBase = isRplStrategy ? rplLeads : totalLeads;
+  const avgCpl = cplBase > 0 ? totalInvestment / cplBase : 0;
 
   const metaImpressions = metaMetrics.reduce((s: number, m: any) => s + (m.impressions || 0), 0);
   const metaClicks = metaMetrics.reduce((s: number, m: any) => s + (m.clicks || 0), 0);
