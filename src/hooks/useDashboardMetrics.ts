@@ -179,22 +179,13 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const refundedSales = sales.filter((s) => s.status === "refunded");
 
   const producerRevenue = approvedSales.reduce((s, e) => s + Number(e.amount), 0);
-  // Comissão de coprodutores = soma do preço base dos produtos - soma das taxas - soma do valor líquido do produtor
-  const totalCoproducerCommission = approvedSales.reduce((s, e) => {
-    const basePrice = Number((e as any).base_price || 0);
-    const fee = Number(e.platform_fee || 0);
-    const producerNet = Number(e.amount || 0);
-    return s + (basePrice - fee - producerNet);
-  }, 0);
-  const totalRevenue = producerRevenue + totalCoproducerCommission;
   const grossRevenue = approvedSales.reduce((s, e) => s + Number(e.gross_amount), 0);
 
-  // Receita Bruta da Ação: uses product base price from products table
+  // Receita Bruta da Ação: usa o preço base cadastrado do produto; fallback para gross_amount
   const registeredProducts = productsQuery.data || [];
   const grossActionRevenue = approvedSales.reduce((sum, sale) => {
     const saleName = (sale.product_name || "").toLowerCase();
     const saleType = sale.product_type || "main";
-    // Match by name + type first, then by name only
     const matched = registeredProducts.find(
       (p: any) => p.name.toLowerCase() === saleName && p.type === saleType
     ) || registeredProducts.find(
@@ -203,8 +194,10 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     return sum + Number(matched?.price || sale.gross_amount || 0);
   }, 0);
 
-  const totalFees = approvedSales.reduce((s, e) => s + Number(e.platform_fee), 0);
+  const totalFees = approvedSales.reduce((s, e) => s + Number(e.platform_fee || 0), 0);
   const totalTaxes = approvedSales.reduce((s, e) => s + Number((e as any).taxes || 0), 0);
+  const totalCoproducerCommission = grossActionRevenue - totalFees - producerRevenue;
+  const totalRevenue = producerRevenue + totalCoproducerCommission;
   const salesCount = approvedSales.length;
   const avgTicket = salesCount > 0 ? totalRevenue / salesCount : 0;
 

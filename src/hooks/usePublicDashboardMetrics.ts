@@ -125,8 +125,6 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
   const leadEvents = leadEventsQuery.data || [];
 
   const producerRevenue = sales.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
-  const totalCoproducerCommission = sales.reduce((s: number, e: any) => s + Number(e.coproducer_commission || 0), 0);
-  const totalRevenue = producerRevenue + totalCoproducerCommission;
   const grossRevenue = sales.reduce((s: number, e: any) => s + Number(e.gross_amount || 0), 0);
 
   const registeredProducts = productsQuery.data || [];
@@ -143,6 +141,8 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
 
   const totalFees = sales.reduce((s: number, e: any) => s + Number(e.platform_fee || 0), 0);
   const totalTaxes = sales.reduce((s: number, e: any) => s + Number(e.taxes || 0), 0);
+  const totalCoproducerCommission = grossActionRevenue - totalFees - producerRevenue;
+  const totalRevenue = producerRevenue + totalCoproducerCommission;
   const salesCount = sales.length;
   const avgTicket = salesCount > 0 ? totalRevenue / salesCount : 0;
 

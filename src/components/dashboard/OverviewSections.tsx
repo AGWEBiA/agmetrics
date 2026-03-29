@@ -37,7 +37,7 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
               <Stat label="Receita Bruta" value={formatBRL(m.grossRevenue)} />
               <Stat label="Receita Líquida (Produtor)" value={formatBRL(m.producerRevenue)} />
               <Stat label="Comissão Coprodutor" value={formatBRL(m.totalCoproducerCommission)} />
-              <Stat label="Taxas Plataforma" value={formatBRL(m.totalTaxes)} />
+              <Stat label="Taxas Plataforma" value={formatBRL(m.totalFees)} />
               <Stat label="Lucro Líquido Projeto" value={formatBRL(m.netProfitProject)} />
               <Stat label="Lucro Líquido Produtor" value={formatBRL(m.netProfitProducer)} />
               <Stat label="Ticket Médio" value={formatBRL(m.avgTicket)} />
