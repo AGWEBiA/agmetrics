@@ -46,6 +46,7 @@ Deno.serve(async (req) => {
     // Allow service role key directly (for internal calls)
     const token = authHeader?.replace("Bearer ", "") || "";
     const isServiceCall = token === serviceRoleKey;
+    console.log(`[backfill] Auth: hasHeader=${!!authHeader}, isServiceCall=${isServiceCall}, tokenLen=${token.length}, srkLen=${serviceRoleKey?.length}`);
 
     if (!isServiceCall) {
       if (!authHeader) {
