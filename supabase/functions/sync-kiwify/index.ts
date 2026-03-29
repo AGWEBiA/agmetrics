@@ -220,6 +220,25 @@ Deno.serve(async (req) => {
         const trackingSrc = tracking.src || tx.src || "";
         const trackingSck = tracking.sck || tx.sck || "";
 
+        // Calculate platform fee and coproducer commission separately
+        // If the API provides kiwify_fee, use it for accurate breakdown
+        const rawKiwifyFee = parseFloat(tx.kiwify_fee || tx.Commissions?.kiwify_fee || "0") / 100;
+        const rawMyCommission = parseFloat(tx.Commissions?.my_commission || "0") / 100;
+        const hasCommissionsBreakdown = rawKiwifyFee > 0 || rawMyCommission > 0;
+
+        let platformFee: number;
+        let coproducerCommission = 0;
+
+        if (hasCommissionsBreakdown) {
+          // Kiwify fee is the platform fee; the rest goes to coproducers/affiliates
+          platformFee = rawKiwifyFee;
+          const producerNet = rawMyCommission || netValue;
+          coproducerCommission = Math.max(0, orderAmount - rawKiwifyFee - producerNet);
+        } else {
+          // No breakdown available — store gross-net as platform_fee (lumped)
+          platformFee = Math.max(0, orderAmount - netValue);
+        }
+
         const record: any = {
           project_id,
           platform: "kiwify",
@@ -229,7 +248,8 @@ Deno.serve(async (req) => {
           amount: netValue,
           gross_amount: orderAmount,
           base_price: basePrice,
-          platform_fee: Math.max(0, orderAmount - netValue),
+          platform_fee: platformFee,
+          coproducer_commission: coproducerCommission,
           status,
           buyer_email: customer.email || "",
           buyer_name: customer.name || "",

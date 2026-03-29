@@ -97,6 +97,17 @@ function extractSaleData(payload: Record<string, any>) {
   // Extract tracking from nested TrackingParameters (new Kiwify format)
   const trackingParams = payload.TrackingParameters || {};
 
+  // Calculate coproducer commission from Commissions object
+  // charge_amount = total charged to buyer
+  // kiwify_fee = platform fee
+  // my_commission = producer's net
+  // Everything else = coproducers + affiliates
+  let coproducerCommission = 0;
+  if (payload.Commissions?.charge_amount && payload.Commissions?.kiwify_fee && payload.Commissions?.my_commission) {
+    const chargeTotal = parseFloat(payload.Commissions.charge_amount) / 100;
+    coproducerCommission = Math.max(0, chargeTotal - kiwifyFee - netValue);
+  }
+
   let status: string;
   switch (rawStatus) {
     case "paid": case "completed":
@@ -111,7 +122,7 @@ function extractSaleData(payload: Record<string, any>) {
 
   return {
     orderId, productName, grossAmount, netValue, platformFee,
-    taxes: 0, coproducerCommission: 0, buyerEmail, buyerName, status,
+    taxes: 0, coproducerCommission, buyerEmail, buyerName, status,
     createdAt, paymentMethod, installments, basePrice,
     trackingParams,
   };

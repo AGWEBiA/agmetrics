@@ -196,7 +196,8 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
 
   const totalFees = approvedSales.reduce((s, e) => s + Number(e.platform_fee || 0), 0);
   const totalTaxes = approvedSales.reduce((s, e) => s + Number((e as any).taxes || 0), 0);
-  const totalCoproducerCommission = grossActionRevenue - totalFees - producerRevenue;
+  // Use stored coproducer_commission from DB — each gateway stores this separately
+  const totalCoproducerCommission = approvedSales.reduce((s, e) => s + Number((e as any).coproducer_commission || 0), 0);
   const totalRevenue = producerRevenue + totalCoproducerCommission;
   const salesCount = approvedSales.length;
   const avgTicket = salesCount > 0 ? totalRevenue / salesCount : 0;

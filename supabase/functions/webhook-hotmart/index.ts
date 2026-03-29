@@ -127,7 +127,34 @@ Deno.serve(async (req) => {
       saleDate = new Date().toISOString();
     }
 
-    const platformFee = Math.max(0, grossValue - netValue);
+    // Hotmart: extract commission breakdown if available
+    // The difference gross - net includes: platform fee + coproducer commissions + taxes
+    // Try to break these down from the webhook payload
+    const commissions = purchase.commissions || payload.data?.commissions || [];
+    let producerCommission = 0;
+    let coproducerTotal = 0;
+    let hasCommissionBreakdown = false;
+
+    if (Array.isArray(commissions) && commissions.length > 0) {
+      hasCommissionBreakdown = true;
+      for (const c of commissions) {
+        const role = (c.source || c.role || "").toUpperCase();
+        const commValue = parseFloat(String(c.value || c.amount || "0"));
+        if (role === "PRODUCER" || role === "SELLER") {
+          producerCommission += commValue;
+        } else if (role !== "") {
+          coproducerTotal += commValue;
+        }
+      }
+    }
+
+    // Platform fee: if we have commission breakdown, deduce it
+    // Otherwise fallback to gross - net (which lumps everything)
+    const totalDeduction = Math.max(0, grossValue - netValue);
+    const platformFee = hasCommissionBreakdown
+      ? Math.max(0, totalDeduction - coproducerTotal)
+      : totalDeduction;
+    const coproducerCommission = hasCommissionBreakdown ? coproducerTotal : 0;
 
     // Match product — only accept sales for registered products
     const { data: matchedProduct } = await supabase
@@ -184,6 +211,7 @@ Deno.serve(async (req) => {
           gross_amount: grossValue,
           base_price: basePrice,
           platform_fee: platformFee,
+          coproducer_commission: coproducerCommission,
           status,
           buyer_email: buyerEmail,
           buyer_name: buyerName,
