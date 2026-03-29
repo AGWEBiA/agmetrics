@@ -115,8 +115,15 @@ Deno.serve(async (req) => {
     let errors = 0;
 
     for (const sale of salesMissingFee) {
-      const orderId = sale.external_id;
+      // Use payload.id (UUID) if available, fallback to external_id
+      const existingPayload = (sale.payload && typeof sale.payload === 'object') ? sale.payload as Record<string, unknown> : {};
+      const orderId = (existingPayload.id as string) || sale.external_id;
       if (!orderId) { errors++; continue; }
+
+      // Skip already-attempted sales that returned errors
+      if (existingPayload._detail && typeof existingPayload._detail === 'object' && (existingPayload._detail as Record<string, unknown>).error) {
+        // Clear old error detail and retry with correct ID
+      }
 
       try {
         const detailUrl = `https://public-api.kiwify.com/v1/sales/${orderId}`;
