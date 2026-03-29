@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { SalesEvent, AdDemographic, DateFilter } from "@/types/database";
 import type { GlobalFilters } from "@/contexts/GlobalFiltersContext";
+import { getNormalizedPlatformFee } from "@/lib/salesFinancials";
 
 function inRange(dateStr: string | null, filter: DateFilter): boolean {
   if (!filter.from && !filter.to) return true;
@@ -194,7 +195,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     return sum + Number(matched?.price || sale.gross_amount || 0);
   }, 0);
 
-  const totalFees = approvedSales.reduce((s, e) => s + Number(e.platform_fee || 0), 0);
+  const totalFees = approvedSales.reduce((s, e) => s + getNormalizedPlatformFee(e), 0);
   const totalTaxes = approvedSales.reduce((s, e) => s + Number((e as any).taxes || 0), 0);
   // Use stored coproducer_commission from DB — each gateway stores this separately
   const totalCoproducerCommission = approvedSales.reduce((s, e) => s + Number((e as any).coproducer_commission || 0), 0);

@@ -126,7 +126,7 @@ export function WidgetRenderer({ type, metrics }: WidgetRendererProps) {
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip formatter={(v: number) => formatNumber(v)} />
             </PieChart>
           </ResponsiveContainer>
         </ChartWrapper>
@@ -163,7 +163,7 @@ export function WidgetRenderer({ type, metrics }: WidgetRendererProps) {
             <BarChart data={funnelData} layout="vertical">
               <XAxis type="number" tick={{ fontSize: 10 }} />
               <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
-              <Tooltip />
+              <Tooltip formatter={(v: number) => formatNumber(v)} />
               <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
