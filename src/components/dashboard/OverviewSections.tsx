@@ -619,11 +619,17 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
                     name: GOAL_LABELS[g.type] || g.type,
                     meta: g.target,
                     atingido: g.current,
+                    _type: g.type,
                   }))}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                     <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                    <Tooltip cursor={false} contentStyle={TOOLTIP_STYLE} />
+                    <Tooltip cursor={false} contentStyle={TOOLTIP_STYLE} formatter={(value: number, _name: string, props: any) => {
+                      const type = props?.payload?._type;
+                      if (type === "revenue") return formatBRL(value);
+                      if (type === "roi" || type === "margin") return formatPercent(value);
+                      return formatNumber(Math.round(value));
+                    }} />
                     <Legend />
                     <Bar dataKey="meta" name="Meta" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="atingido" name="Atingido" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} />

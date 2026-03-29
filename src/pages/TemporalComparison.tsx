@@ -167,7 +167,12 @@ export default function TemporalComparison() {
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(v: number) => formatBRL(v)} />
+                  <Tooltip formatter={(v: number, _name: string, props: any) => {
+                    const metricName = props?.payload?.name;
+                    const monetaryMetrics = ["Receita", "Investimento", "Ticket Médio"];
+                    if (monetaryMetrics.includes(metricName)) return formatBRL(v);
+                    return formatNumber(Math.round(v));
+                  }} />
                   <Legend />
                   <Bar dataKey={periods.labels[0]} fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} opacity={0.5} />
                   <Bar dataKey={periods.labels[1]} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
