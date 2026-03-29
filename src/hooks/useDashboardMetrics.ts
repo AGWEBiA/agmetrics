@@ -245,7 +245,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   // Conversion rate uses same base as CPL/RPL for consistency
   const conversionBase = isPerpertuo ? totalPageViews : cplBase;
   const conversionRate = conversionBase > 0 ? (salesCount / conversionBase) * 100 : 0;
-  const conversionLabel = isPerpertuo ? "Views → Compras" : (isRplStrategy ? "Compradores únicos → Compras" : "Leads → Compras");
+  const conversionLabel = isPerpertuo ? "Views → Compras" : "Leads → Compras";
 
   const metaImpressions = metaMetrics.reduce((s: number, m: any) => s + (m.impressions || 0), 0);
   const metaClicks = metaMetrics.reduce((s: number, m: any) => s + (m.clicks || 0), 0);
