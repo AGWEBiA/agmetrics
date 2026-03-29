@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useProject } from "@/hooks/useProjects";
-import { formatBRL, formatPercent } from "@/lib/formatters";
+import { formatBRL, formatPercent, formatNumber } from "@/lib/formatters";
 import { subDays, subWeeks, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { ArrowUpRight, ArrowDownRight, Minus, TrendingUp, Calendar } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
