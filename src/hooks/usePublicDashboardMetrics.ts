@@ -193,13 +193,13 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
   const conversionRate = totalLeads > 0 ? (salesCount / totalLeads) * 100 : 0;
   const avgCpl = totalLeads > 0 ? totalInvestment / totalLeads : 0;
 
-  // RPL - unique buyers as leads
-  const uniqueBuyerEmails = new Set(
+  // RPL - unique buyers as leads (public RPC strips PII, use external_id as proxy)
+  const uniqueSaleKeys = new Set(
     sales
-      .map((s: any) => ((s.buyer_email || s.product_name || "") + "").toLowerCase().trim())
+      .map((s: any) => (s.external_id || "").toLowerCase().trim())
       .filter((e: string) => e.length > 0)
   );
-  const rplLeads = uniqueBuyerEmails.size;
+  const rplLeads = uniqueSaleKeys.size || salesCount;
   const rpl = rplLeads > 0 ? totalRevenue / rplLeads : 0;
 
   // Sales by date
