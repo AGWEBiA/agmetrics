@@ -179,16 +179,12 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const refundedSales = sales.filter((s) => s.status === "refunded");
 
   const producerRevenue = approvedSales.reduce((s, e) => s + Number(e.amount), 0);
-  // Comissão de coprodutores: usa o campo coproducer_commission quando disponível,
-  // senão calcula como gross_amount - platform_fee - amount (líquido produtor)
+  // Comissão de coprodutores = soma do preço base dos produtos - soma das taxas - soma do valor líquido do produtor
   const totalCoproducerCommission = approvedSales.reduce((s, e) => {
-    const storedCommission = Number((e as any).coproducer_commission || 0);
-    if (storedCommission > 0) return s + storedCommission;
-    const gross = Number(e.gross_amount || 0);
+    const basePrice = Number((e as any).base_price || 0);
     const fee = Number(e.platform_fee || 0);
     const producerNet = Number(e.amount || 0);
-    const calculated = gross - fee - producerNet;
-    return s + Math.max(calculated, 0);
+    return s + (basePrice - fee - producerNet);
   }, 0);
   const totalRevenue = producerRevenue + totalCoproducerCommission;
   const grossRevenue = approvedSales.reduce((s, e) => s + Number(e.gross_amount), 0);
