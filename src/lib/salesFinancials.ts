@@ -11,7 +11,21 @@ type SaleLike = {
 function toNumber(value: unknown): number {
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
   if (typeof value === "string") {
-    const normalized = value.replace(/\./g, "").replace(",", ".");
+    const trimmed = value.trim();
+    if (!trimmed) return 0;
+
+    const sanitized = trimmed.replace(/[^\d,.-]/g, "");
+    const hasComma = sanitized.includes(",");
+    const hasDot = sanitized.includes(".");
+
+    const normalized = hasComma && hasDot
+      ? sanitized.lastIndexOf(",") > sanitized.lastIndexOf(".")
+        ? sanitized.replace(/\./g, "").replace(/,/g, ".")
+        : sanitized.replace(/,/g, "")
+      : hasComma
+        ? sanitized.replace(/,/g, ".")
+        : sanitized;
+
     const parsed = Number(normalized);
     return Number.isFinite(parsed) ? parsed : 0;
   }
@@ -19,7 +33,7 @@ function toNumber(value: unknown): number {
 }
 
 function toCentsNumber(value: unknown): number {
-  const parsed = typeof value === "string" ? Number(value) : toNumber(value);
+  const parsed = toNumber(value);
   return Number.isFinite(parsed) ? parsed / 100 : 0;
 }
 
@@ -33,12 +47,27 @@ function getKiwifyPlatformFee(sale: SaleLike): number {
   const commissions = getPayloadObject(payload.Commissions || payload.commissions || detail.Commissions || detail.commissions);
   const payment = getPayloadObject(payload.payment || payload.Payment || detail.payment || detail.Payment);
 
+  const decimalFeeCandidates = [
+    payload.taxas,
+    payload["taxas"],
+    detail.taxas,
+    detail["taxas"],
+  ];
+
+  for (const candidate of decimalFeeCandidates) {
+    if (candidate !== undefined && candidate !== null && candidate !== "") {
+      const parsed = toNumber(candidate);
+      if (parsed > 0) return parsed;
+    }
+  }
+
   const feeCandidates = [
     commissions.kiwify_fee,
     payload.fee_amount,
     payload.kiwify_fee,
     payment.fee_amount,
     detail.fee_amount,
+    detail.kiwify_fee,
   ];
 
   for (const candidate of feeCandidates) {
