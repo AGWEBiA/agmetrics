@@ -242,6 +242,11 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const avgCpl = cplBase > 0 ? totalInvestment / cplBase : 0;
   const avgPurchasesPerLead = cplBase > 0 ? salesCount / cplBase : 0;
 
+  // Conversion rate uses same base as CPL/RPL for consistency
+  const conversionBase = isPerpertuo ? totalPageViews : cplBase;
+  const conversionRate = conversionBase > 0 ? (salesCount / conversionBase) * 100 : 0;
+  const conversionLabel = isPerpertuo ? "Views → Compras" : (isRplStrategy ? "Compradores únicos → Compras" : "Leads → Compras");
+
   const metaImpressions = metaMetrics.reduce((s: number, m: any) => s + (m.impressions || 0), 0);
   const metaClicks = metaMetrics.reduce((s: number, m: any) => s + (m.clicks || 0), 0);
   const metaResults = metaMetrics.reduce((s: number, m: any) => s + (m.results || 0), 0);
