@@ -141,7 +141,8 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
 
   const totalFees = sales.reduce((s: number, e: any) => s + Number(e.platform_fee || 0), 0);
   const totalTaxes = sales.reduce((s: number, e: any) => s + Number(e.taxes || 0), 0);
-  const totalCoproducerCommission = grossActionRevenue - totalFees - producerRevenue;
+  // Use stored coproducer_commission from DB — each gateway stores this separately
+  const totalCoproducerCommission = sales.reduce((s: number, e: any) => s + Number(e.coproducer_commission || 0), 0);
   const totalRevenue = producerRevenue + totalCoproducerCommission;
   const salesCount = sales.length;
   const avgTicket = salesCount > 0 ? totalRevenue / salesCount : 0;
