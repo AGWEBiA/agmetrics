@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { SalesEvent, AdDemographic, DateFilter } from "@/types/database";
 import type { GlobalFilters } from "@/contexts/GlobalFiltersContext";
-import { getNormalizedPlatformFee, getNormalizedCoproducerCommission } from "@/lib/salesFinancials";
+import { getNormalizedPlatformFee, getNormalizedCoproducerCommission, getNormalizedBasePrice } from "@/lib/salesFinancials";
 
 function inRange(dateStr: string | null, filter: DateFilter): boolean {
   if (!filter.from && !filter.to) return true;
@@ -182,9 +182,13 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
   const producerRevenue = approvedSales.reduce((s, e) => s + Number(e.amount), 0);
   const grossRevenue = approvedSales.reduce((s, e) => s + Number(e.gross_amount), 0);
 
-  // Receita Bruta da Ação: usa o preço base cadastrado do produto; fallback para gross_amount
+  // Receita Bruta da Ação: usa o valor base real da venda (base_price/gross_amount)
+  // para manter consistência com: base - taxa plataforma - líquido produtor = comissão coprodutor
   const registeredProducts = productsQuery.data || [];
   const grossActionRevenue = approvedSales.reduce((sum, sale) => {
+    const normalizedBase = getNormalizedBasePrice(sale as any);
+    if (normalizedBase > 0) return sum + normalizedBase;
+
     const saleName = (sale.product_name || "").toLowerCase();
     const saleType = sale.product_type || "main";
     const matched = registeredProducts.find(
@@ -192,7 +196,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     ) || registeredProducts.find(
       (p: any) => p.name.toLowerCase() === saleName
     );
-    return sum + Number(matched?.price || sale.gross_amount || 0);
+    return sum + Number(matched?.price || 0);
   }, 0);
 
   const totalFees = approvedSales.reduce((s, e) => s + getNormalizedPlatformFee(e), 0);
