@@ -10,7 +10,6 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import type { SalesEvent } from "@/types/database";
-import { getNormalizedCoproducerCommission } from "@/lib/salesFinancials";
 
 const COLORS = [
   "hsl(220, 90%, 56%)", "hsl(265, 80%, 60%)", "hsl(152, 60%, 42%)",
@@ -47,7 +46,7 @@ function groupBy(sales: Sale[], field: string) {
   sales.forEach((s) => {
     const val = extractUtm(s, field) || "(sem tracking)";
     const existing = map.get(val) || { count: 0, revenue: 0, grossRevenue: 0 };
-    const revenue = Number(s.amount || 0) + getNormalizedCoproducerCommission(s as any);
+    const revenue = Number(s.amount || 0) + Number(s.coproducer_commission || 0);
     map.set(val, {
       count: existing.count + 1,
       revenue: existing.revenue + revenue,
@@ -121,7 +120,7 @@ export function SalesTrackingAnalysis({ sales, totalInvestment }: SalesTrackingA
   );
 
   const totalTrackedRevenue = trackedSales.reduce((s, e) =>
-    s + Number(e.amount || 0) + getNormalizedCoproducerCommission(e as any), 0
+    s + Number(e.amount || 0) + Number(e.coproducer_commission || 0), 0
   );
 
   const dimensionLabels: Record<string, string> = {
