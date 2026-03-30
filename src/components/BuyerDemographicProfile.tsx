@@ -27,7 +27,7 @@ export function BuyerDemographicProfile({ sales, adDemographics }: BuyerDemograp
   const approvedSales = useMemo(() => sales.filter(s => s.status === "approved"), [sales]);
   const totalSales = approvedSales.length;
   const totalRevenue = useMemo(() =>
-    approvedSales.reduce((s, e) => s + Number(e.amount || 0) + Number(e.coproducer_commission || 0), 0),
+    approvedSales.reduce((s, e) => s + Number(e.amount || 0) + getNormalizedCoproducerCommission(e), 0),
     [approvedSales]
   );
 
@@ -37,7 +37,7 @@ export function BuyerDemographicProfile({ sales, adDemographics }: BuyerDemograp
     approvedSales.forEach(s => {
       const state = s.buyer_state || (s.payload as any)?.estado || "";
       if (!state) return;
-      const rev = Number(s.amount || 0) + Number(s.coproducer_commission || 0);
+      const rev = Number(s.amount || 0) + getNormalizedCoproducerCommission(s);
       const existing = map.get(state) || { count: 0, revenue: 0 };
       map.set(state, { count: existing.count + 1, revenue: existing.revenue + rev });
     });
@@ -52,7 +52,7 @@ export function BuyerDemographicProfile({ sales, adDemographics }: BuyerDemograp
     approvedSales.forEach(s => {
       const city = s.buyer_city || "";
       if (!city) return;
-      const rev = Number(s.amount || 0) + Number(s.coproducer_commission || 0);
+      const rev = Number(s.amount || 0) + getNormalizedCoproducerCommission(s);
       const existing = map.get(city) || { count: 0, revenue: 0 };
       map.set(city, { count: existing.count + 1, revenue: existing.revenue + rev });
     });
@@ -81,7 +81,7 @@ export function BuyerDemographicProfile({ sales, adDemographics }: BuyerDemograp
       else if (method.includes("credit") || method.includes("card") || method.includes("cartao") || method.includes("cartão")) label = "Cartão";
       else if (method) label = "Cartão";
 
-      const rev = Number(s.amount || 0) + Number(s.coproducer_commission || 0);
+      const rev = Number(s.amount || 0) + getNormalizedCoproducerCommission(s);
       const existing = map.get(label) || { count: 0, revenue: 0 };
       map.set(label, { count: existing.count + 1, revenue: existing.revenue + rev });
     });
@@ -100,7 +100,7 @@ export function BuyerDemographicProfile({ sales, adDemographics }: BuyerDemograp
     approvedSales.forEach(s => {
       const d = new Date(s.sale_date || s.created_at || "");
       if (isNaN(d.getTime())) return;
-      const rev = Number(s.amount || 0) + Number(s.coproducer_commission || 0);
+      const rev = Number(s.amount || 0) + getNormalizedCoproducerCommission(s);
       byDay[d.getDay()].vendas++;
       byDay[d.getDay()].revenue += rev;
       byHour[d.getHours()].vendas++;
