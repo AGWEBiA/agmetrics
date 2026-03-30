@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getNormalizedPlatformFee, getNormalizedCoproducerCommission } from "@/lib/salesFinancials";
+import { getNormalizedPlatformFee, getNormalizedCoproducerCommission, getNormalizedBasePrice } from "@/lib/salesFinancials";
 
 export function usePublicDashboardMetrics(projectId: string | undefined, viewToken: string | undefined) {
   const salesQuery = useQuery({
@@ -130,6 +130,9 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
 
   const registeredProducts = productsQuery.data || [];
   const grossActionRevenue = sales.reduce((sum: number, sale: any) => {
+    const normalizedBase = getNormalizedBasePrice(sale);
+    if (normalizedBase > 0) return sum + normalizedBase;
+
     const saleName = (sale.product_name || "").toLowerCase();
     const saleType = sale.product_type || "main";
     const matched = registeredProducts.find(
@@ -137,7 +140,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
     ) || registeredProducts.find(
       (p: any) => p.name.toLowerCase() === saleName
     );
-    return sum + Number(matched?.price || sale.gross_amount || 0);
+    return sum + Number(matched?.price || 0);
   }, 0);
 
   const totalFees = sales.reduce((s: number, e: any) => s + getNormalizedPlatformFee(e), 0);
