@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { getNormalizedCoproducerCommission } from "@/lib/salesFinancials";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -82,7 +83,7 @@ export function AdsVendasCrossTab({ m, strategy }: AdsVendasCrossTabProps) {
       if (!dateStr) return;
       const d = getOrCreate(dateStr);
       d.salesCount++;
-      const saleRevenue = Number(s.amount || 0) + Number(s.coproducer_commission || 0);
+      const saleRevenue = Number(s.amount || 0) + getNormalizedCoproducerCommission(s);
       d.revenue += saleRevenue;
       if (s.platform === "kiwify") { d.kiwifySales++; d.kiwifyRevenue += saleRevenue; }
       if (s.platform === "hotmart") { d.hotmartSales++; d.hotmartRevenue += saleRevenue; }

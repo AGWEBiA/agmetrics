@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { SalesEvent, AdDemographic, DateFilter } from "@/types/database";
 import type { GlobalFilters } from "@/contexts/GlobalFiltersContext";
-import { getNormalizedPlatformFee } from "@/lib/salesFinancials";
+import { getNormalizedPlatformFee, getNormalizedCoproducerCommission } from "@/lib/salesFinancials";
 
 function inRange(dateStr: string | null, filter: DateFilter): boolean {
   if (!filter.from && !filter.to) return true;
@@ -197,8 +197,8 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
 
   const totalFees = approvedSales.reduce((s, e) => s + getNormalizedPlatformFee(e), 0);
   const totalTaxes = approvedSales.reduce((s, e) => s + Number((e as any).taxes || 0), 0);
-  // Use stored coproducer_commission from DB — each gateway stores this separately
-  const totalCoproducerCommission = approvedSales.reduce((s, e) => s + Number((e as any).coproducer_commission || 0), 0);
+  // Calculate coproducer commission using normalized formula (fixes Kiwify stored values)
+  const totalCoproducerCommission = approvedSales.reduce((s, e) => s + getNormalizedCoproducerCommission(e as any), 0);
   const totalRevenue = producerRevenue + totalCoproducerCommission;
   const salesCount = approvedSales.length;
   const avgTicket = salesCount > 0 ? totalRevenue / salesCount : 0;

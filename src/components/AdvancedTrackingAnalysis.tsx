@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { getNormalizedCoproducerCommission } from "@/lib/salesFinancials";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -67,7 +68,7 @@ export function AdvancedTrackingAnalysis({ sales, totalInvestment, metaMetrics =
 
       const existing = map.get(source) || { buyers: new Set<string>(), totalRevenue: 0, purchaseCount: 0 };
       existing.buyers.add(email);
-      existing.totalRevenue += Number(s.amount || 0) + Number(s.coproducer_commission || 0);
+      existing.totalRevenue += Number(s.amount || 0) + getNormalizedCoproducerCommission(s);
       existing.purchaseCount++;
       map.set(source, existing);
     });
@@ -114,7 +115,7 @@ export function AdvancedTrackingAnalysis({ sales, totalInvestment, metaMetrics =
     approvedSales.forEach(s => {
       const campaign = s.utm_campaign || "(sem campanha)";
       const existing = campaignSales.get(campaign) || { revenue: 0, count: 0, buyers: new Set<string>() };
-      existing.revenue += Number(s.amount || 0) + Number(s.coproducer_commission || 0);
+      existing.revenue += Number(s.amount || 0) + getNormalizedCoproducerCommission(s);
       existing.count++;
       if (s.buyer_email) existing.buyers.add(s.buyer_email);
       campaignSales.set(campaign, existing);
@@ -177,7 +178,7 @@ export function AdvancedTrackingAnalysis({ sales, totalInvestment, metaMetrics =
       const last = sorted[sorted.length - 1];
       const firstSource = getRealSource(first);
       const lastSource = getRealSource(last);
-      const totalRev = sorted.reduce((s: number, sale: any) => s + Number(sale.amount || 0) + Number(sale.coproducer_commission || 0), 0);
+      const totalRev = sorted.reduce((s: number, sale: any) => s + Number(sale.amount || 0) + getNormalizedCoproducerCommission(sale), 0);
 
       map.set(email, {
         firstSource,

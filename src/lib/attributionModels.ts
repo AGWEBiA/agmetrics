@@ -2,6 +2,7 @@
  * Multi-touch attribution models for lead journey analysis.
  * Distributes conversion credit across touchpoints.
  */
+import { getNormalizedCoproducerCommission } from "@/lib/salesFinancials";
 
 export type AttributionModel = "first_click" | "last_click" | "linear" | "time_decay";
 
@@ -120,7 +121,7 @@ export function buildJourneysFromSales(sales: any[]): BuyerJourney[] {
 
     const revenue = sorted
       .filter((s: any) => s.status === "approved")
-      .reduce((sum: number, s: any) => sum + Number(s.amount || 0) + Number(s.coproducer_commission || 0), 0);
+      .reduce((sum: number, s: any) => sum + Number(s.amount || 0) + getNormalizedCoproducerCommission(s), 0);
 
     return {
       email,
