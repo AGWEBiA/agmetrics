@@ -123,6 +123,16 @@ export function getNormalizedPlatformFee(sale: SaleLike): number {
   return toNumber(sale.platform_fee);
 }
 
+export function getNormalizedBasePrice(sale: SaleLike): number {
+  const basePrice = toNumber(sale.base_price);
+  if (basePrice > 0) return basePrice;
+
+  const grossAmount = toNumber(sale.gross_amount);
+  if (grossAmount > 0) return grossAmount;
+
+  return 0;
+}
+
 /**
  * Calculate coproducer commission using the formula:
  * base_price - platform_fee - amount (producer net)
@@ -133,19 +143,14 @@ export function getNormalizedCoproducerCommission(sale: SaleLike): number {
   const storedCoprod = toNumber(sale.coproducer_commission);
 
   if (sale.platform === "kiwify") {
-    const basePrice = toNumber(sale.base_price);
+    const basePrice = getNormalizedBasePrice(sale);
     const platformFee = getNormalizedPlatformFee(sale);
     const producerNet = toNumber(sale.amount);
 
-    // Only calculate if we have meaningful base_price different from amount
-    if (basePrice > 0 && platformFee > 0 && basePrice > producerNet) {
+    // Kiwify: coproducer commission must follow financial identity
+    // base_price - platform_fee - producer_net
+    if (basePrice > 0 && basePrice >= producerNet) {
       return Math.max(0, basePrice - platformFee - producerNet);
-    }
-
-    // If base_price equals amount (no backfill data), use gross_amount as fallback
-    const grossAmount = toNumber(sale.gross_amount);
-    if (grossAmount > 0 && grossAmount > producerNet && platformFee > 0) {
-      return Math.max(0, grossAmount - platformFee - producerNet);
     }
 
     return storedCoprod;
