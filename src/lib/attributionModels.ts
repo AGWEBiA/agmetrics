@@ -2,6 +2,7 @@
  * Multi-touch attribution models for lead journey analysis.
  * Distributes conversion credit across touchpoints.
  */
+import { getNormalizedCoproducerCommission } from "@/lib/salesFinancials";
 
 export type AttributionModel = "first_click" | "last_click" | "linear" | "time_decay";
 
