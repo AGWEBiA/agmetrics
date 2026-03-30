@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { SalesEvent, AdDemographic, DateFilter } from "@/types/database";
 import type { GlobalFilters } from "@/contexts/GlobalFiltersContext";
-import { getNormalizedPlatformFee } from "@/lib/salesFinancials";
+import { getNormalizedPlatformFee, getNormalizedCoproducerCommission } from "@/lib/salesFinancials";
 
 function inRange(dateStr: string | null, filter: DateFilter): boolean {
   if (!filter.from && !filter.to) return true;

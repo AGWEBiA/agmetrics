@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getNormalizedPlatformFee } from "@/lib/salesFinancials";
+import { getNormalizedPlatformFee, getNormalizedCoproducerCommission } from "@/lib/salesFinancials";
 
 export function usePublicDashboardMetrics(projectId: string | undefined, viewToken: string | undefined) {
   const salesQuery = useQuery({
