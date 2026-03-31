@@ -49,7 +49,7 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
     ) : null,
 
     roi: (m.totalInvestment > 0 || m.salesCount > 0) ? (
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
         <AnimatedCard index={0}><MetricCard title="ROI Total" value={formatPercent(m.roi)} color={m.roi >= 0 ? "text-success" : "text-destructive"} icon={m.roi >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />} change={m.roiChange} /></AnimatedCard>
         <AnimatedCard index={1}><MetricCard title="ROAS" value={`${formatDecimal(m.roas)}x`} subtitle="Retorno sobre gasto em ads" /></AnimatedCard>
         <AnimatedCard index={2}><MetricCard title="Margem Líquida" value={formatPercent(m.margin)} color={m.margin >= 0 ? "text-success" : "text-destructive"} /></AnimatedCard>
