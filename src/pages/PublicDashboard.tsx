@@ -115,10 +115,10 @@ export default function PublicDashboard() {
     return { type: g.type, target: g.target_value, current, period: g.period, pct: g.target_value > 0 ? (current / g.target_value) * 100 : 0 };
   });
 
-  // Computed KPIs for public summary
+  // Computed KPIs for public summary — use strategy-aware values from hook
   const cpa = m.salesCount > 0 && m.totalInvestment > 0 ? m.totalInvestment / m.salesCount : 0;
-  const cpl = m.totalLeads > 0 && m.totalInvestment > 0 ? m.totalInvestment / m.totalLeads : 0;
-  const conversionRate = m.totalLeads > 0 ? (m.salesCount / m.totalLeads) * 100 : 0;
+  const cpl = m.avgCpl;
+  const conversionRate = m.conversionRate;
 
   const overviewSections = useMemo(() => {
     return buildOverviewSections({ m, budgetData, whatsappGroups, whatsappHistory, goalsProgress });
@@ -175,7 +175,7 @@ export default function PublicDashboard() {
               <MetricCard
                 title="Conversão"
                 value={conversionRate > 0 ? formatPercent(conversionRate) : "—"}
-                subtitle="Leads → Vendas"
+                subtitle={m.conversionLabel || "Leads → Vendas"}
                 icon={<TrendingUp className="h-4 w-4" />}
               />
             </AnimatedCard>
