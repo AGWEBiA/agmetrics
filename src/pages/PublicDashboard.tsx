@@ -111,7 +111,7 @@ export default function PublicDashboard() {
       {/* Consolidated Public KPI Summary */}
       {!m.isLoading && (m.totalInvestment > 0 || m.salesCount > 0) && (
         <div className="space-y-4">
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-7">
             <AnimatedCard index={0}>
               <MetricCard
                 title="Receita Total"
