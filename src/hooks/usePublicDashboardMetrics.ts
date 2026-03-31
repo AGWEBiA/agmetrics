@@ -119,7 +119,11 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
     refetchInterval: 300000,
   });
 
-  const sales = (salesQuery.data || []).filter((s: any) => s.status === "approved" && !s.is_ignored);
+  const allSales = (salesQuery.data || []).filter((s: any) => !s.is_ignored);
+  const sales = allSales.filter((s: any) => s.status === "approved");
+  const pendingSales = allSales.filter((s: any) => s.status === "pending");
+  const refundedSales = allSales.filter((s: any) => s.status === "refunded");
+  const cancelledSales = allSales.filter((s: any) => s.status === "cancelled");
   const meta = metaQuery.data || [];
   const google = googleQuery.data || [];
   const goals = goalsQuery.data || [];
@@ -142,7 +146,6 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
 
   const totalFees = sales.reduce((s: number, e: any) => s + getNormalizedPlatformFee(e), 0);
   const totalTaxes = sales.reduce((s: number, e: any) => s + Number(e.taxes || 0), 0);
-  // Calculate coproducer commission using normalized formula (fixes Kiwify stored values)
   const totalCoproducerCommission = sales.reduce((s: number, e: any) => s + getNormalizedCoproducerCommission(e), 0);
   const totalRevenue = producerRevenue + totalCoproducerCommission;
   const salesCount = sales.length;
@@ -190,19 +193,24 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
   }));
   const topAds = metaAds.slice(0, 10);
 
-  // Lead journey data (no PII)
-  const totalLeads = leadEvents.filter((e: any) => e.event_type === "lead").length;
-  const conversionRate = totalLeads > 0 ? (salesCount / totalLeads) * 100 : 0;
-  const avgCpl = totalLeads > 0 ? totalInvestment / totalLeads : 0;
+  // Leads: use same formula as private dashboard (meta + google leads from metrics)
+  const googleLeads = google.reduce((s: number, m: any) => s + (m.conversions || 0), 0);
+  const totalLeads = metaLeads + googleLeads;
 
-  // RPL - unique buyers as leads (public RPC strips PII, use external_id as proxy)
+  // RPL - unique buyers (public RPC strips PII, use external_id as proxy)
   const uniqueSaleKeys = new Set(
     sales
       .map((s: any) => (s.external_id || "").toLowerCase().trim())
       .filter((e: string) => e.length > 0)
   );
+  const isRplStrategy = true;
   const rplLeads = uniqueSaleKeys.size || salesCount;
   const rpl = rplLeads > 0 ? totalRevenue / rplLeads : 0;
+  const rplGross = rplLeads > 0 ? grossRevenue / rplLeads : 0;
+  const cplBase = isRplStrategy ? rplLeads : totalLeads;
+  const avgCpl = cplBase > 0 ? totalInvestment / cplBase : 0;
+  const avgPurchasesPerLead = cplBase > 0 ? salesCount / cplBase : 0;
+  const conversionRate = totalLeads > 0 ? (salesCount / totalLeads) * 100 : 0;
 
   // Sales by date
   const salesByDate = new Map<string, { count: number; revenue: number }>();
@@ -265,36 +273,91 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
   const gConversionRate = gClicks > 0 ? (gConversions / gClicks) * 100 : 0;
   const gCostPerConversion = gConversions > 0 ? googleInvestment / gConversions : 0;
 
-  // Sales by day of week
-  const salesByDayOfWeek = (() => {
-    const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-    const dayData = Array(7).fill(null).map((_, i) => ({ name: days[i], vendas: 0, revenue: 0 }));
-    sales.forEach((s: any) => {
-      const raw = s.sale_date || s.created_at;
-      if (!raw) return;
-      const dayIdx = new Date(raw).getDay();
-      dayData[dayIdx].vendas += 1;
-      dayData[dayIdx].revenue += Number(s.amount || 0);
-    });
-    return dayData;
-  })();
-
   // Kiwify/Hotmart splits
   const kiwifySales = sales.filter((s: any) => s.platform === "kiwify");
   const hotmartSales = sales.filter((s: any) => s.platform === "hotmart");
 
-  // Payment methods
-  const paymentBreakdown = new Map<string, { count: number; revenue: number }>();
+  // Payment method breakdown using payment_method field
+  const paymentBreakdownCalc = { pix: { count: 0, revenue: 0 }, card: { count: 0, revenue: 0 }, cardCash: { count: 0, revenue: 0 }, cardInstallment: { count: 0, revenue: 0 }, boleto: { count: 0, revenue: 0 } };
   sales.forEach((s: any) => {
-    const method = s.payment_method || "Outro";
-    const existing = paymentBreakdown.get(method) || { count: 0, revenue: 0 };
-    paymentBreakdown.set(method, { count: existing.count + 1, revenue: existing.revenue + Number(s.amount || 0) });
+    const method = (s.payment_method || "").toLowerCase();
+    const amount = Number(s.gross_amount || s.amount || 0);
+    if (method === "pix") {
+      paymentBreakdownCalc.pix.count++;
+      paymentBreakdownCalc.pix.revenue += amount;
+    } else if (["boleto", "billet", "bank_slip", "boleto_bancario"].includes(method)) {
+      paymentBreakdownCalc.boleto.count++;
+      paymentBreakdownCalc.boleto.revenue += amount;
+    } else if (method) {
+      paymentBreakdownCalc.card.count++;
+      paymentBreakdownCalc.card.revenue += amount;
+      paymentBreakdownCalc.cardCash.count++;
+      paymentBreakdownCalc.cardCash.revenue += amount;
+    }
   });
-  const paymentMethodData = Array.from(paymentBreakdown.entries()).map(([method, data]) => ({
+
+  const paymentPieData = [
+    { name: "Cartão de Crédito", value: paymentBreakdownCalc.card.count },
+    { name: "PIX", value: paymentBreakdownCalc.pix.count },
+    { name: "Boleto", value: paymentBreakdownCalc.boleto.count },
+  ].filter((d) => d.value > 0);
+
+  const installmentBarData = [
+    { name: "Cartão de Crédito", avista: paymentBreakdownCalc.cardCash.count, parcelado: paymentBreakdownCalc.cardInstallment.count },
+    { name: "PIX", avista: paymentBreakdownCalc.pix.count, parcelado: 0 },
+    { name: "Boleto", avista: paymentBreakdownCalc.boleto.count, parcelado: 0 },
+  ];
+
+  const cardCashPct = paymentBreakdownCalc.card.count > 0 ? (paymentBreakdownCalc.cardCash.count / paymentBreakdownCalc.card.count) * 100 : 0;
+  const cardInstallmentPct = paymentBreakdownCalc.card.count > 0 ? (paymentBreakdownCalc.cardInstallment.count / paymentBreakdownCalc.card.count) * 100 : 0;
+
+  // Boleto metrics
+  const isBoleto = (method: string): boolean => ["boleto", "billet", "bank_slip", "boleto_bancario"].includes(method);
+  const boletoAllSales = allSales.filter((s: any) => isBoleto((s.payment_method || "").toLowerCase()));
+  const boletoTotal = boletoAllSales.length;
+  const boletoPaid = boletoAllSales.filter((s: any) => s.status === "approved").length;
+  const boletoPending = boletoAllSales.filter((s: any) => s.status === "pending").length;
+  const boletoConversionRate = boletoTotal > 0 ? (boletoPaid / boletoTotal) * 100 : 0;
+  const boletoRevenue = boletoAllSales.filter((s: any) => s.status === "approved").reduce((sum: number, s: any) => sum + Number(s.amount || 0), 0);
+  const boletoByPlatform = {
+    kiwify: { total: 0, paid: 0, pending: 0, revenue: 0 },
+    hotmart: { total: 0, paid: 0, pending: 0, revenue: 0 },
+  };
+  boletoAllSales.forEach((s: any) => {
+    const p = s.platform === "kiwify" ? boletoByPlatform.kiwify : boletoByPlatform.hotmart;
+    p.total++;
+    if (s.status === "approved") { p.paid++; p.revenue += Number(s.amount || 0); }
+    if (s.status === "pending") p.pending++;
+  });
+
+  // Temporal analysis - sales by day of week and hour
+  const DAY_NAMES = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+  const salesByDayOfWeek = Array.from({ length: 7 }, (_, i) => ({ name: DAY_NAMES[i], vendas: 0, revenue: 0 }));
+  const salesByHour = Array.from({ length: 24 }, (_, i) => ({ name: `${String(i).padStart(2, "0")}:00`, vendas: 0, revenue: 0 }));
+  sales.forEach((s: any) => {
+    const dateStr = s.sale_date || s.created_at;
+    if (!dateStr) return;
+    const d = new Date(dateStr);
+    salesByDayOfWeek[d.getDay()].vendas++;
+    salesByDayOfWeek[d.getDay()].revenue += Number(s.amount || 0);
+    salesByHour[d.getHours()].vendas++;
+    salesByHour[d.getHours()].revenue += Number(s.amount || 0);
+  });
+  const bestDay = salesByDayOfWeek.reduce((best, cur) => cur.vendas > best.vendas ? cur : best, salesByDayOfWeek[0]);
+  const bestHour = salesByHour.reduce((best, cur) => cur.vendas > best.vendas ? cur : best, salesByHour[0]);
+
+  // Payment method data for charts
+  const paymentMethodData = Array.from(
+    sales.reduce((map: Map<string, { count: number; revenue: number }>, s: any) => {
+      const method = s.payment_method || "Outro";
+      const existing = map.get(method) || { count: 0, revenue: 0 };
+      map.set(method, { count: existing.count + 1, revenue: existing.revenue + Number(s.amount || 0) });
+      return map;
+    }, new Map<string, { count: number; revenue: number }>()).entries()
+  ).map(([method, data]) => ({
     method, ...data, pct: salesCount > 0 ? (data.count / salesCount) * 100 : 0,
   }));
 
-  // Meta metrics per date for charts
   const metaMetrics = meta;
   const googleMetrics = google;
 
@@ -310,30 +373,22 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
     gImpressions, gClicks, gConversions, gCpm, gCtr, gCpc, gConversionRate, gCostPerConversion,
     topAds, salesChartData, productData, platformChartData, goalsProgress,
     totalLeads, conversionRate, avgCpl, metaLeadsCost: metaCostPerLead,
-    rpl, rplLeads, isRplStrategy: true,
-    salesByDayOfWeek, kiwifySales, hotmartSales, paymentMethodData,
-    metaMetrics, googleMetrics,
-    // Compatibility fields expected by DashboardTabs / OverviewSections
-    pendingSalesCount: 0, cancelledSalesCount: 0, refundedSalesCount: 0, totalSalesCount: sales.length,
-    pendingSales: [], refundedSales: [],
-    conversionLabel: "lead → venda", conversionBase: totalLeads,
+    rpl, rplGross, rplLeads, isRplStrategy, avgPurchasesPerLead,
+    salesByDayOfWeek, salesByHour, kiwifySales, hotmartSales, paymentMethodData,
+    metaMetrics, googleMetrics, metaAds: topAds,
+    // Status counts
+    pendingSalesCount: pendingSales.length, cancelledSalesCount: cancelledSales.length,
+    refundedSalesCount: refundedSales.length, totalSalesCount: allSales.length,
+    pendingSales, refundedSales,
+    conversionLabel: "Leads → Compras", conversionBase: totalLeads,
     demographicsLoaded: false, metaAdsLoaded: metaAdsQuery.isFetched,
-    revenueChange: 0, salesCountChange: 0, roiChange: 0, investmentChange: 0,
-    // Boleto compatibility fields
-    boletoTotal: 0, boletoPaid: 0, boletoPending: 0, boletoConversionRate: 0, boletoRevenue: 0,
-    boletoByPlatform: { kiwify: { total: 0, paid: 0, pending: 0 }, hotmart: { total: 0, paid: 0, pending: 0 } },
-    // Payment breakdown compatibility
-    paymentBreakdown: { pix: { count: 0, revenue: 0 }, card: { count: 0, revenue: 0 }, cardCash: { count: 0, revenue: 0 }, cardInstallment: { count: 0, revenue: 0 }, boleto: { count: 0, revenue: 0 } },
-    paymentChartData: [], paymentMethodBreakdownChart: [],
-    // Additional compatibility fields for OverviewSections
-    paymentPieData: [] as any[],
-    cardCashPct: 0, cardInstallmentPct: 0,
-    installmentBarData: [] as any[],
-    bestDay: null as any, bestHour: null as any,
-    salesByHour: [] as any[],
-    avgPurchasesPerLead: 0,
-    leadsChange: 0,
-    rplGross: 0,
-    metaAds: topAds,
+    revenueChange: 0, salesCountChange: 0, roiChange: 0, investmentChange: 0, leadsChange: 0,
+    // Boleto
+    boletoTotal, boletoPaid, boletoPending, boletoConversionRate, boletoRevenue, boletoByPlatform,
+    // Payment breakdown
+    paymentBreakdown: paymentBreakdownCalc,
+    paymentChartData: paymentPieData, paymentMethodBreakdownChart: installmentBarData,
+    paymentPieData, cardCashPct, cardInstallmentPct, installmentBarData,
+    bestDay, bestHour,
   };
 }
