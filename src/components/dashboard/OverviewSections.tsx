@@ -49,7 +49,7 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
     ) : null,
 
     roi: (m.totalInvestment > 0 || m.salesCount > 0) ? (
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
         <AnimatedCard index={0}><MetricCard title="ROI Total" value={formatPercent(m.roi)} color={m.roi >= 0 ? "text-success" : "text-destructive"} icon={m.roi >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />} change={m.roiChange} /></AnimatedCard>
         <AnimatedCard index={1}><MetricCard title="ROAS" value={`${formatDecimal(m.roas)}x`} subtitle="Retorno sobre gasto em ads" /></AnimatedCard>
         <AnimatedCard index={2}><MetricCard title="Margem Líquida" value={formatPercent(m.margin)} color={m.margin >= 0 ? "text-success" : "text-destructive"} /></AnimatedCard>
@@ -58,7 +58,7 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
 
     sales_overview: m.totalSalesCount > 0 ? (
       <div className="space-y-4">
-        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
           <AnimatedCard index={0}><MetricCard title="Total de Vendas" value={formatNumber(m.totalSalesCount)} subtitle="Todas" /></AnimatedCard>
           <AnimatedCard index={1}><MetricCard title="Aprovadas" value={formatNumber(m.salesCount)} color="text-success" /></AnimatedCard>
           <AnimatedCard index={2}><MetricCard title="Pendentes" value={formatNumber(m.pendingSalesCount)} color="text-warning" /></AnimatedCard>
@@ -156,7 +156,7 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
     ) : null,
 
     funnel: (m.totalLeads > 0 || m.totalInvestment > 0 || m.rplLeads > 0) ? (
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-4 lg:grid-cols-8">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
         <AnimatedCard index={0}><MetricCard title={m.isRplStrategy ? "Leads (Compradores Únicos)" : "Total de Leads"} value={formatNumber(m.isRplStrategy ? m.rplLeads : m.totalLeads)} subtitle={m.isRplStrategy ? "Emails únicos" : "Meta + Google"} change={m.leadsChange} /></AnimatedCard>
         <AnimatedCard index={1}><MetricCard title="CPL Médio" value={formatBRL(m.avgCpl)} subtitle={m.isRplStrategy ? "Investimento ÷ compradores únicos" : "Custo por lead"} /></AnimatedCard>
         <AnimatedCard index={2}><MetricCard title="RPL Bruto" value={formatBRL(m.rplGross)} subtitle="Receita bruta por lead" color={m.rplGross > (m.avgCpl || 0) ? "text-success" : m.avgCpl > 0 ? "text-destructive" : undefined} /></AnimatedCard>
@@ -542,77 +542,38 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
     ) : null,
 
     goals: goalsProgress && goalsProgress.length > 0 ? (
-      <AnimatedCard index={0}>
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-lg">🎯 Metas × Atingido</CardTitle></CardHeader>
-          <CardContent className="space-y-6">
-            {/* Revenue vs Goal cards */}
-            {(() => {
-              const revenueGoal = goalsProgress.find((g: any) => g.type === "revenue");
-              const target = revenueGoal?.target || 0;
-              const grossActionPct = target > 0 ? (m.grossActionRevenue / target) * 100 : 0;
-              const grossRevPct = target > 0 ? (m.grossRevenue / target) * 100 : 0;
-              const getStatus = (pct: number) => pct >= 100 ? "🟢" : pct >= 70 ? "🟡" : "🔴";
-              return (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="rounded-lg border p-4 space-y-2">
+      <div className="space-y-4">
+        {/* Goal status cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {goalsProgress.map((g: any, i: number) => {
+            const status = g.pct >= 100 ? "reached" : g.pct >= 70 ? "close" : "behind";
+            const statusIcon = status === "reached" ? "🟢" : status === "close" ? "🟡" : "🔴";
+            const statusLabel = status === "reached" ? "Atingida" : status === "close" ? "Em progresso" : "Abaixo";
+            const fmtValue = (v: number) =>
+              g.type === "revenue" ? formatBRL(v) : g.type === "roi" || g.type === "margin" ? formatPercent(v) : formatNumber(Math.round(v));
+            return (
+              <AnimatedCard key={i} index={i}>
+                <Card>
+                  <CardContent className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Receita Bruta Total (Preço Base)</p>
-                      {target > 0 && <span className="text-xs">{getStatus(grossActionPct)}</span>}
+                      <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{GOAL_LABELS[g.type] || g.type}</span>
+                      <span className="text-[10px] whitespace-nowrap">{statusIcon} {statusLabel}</span>
                     </div>
-                    <p className="text-2xl font-bold">{formatBRL(m.grossActionRevenue)}</p>
-                    {target > 0 && (
-                      <>
-                        <div className="text-xs text-muted-foreground">Meta: {formatBRL(target)}</div>
-                        <Progress value={Math.min(grossActionPct, 100)} className="h-2" />
-                        <div className="text-xs text-right font-medium">{formatPercent(Math.min(grossActionPct, 999))}</div>
-                      </>
-                    )}
-                    {!target && <p className="text-xs text-muted-foreground">Soma do preço base dos produtos vendidos</p>}
-                  </div>
-                  <div className="rounded-lg border p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Receita Bruta Produtor</p>
-                      {target > 0 && <span className="text-xs">{getStatus(grossRevPct)}</span>}
-                    </div>
-                    <p className="text-2xl font-bold">{formatBRL(m.grossRevenue)}</p>
-                    {target > 0 && (
-                      <>
-                        <div className="text-xs text-muted-foreground">Meta: {formatBRL(target)}</div>
-                        <Progress value={Math.min(grossRevPct, 100)} className="h-2" />
-                        <div className="text-xs text-right font-medium">{formatPercent(Math.min(grossRevPct, 999))}</div>
-                      </>
-                    )}
-                    {!target && <p className="text-xs text-muted-foreground">Valor bruto recebido pelo produtor</p>}
-                  </div>
-                </div>
-              );
-            })()}
-            {/* Status cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {goalsProgress.map((g: any, i: number) => {
-                const status = g.pct >= 100 ? "reached" : g.pct >= 70 ? "close" : "behind";
-                const statusIcon = status === "reached" ? "🟢" : status === "close" ? "🟡" : "🔴";
-                const statusLabel = status === "reached" ? "Atingida" : status === "close" ? "Em progresso" : "Abaixo";
-                const fmtValue = (v: number) =>
-                  g.type === "revenue" ? formatBRL(v) : g.type === "roi" || g.type === "margin" ? formatPercent(v) : formatNumber(Math.round(v));
-                return (
-                  <div key={i} className="rounded-lg border p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium">{GOAL_LABELS[g.type] || g.type}</span>
-                      <span className="text-xs">{statusIcon} {statusLabel}</span>
-                    </div>
-                    <div className="text-lg font-bold">{fmtValue(g.current)}</div>
-                    <div className="text-xs text-muted-foreground">Meta: {fmtValue(g.target)}</div>
+                    <p className="text-xl sm:text-2xl font-bold">{fmtValue(g.current)}</p>
+                    <div className="text-[11px] text-muted-foreground">Meta: {fmtValue(g.target)}</div>
                     <Progress value={Math.min(g.pct, 100)} className="h-2" />
-                    <div className="text-xs text-right font-medium">{formatPercent(Math.min(g.pct, 999))}</div>
-                  </div>
-                );
-              })}
-            </div>
-            {/* Bar chart: Meta × Atingido */}
-            <div>
-              <p className="text-sm font-medium mb-2">Comparativo Meta × Atingido</p>
+                    <div className="text-[11px] text-right font-semibold">{formatPercent(Math.min(g.pct, 999))}</div>
+                  </CardContent>
+                </Card>
+              </AnimatedCard>
+            );
+          })}
+        </div>
+        {/* Bar chart: Meta × Atingido */}
+        <AnimatedCard index={goalsProgress.length}>
+          <Card>
+            <CardContent className="p-4 pt-4">
+              <p className="text-sm font-medium mb-3">Comparativo Meta × Atingido</p>
               <div className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={goalsProgress.map((g: any) => ({
@@ -636,10 +597,10 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </AnimatedCard>
+            </CardContent>
+          </Card>
+        </AnimatedCard>
+      </div>
     ) : null,
 
     lead_journey: leadJourney && leadJourney.totalPurchases > 0 ? (
