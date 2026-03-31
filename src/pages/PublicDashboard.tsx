@@ -175,7 +175,7 @@ export default function PublicDashboard() {
               <MetricCard
                 title="Conversão"
                 value={conversionRate > 0 ? formatPercent(conversionRate) : "—"}
-                subtitle="Leads → Vendas"
+                subtitle={m.conversionLabel || "Leads → Vendas"}
                 icon={<TrendingUp className="h-4 w-4" />}
               />
             </AnimatedCard>
