@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getNormalizedPlatformFee, getNormalizedCoproducerCommission } from "@/lib/salesFinancials";
 
-export function usePublicDashboardMetrics(projectId: string | undefined, viewToken: string | undefined) {
+export function usePublicDashboardMetrics(projectId: string | undefined, viewToken: string | undefined, strategy?: string) {
   const salesQuery = useQuery({
     queryKey: ["public_sales", projectId, viewToken],
     enabled: !!projectId && !!viewToken,

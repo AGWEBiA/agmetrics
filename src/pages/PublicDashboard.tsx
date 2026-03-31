@@ -58,7 +58,7 @@ export default function PublicDashboard() {
   }, [project?.view_token]);
 
   const viewToken = project?.view_token;
-  const m = usePublicDashboardMetrics(project?.id, viewToken);
+  const m = usePublicDashboardMetrics(project?.id, viewToken, project?.strategy);
   const { data: whatsappGroups } = useQuery({
     queryKey: ["public_whatsapp_groups", project?.id],
     enabled: !!project?.id,
