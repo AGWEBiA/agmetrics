@@ -156,7 +156,7 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
     ) : null,
 
     funnel: (m.totalLeads > 0 || m.totalInvestment > 0 || m.rplLeads > 0) ? (
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-4 lg:grid-cols-8">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
         <AnimatedCard index={0}><MetricCard title={m.isRplStrategy ? "Leads (Compradores Únicos)" : "Total de Leads"} value={formatNumber(m.isRplStrategy ? m.rplLeads : m.totalLeads)} subtitle={m.isRplStrategy ? "Emails únicos" : "Meta + Google"} change={m.leadsChange} /></AnimatedCard>
         <AnimatedCard index={1}><MetricCard title="CPL Médio" value={formatBRL(m.avgCpl)} subtitle={m.isRplStrategy ? "Investimento ÷ compradores únicos" : "Custo por lead"} /></AnimatedCard>
         <AnimatedCard index={2}><MetricCard title="RPL Bruto" value={formatBRL(m.rplGross)} subtitle="Receita bruta por lead" color={m.rplGross > (m.avgCpl || 0) ? "text-success" : m.avgCpl > 0 ? "text-destructive" : undefined} /></AnimatedCard>
