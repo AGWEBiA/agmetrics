@@ -220,6 +220,8 @@ Deno.serve(async (req) => {
         let rawCharge = parseFloat(tx.charge_amount || tx.order_amount || "0") / 100;
         let rawKiwifyFee = parseFloat(tx.kiwify_fee || tx.Commissions?.kiwify_fee || "0") / 100;
         let rawMyCommission = parseFloat(tx.Commissions?.my_commission || "0") / 100;
+        // Extract co_production_commission directly from payload (in reais, not cents)
+        let rawCoProdCommission = parseFloat(tx.co_production_commission || "0");
         let detailPayload = tx;
 
         // If charge_amount missing from list, fetch individual sale detail endpoint
@@ -234,6 +236,8 @@ Deno.serve(async (req) => {
               const commissions = detail.Commissions || detail.commissions || {};
               if (!rawKiwifyFee) rawKiwifyFee = parseFloat(commissions.kiwify_fee || "0") / 100;
               if (!rawMyCommission) rawMyCommission = parseFloat(commissions.my_commission || "0") / 100;
+              // Also check detail for co_production_commission
+              if (!rawCoProdCommission) rawCoProdCommission = parseFloat(detail.co_production_commission || "0");
               detailPayload = { ...tx, _detail: detail };
             }
           } catch (e) {
@@ -250,14 +254,16 @@ Deno.serve(async (req) => {
         const hasCommissionsBreakdown = rawKiwifyFee > 0 || rawMyCommission > 0;
 
         let platformFee: number;
-        let coproducerCommission = 0;
+        let coproducerCommission = rawCoProdCommission;
 
         if (hasCommissionsBreakdown) {
           platformFee = rawKiwifyFee;
-          const producerNet = rawMyCommission || netValue;
-          coproducerCommission = Math.max(0, orderAmount - rawKiwifyFee - producerNet);
+          if (coproducerCommission <= 0) {
+            // Derive: charge - fee - producer_net
+            const producerNet = rawMyCommission || netValue;
+            coproducerCommission = Math.max(0, orderAmount - rawKiwifyFee - producerNet);
+          }
         } else if (rawCharge > 0 && rawNet > 0 && rawCharge > rawNet) {
-          // We have both charge and net — derive total deductions
           platformFee = Math.max(0, orderAmount - netValue);
         } else {
           platformFee = 0;
