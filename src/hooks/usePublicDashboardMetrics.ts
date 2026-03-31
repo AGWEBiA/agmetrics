@@ -359,6 +359,8 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
     { name: "Boleto", value: paymentBreakdownCalc.boleto.count },
   ].filter((d) => d.value > 0);
 
+  const totalPaymentSales = paymentBreakdownCalc.pix.count + paymentBreakdownCalc.card.count + paymentBreakdownCalc.boleto.count;
+
   const installmentBarData = [
     { name: "Cartão de Crédito", avista: paymentBreakdownCalc.cardCash.count, parcelado: paymentBreakdownCalc.cardInstallment.count },
     { name: "PIX", avista: paymentBreakdownCalc.pix.count, parcelado: 0 },
@@ -420,6 +422,8 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
 
   return {
     isLoading: salesQuery.isLoading || metaQuery.isLoading || googleQuery.isLoading || goalsQuery.isLoading || productsQuery.isLoading || leadEventsQuery.isLoading,
+    loadDemographics: async () => ({ data: [] as any[] }),
+    loadMetaAds: metaAdsQuery.refetch,
     totalRevenue, grossRevenue, grossActionRevenue, totalFees, totalTaxes, totalCoproducerCommission, producerRevenue,
     salesCount, avgTicket,
     totalInvestment, metaInvestment, googleInvestment, manualInvestment,
@@ -438,7 +442,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
     refundedSalesCount: refundedSales.length, totalSalesCount: allSales.length,
     pendingSales, refundedSales,
     conversionLabel, conversionBase,
-    demographicsLoaded: false, metaAdsLoaded: metaAdsQuery.isFetched,
+    demographicsLoaded: true, metaAdsLoaded: metaAdsQuery.isFetched,
     revenueChange: 0, salesCountChange: 0, roiChange: 0, investmentChange: 0, leadsChange: 0,
     // Boleto
     boletoTotal, boletoPaid, boletoPending, boletoConversionRate, boletoRevenue, boletoByPlatform,
@@ -446,7 +450,9 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
     paymentBreakdown: paymentBreakdownCalc,
     paymentChartData: paymentPieData, paymentMethodBreakdownChart: installmentBarData,
     paymentPieData, cardCashPct, cardInstallmentPct, installmentBarData,
-    metaDemographics: [], googleDemographics: [], buyerLocationData: [], pixPct: paymentPieData.find((d) => d.name === "PIX")?.value || 0, cardPct: paymentPieData.find((d) => d.name === "Cartão de Crédito")?.value || 0,
+    metaDemographics: [], googleDemographics: [], buyerLocationData: [],
+    pixPct: totalPaymentSales > 0 ? (paymentBreakdownCalc.pix.count / totalPaymentSales) * 100 : 0,
+    cardPct: totalPaymentSales > 0 ? (paymentBreakdownCalc.card.count / totalPaymentSales) * 100 : 0,
     bestDay, bestHour,
   };
 }
