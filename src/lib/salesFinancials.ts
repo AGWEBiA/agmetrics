@@ -133,16 +133,13 @@ export function getNormalizedCoproducerCommission(sale: SaleLike): number {
   const storedCoprod = toNumber(sale.coproducer_commission);
 
   if (sale.platform === "kiwify") {
-    // Priority 1: Use stored value if it's meaningful (> 0)
-    if (storedCoprod > 0) return storedCoprod;
-
-    // Priority 2: Read co_production_commission from payload (Kiwify webhook standard field)
+    // Priority 1: Read co_production_commission from payload (Kiwify webhook standard field, in reais)
     const payload = getPayloadObject(sale.payload);
     const detail = getPayloadObject(payload._detail);
     const payloadCoProd = toNumber(payload.co_production_commission) || toNumber(detail.co_production_commission);
     if (payloadCoProd > 0) return payloadCoProd;
 
-    // Priority 3: Derive from financial breakdown
+    // Priority 2: Derive from financial breakdown (most reliable for historical data)
     const basePrice = toNumber(sale.base_price);
     const platformFee = getNormalizedPlatformFee(sale);
     const producerNet = toNumber(sale.amount);
