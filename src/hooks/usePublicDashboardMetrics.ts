@@ -325,5 +325,15 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
     // Payment breakdown compatibility
     paymentBreakdown: { pix: { count: 0, revenue: 0 }, card: { count: 0, revenue: 0 }, cardCash: { count: 0, revenue: 0 }, cardInstallment: { count: 0, revenue: 0 }, boleto: { count: 0, revenue: 0 } },
     paymentChartData: [], paymentMethodBreakdownChart: [],
+    // Additional compatibility fields for OverviewSections
+    paymentPieData: [] as any[],
+    cardCashPct: 0, cardInstallmentPct: 0,
+    installmentBarData: [] as any[],
+    bestDay: null as any, bestHour: null as any,
+    salesByHour: [] as any[],
+    avgPurchasesPerLead: 0,
+    leadsChange: 0,
+    rplGross: 0,
+    metaAds: topAds,
   };
 }
