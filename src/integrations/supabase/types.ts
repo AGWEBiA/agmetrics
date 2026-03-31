@@ -2032,6 +2032,29 @@ export type Database = {
       }
     }
     Functions: {
+      get_project_by_slug: {
+        Args: { _slug: string }
+        Returns: {
+          budget: number
+          cart_open_date: string
+          created_at: string
+          description: string
+          end_date: string
+          google_leads_enabled: boolean
+          id: string
+          is_active: boolean
+          manual_investment: number
+          meta_leads_enabled: boolean
+          name: string
+          organization_id: string
+          owner_id: string
+          slug: string
+          start_date: string
+          strategy: Database["public"]["Enums"]["project_strategy"]
+          updated_at: string
+          view_token: string
+        }[]
+      }
       get_project_by_view_token: {
         Args: { _token: string }
         Returns: {
@@ -2156,6 +2179,10 @@ export type Database = {
       has_valid_view_token: { Args: { _project_id: string }; Returns: boolean }
       is_org_member: {
         Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_org_project_member: {
+        Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
       owns_project: { Args: { _project_id: string }; Returns: boolean }

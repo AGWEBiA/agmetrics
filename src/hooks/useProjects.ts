@@ -69,14 +69,11 @@ export function useProjectBySlug(slug: string | undefined) {
     queryKey: ["projects", "slug", slug],
     enabled: !!slug,
     queryFn: async () => {
-      // First try projects_public (no view_token), then fall back to token lookup
-      const { data, error } = await supabase
-        .from("projects_public" as any)
-        .select("id, name, description, strategy, start_date, end_date, cart_open_date, budget, manual_investment, is_active, created_at, updated_at, meta_leads_enabled, google_leads_enabled, owner_id, slug, organization_id")
-        .eq("slug", slug!)
-        .single();
+      const { data, error } = await supabase.rpc("get_project_by_slug", { _slug: slug! });
       if (error) throw error;
-      return data as unknown as Project;
+      const rows = data as any[];
+      if (!rows || rows.length === 0) throw new Error("Project not found");
+      return rows[0] as unknown as Project;
     },
   });
 }
