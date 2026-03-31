@@ -1,14 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { createNotification } from "@/hooks/useNotifications";
-import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
 
+/**
+ * Polls for new sales every 30s and invalidates caches.
+ * We removed sales_events from Realtime publication to prevent PII leakage,
+ * so we use polling as a secure alternative.
+ */
 export function useSalesRealtime(projectId: string | undefined) {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const { showNotification } = useBrowserNotifications();
+  const lastCheckRef = useRef<string>(new Date().toISOString());
 
   useEffect(() => {
     if (!projectId) return;
@@ -21,94 +22,23 @@ export function useSalesRealtime(projectId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ["compare_sales"] });
     };
 
-    const channel = supabase
-      .channel(`sales-${projectId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "sales_events",
-          filter: `project_id=eq.${projectId}`,
-        },
-        async (payload) => {
-          const sale = payload.new as any;
+    const interval = setInterval(async () => {
+      try {
+        const { count } = await supabase
+          .from("sales_events")
+          .select("id", { count: "exact", head: true })
+          .eq("project_id", projectId)
+          .gt("created_at", lastCheckRef.current);
+
+        if (count && count > 0) {
+          lastCheckRef.current = new Date().toISOString();
           invalidateAllSalesQueries();
-
-          const saleMsg = `${sale.buyer_name || sale.buyer_email || "Cliente"} — R$ ${Number(sale.amount || 0).toFixed(2)}`;
-
-          toast({
-            title: "🎉 Nova venda!",
-            description: saleMsg,
-          });
-
-          // Browser push notification
-          showNotification("🎉 Nova venda!", { body: saleMsg, tag: `sale-${sale.id}` });
-
-          // Create in-app notification
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            createNotification({
-              userId: user.id,
-              projectId,
-              type: "sale",
-              title: "Nova venda!",
-              message: saleMsg,
-              metadata: { sale_id: sale.id, amount: sale.amount },
-            });
-          }
         }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "sales_events",
-          filter: `project_id=eq.${projectId}`,
-        },
-        async (payload) => {
-          const oldSale = payload.old as any;
-          const newSale = payload.new as any;
-          invalidateAllSalesQueries();
+      } catch {
+        // Silent fail — polling is best-effort
+      }
+    }, 30000);
 
-          if (oldSale.status && newSale.status && oldSale.status !== newSale.status) {
-            const statusLabels: Record<string, string> = {
-              approved: "Aprovada",
-              pending: "Pendente",
-              cancelled: "Cancelada",
-              refunded: "Reembolsada",
-            };
-            const msg = `${newSale.buyer_name || "Cliente"} — ${statusLabels[oldSale.status] || oldSale.status} → ${statusLabels[newSale.status] || newSale.status}`;
-
-            toast({
-              title: "🔄 Status de venda atualizado",
-              description: msg,
-            });
-
-            showNotification("🔄 Status atualizado", { body: msg, tag: `status-${newSale.id}` });
-
-            // Create notification for refunds
-            if (newSale.status === "refunded") {
-              const { data: { user } } = await supabase.auth.getUser();
-              if (user) {
-                createNotification({
-                  userId: user.id,
-                  projectId,
-                  type: "refund",
-                  title: "Reembolso registrado",
-                  message: `${newSale.buyer_name || "Cliente"} — R$ ${Number(newSale.amount || 0).toFixed(2)}`,
-                  metadata: { sale_id: newSale.id },
-                });
-              }
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [projectId, queryClient, toast]);
+    return () => clearInterval(interval);
+  }, [projectId, queryClient]);
 }
