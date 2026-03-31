@@ -7,12 +7,28 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
     queryKey: ["public_sales", projectId, viewToken],
     enabled: !!projectId && !!viewToken,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_public_sales", {
-        _project_id: projectId!,
-        _token: viewToken!,
-      });
-      if (error) throw error;
-      return (data as any[]) || [];
+      const pageSize = 1000;
+      let from = 0;
+      let allData: any[] = [];
+
+      while (true) {
+        const { data, error } = await supabase
+          .rpc("get_public_sales", {
+            _project_id: projectId!,
+            _token: viewToken!,
+          })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+
+        const page = (data as any[]) || [];
+        allData = allData.concat(page);
+
+        if (page.length < pageSize) break;
+        from += pageSize;
+      }
+
+      return allData;
     },
     refetchInterval: 300000,
   });
@@ -21,12 +37,28 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
     queryKey: ["public_lead_events", projectId, viewToken],
     enabled: !!projectId && !!viewToken,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_public_lead_events", {
-        _project_id: projectId!,
-        _token: viewToken!,
-      });
-      if (error) throw error;
-      return (data as any[]) || [];
+      const pageSize = 1000;
+      let from = 0;
+      let allData: any[] = [];
+
+      while (true) {
+        const { data, error } = await supabase
+          .rpc("get_public_lead_events", {
+            _project_id: projectId!,
+            _token: viewToken!,
+          })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+
+        const page = (data as any[]) || [];
+        allData = allData.concat(page);
+
+        if (page.length < pageSize) break;
+        from += pageSize;
+      }
+
+      return allData;
     },
     refetchInterval: 300000,
   });
@@ -290,8 +322,17 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
 
   // Payment method breakdown using payment_method field
   const paymentBreakdownCalc = { pix: { count: 0, revenue: 0 }, card: { count: 0, revenue: 0 }, cardCash: { count: 0, revenue: 0 }, cardInstallment: { count: 0, revenue: 0 }, boleto: { count: 0, revenue: 0 } };
+  const getPaymentMethod = (sale: any) => (sale.payment_method || "").toLowerCase().trim();
+  const getInstallments = (sale: any) => {
+    const method = getPaymentMethod(sale);
+    const numericMatch = method.match(/(\d+)/);
+    if (numericMatch) return Number(numericMatch[1]);
+    if (method.includes("parcel") || method.includes("installment")) return 2;
+    return 1;
+  };
   sales.forEach((s: any) => {
-    const method = (s.payment_method || "").toLowerCase();
+    const method = getPaymentMethod(s);
+    const installments = getInstallments(s);
     const amount = Number(s.gross_amount || s.amount || 0);
     if (method === "pix") {
       paymentBreakdownCalc.pix.count++;
@@ -302,8 +343,13 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
     } else if (method) {
       paymentBreakdownCalc.card.count++;
       paymentBreakdownCalc.card.revenue += amount;
-      paymentBreakdownCalc.cardCash.count++;
-      paymentBreakdownCalc.cardCash.revenue += amount;
+      if (installments <= 1) {
+        paymentBreakdownCalc.cardCash.count++;
+        paymentBreakdownCalc.cardCash.revenue += amount;
+      } else {
+        paymentBreakdownCalc.cardInstallment.count++;
+        paymentBreakdownCalc.cardInstallment.revenue += amount;
+      }
     }
   });
 
@@ -324,7 +370,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
 
   // Boleto metrics
   const isBoleto = (method: string): boolean => ["boleto", "billet", "bank_slip", "boleto_bancario"].includes(method);
-  const boletoAllSales = allSales.filter((s: any) => isBoleto((s.payment_method || "").toLowerCase()));
+  const boletoAllSales = allSales.filter((s: any) => isBoleto(getPaymentMethod(s)));
   const boletoTotal = boletoAllSales.length;
   const boletoPaid = boletoAllSales.filter((s: any) => s.status === "approved").length;
   const boletoPending = boletoAllSales.filter((s: any) => s.status === "pending").length;
@@ -400,6 +446,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
     paymentBreakdown: paymentBreakdownCalc,
     paymentChartData: paymentPieData, paymentMethodBreakdownChart: installmentBarData,
     paymentPieData, cardCashPct, cardInstallmentPct, installmentBarData,
+    metaDemographics: [], googleDemographics: [], buyerLocationData: [], pixPct: paymentPieData.find((d) => d.name === "PIX")?.value || 0, cardPct: paymentPieData.find((d) => d.name === "Cartão de Crédito")?.value || 0,
     bestDay, bestHour,
   };
 }
