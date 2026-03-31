@@ -469,7 +469,7 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
       </AnimatedCard>
     ) : null,
 
-    temporal_analysis: m.salesCount > 0 ? (
+    temporal_analysis: m.salesCount > 0 && m.bestDay && m.bestHour ? (
       <AnimatedCard index={5}>
         <Card>
           <CardHeader className="pb-3"><CardTitle className="text-lg">Análise Temporal de Vendas</CardTitle></CardHeader>
