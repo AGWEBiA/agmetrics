@@ -111,7 +111,7 @@ export default function PublicDashboard() {
       {/* Consolidated Public KPI Summary */}
       {!m.isLoading && (m.totalInvestment > 0 || m.salesCount > 0) && (
         <div className="space-y-4">
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-7">
             <AnimatedCard index={0}>
               <MetricCard
                 title="Receita Total"
@@ -122,20 +122,29 @@ export default function PublicDashboard() {
             </AnimatedCard>
             <AnimatedCard index={1}>
               <MetricCard
+                title="Receita Bruta"
+                value={formatBRL(m.grossActionRevenue)}
+                subtitle="Preço base do produto"
+                icon={<DollarSign className="h-4 w-4" />}
+                color="text-primary"
+              />
+            </AnimatedCard>
+            <AnimatedCard index={2}>
+              <MetricCard
                 title="Investimento"
                 value={formatBRL(m.totalInvestment)}
                 icon={<TrendingDown className="h-4 w-4" />}
                 color="text-warning"
               />
             </AnimatedCard>
-            <AnimatedCard index={2}>
+            <AnimatedCard index={3}>
               <MetricCard
                 title="Vendas"
                 value={formatNumber(m.salesCount)}
                 icon={<ShoppingCart className="h-4 w-4" />}
               />
             </AnimatedCard>
-            <AnimatedCard index={3}>
+            <AnimatedCard index={4}>
               <MetricCard
                 title="CPA"
                 value={cpa > 0 ? formatBRL(cpa) : "—"}
@@ -143,7 +152,7 @@ export default function PublicDashboard() {
                 icon={<Target className="h-4 w-4" />}
               />
             </AnimatedCard>
-            <AnimatedCard index={4}>
+            <AnimatedCard index={5}>
               <MetricCard
                 title="CPL"
                 value={cpl > 0 ? formatBRL(cpl) : "—"}
@@ -151,7 +160,7 @@ export default function PublicDashboard() {
                 icon={<Users className="h-4 w-4" />}
               />
             </AnimatedCard>
-            <AnimatedCard index={5}>
+            <AnimatedCard index={6}>
               <MetricCard
                 title="Conversão"
                 value={conversionRate > 0 ? formatPercent(conversionRate) : "—"}
