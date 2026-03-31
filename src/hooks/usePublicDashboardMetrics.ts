@@ -3,9 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { getNormalizedPlatformFee, getNormalizedCoproducerCommission } from "@/lib/salesFinancials";
 
 export function usePublicDashboardMetrics(projectId: string | undefined, viewToken: string | undefined, strategy?: string) {
+  const ready = !!projectId && !!viewToken;
+
   const salesQuery = useQuery({
     queryKey: ["public_sales", projectId, viewToken],
-    enabled: !!projectId && !!viewToken,
+    enabled: ready,
     queryFn: async () => {
       const pageSize = 1000;
       let from = 0;
@@ -35,7 +37,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
 
   const leadEventsQuery = useQuery({
     queryKey: ["public_lead_events", projectId, viewToken],
-    enabled: !!projectId && !!viewToken,
+    enabled: ready,
     queryFn: async () => {
       const pageSize = 1000;
       let from = 0;
@@ -64,8 +66,8 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
   });
 
   const metaQuery = useQuery({
-    queryKey: ["public_meta", projectId],
-    enabled: !!projectId,
+    queryKey: ["public_meta", projectId, viewToken],
+    enabled: ready,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("meta_metrics")
@@ -79,8 +81,8 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
   });
 
   const googleQuery = useQuery({
-    queryKey: ["public_google", projectId],
-    enabled: !!projectId,
+    queryKey: ["public_google", projectId, viewToken],
+    enabled: ready,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("google_metrics")
@@ -94,8 +96,8 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
   });
 
   const goalsQuery = useQuery({
-    queryKey: ["public_goals", projectId],
-    enabled: !!projectId,
+    queryKey: ["public_goals", projectId, viewToken],
+    enabled: ready,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_goals")
@@ -109,8 +111,8 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
   });
 
   const productsQuery = useQuery({
-    queryKey: ["public_products", projectId],
-    enabled: !!projectId,
+    queryKey: ["public_products", projectId, viewToken],
+    enabled: ready,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
@@ -123,8 +125,8 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
   });
 
   const metaAdsQuery = useQuery({
-    queryKey: ["public_meta_ads", projectId],
-    enabled: !!projectId,
+    queryKey: ["public_meta_ads", projectId, viewToken],
+    enabled: ready,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("meta_ads")
@@ -138,8 +140,8 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
   });
 
   const manualInvestmentsQuery = useQuery({
-    queryKey: ["public_manual_investments", projectId],
-    enabled: !!projectId,
+    queryKey: ["public_manual_investments", projectId, viewToken],
+    enabled: ready,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("manual_investments")

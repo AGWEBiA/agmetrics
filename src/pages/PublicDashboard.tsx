@@ -57,11 +57,16 @@ export default function PublicDashboard() {
     return () => setPublicViewToken(null);
   }, [project?.view_token]);
 
+  // Also set it synchronously during render so queries in the same cycle see it
   const viewToken = project?.view_token;
+  if (viewToken) {
+    setPublicViewToken(viewToken);
+  }
+
   const m = usePublicDashboardMetrics(project?.id, viewToken, project?.strategy);
   const { data: whatsappGroups } = useQuery({
-    queryKey: ["public_whatsapp_groups", project?.id],
-    enabled: !!project?.id,
+    queryKey: ["public_whatsapp_groups", project?.id, viewToken],
+    enabled: !!project?.id && !!viewToken,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("whatsapp_groups")
@@ -73,8 +78,8 @@ export default function PublicDashboard() {
   });
 
   const { data: whatsappHistory } = useQuery({
-    queryKey: ["public_whatsapp_history", project?.id],
-    enabled: !!project?.id,
+    queryKey: ["public_whatsapp_history", project?.id, viewToken],
+    enabled: !!project?.id && !!viewToken,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("whatsapp_member_history" as any)
@@ -88,32 +93,7 @@ export default function PublicDashboard() {
 
   const budgetData = useBudgetData(project, m.totalInvestment, m.metaMetrics, m.googleMetrics);
 
-  // Goals
-  const { data: goals } = useQuery({
-    queryKey: ["public_goals", project?.id],
-    enabled: !!project?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("project_goals")
-        .select("type, target_value, period, is_active")
-        .eq("project_id", project!.id)
-        .eq("is_active", true);
-      if (error) throw error;
-      return (data as any[]) || [];
-    },
-  });
-
-  const goalsProgress = (goals || []).map((g: any) => {
-    let current = 0;
-    switch (g.type) {
-      case "revenue": current = m.grossActionRevenue; break;
-      case "sales": current = m.salesCount; break;
-      case "roi": current = m.roi; break;
-      case "margin": current = m.margin; break;
-      case "leads": current = m.totalLeads; break;
-    }
-    return { type: g.type, target: g.target_value, current, period: g.period, pct: g.target_value > 0 ? (current / g.target_value) * 100 : 0 };
-  });
+  const goalsProgress = m.goalsProgress || [];
 
   // Computed KPIs for public summary — use strategy-aware values from hook
   const cpa = m.salesCount > 0 && m.totalInvestment > 0 ? m.totalInvestment / m.salesCount : 0;
