@@ -391,7 +391,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
     pendingSalesCount: pendingSales.length, cancelledSalesCount: cancelledSales.length,
     refundedSalesCount: refundedSales.length, totalSalesCount: allSales.length,
     pendingSales, refundedSales,
-    conversionLabel: "Leads → Compras", conversionBase: totalLeads,
+    conversionLabel, conversionBase,
     demographicsLoaded: false, metaAdsLoaded: metaAdsQuery.isFetched,
     revenueChange: 0, salesCountChange: 0, roiChange: 0, investmentChange: 0, leadsChange: 0,
     // Boleto
