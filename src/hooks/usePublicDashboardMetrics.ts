@@ -319,5 +319,11 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
     conversionLabel: "lead → venda", conversionBase: totalLeads,
     demographicsLoaded: false, metaAdsLoaded: metaAdsQuery.isFetched,
     revenueChange: 0, salesCountChange: 0, roiChange: 0, investmentChange: 0,
+    // Boleto compatibility fields
+    boletoTotal: 0, boletoPaid: 0, boletoPending: 0, boletoConversionRate: 0, boletoRevenue: 0,
+    boletoByPlatform: { kiwify: { total: 0, paid: 0, pending: 0 }, hotmart: { total: 0, paid: 0, pending: 0 } },
+    // Payment breakdown compatibility
+    paymentBreakdown: { pix: { count: 0, revenue: 0 }, card: { count: 0, revenue: 0 }, cardCash: { count: 0, revenue: 0 }, cardInstallment: { count: 0, revenue: 0 }, boleto: { count: 0, revenue: 0 } },
+    paymentChartData: [], paymentMethodBreakdownChart: [],
   };
 }
