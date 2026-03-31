@@ -97,13 +97,14 @@ function extractSaleData(payload: Record<string, any>) {
   // Extract tracking from nested TrackingParameters (new Kiwify format)
   const trackingParams = payload.TrackingParameters || {};
 
-  // Calculate coproducer commission from Commissions object
-  // charge_amount = total charged to buyer
-  // kiwify_fee = platform fee
-  // my_commission = producer's net
-  // Everything else = coproducers + affiliates
+  // Extract coproducer commission:
+  // 1. Direct field co_production_commission (Kiwify's standard webhook field, in reais)
+  // 2. Derive from Commissions breakdown: charge_amount - kiwify_fee - my_commission
   let coproducerCommission = 0;
-  if (payload.Commissions?.charge_amount && payload.Commissions?.kiwify_fee && payload.Commissions?.my_commission) {
+  const rawCoProdCommission = parseFloat(payload.co_production_commission || payload.order?.co_production_commission || "0");
+  if (rawCoProdCommission > 0) {
+    coproducerCommission = rawCoProdCommission;
+  } else if (payload.Commissions?.charge_amount && payload.Commissions?.kiwify_fee && payload.Commissions?.my_commission) {
     const chargeTotal = parseFloat(payload.Commissions.charge_amount) / 100;
     coproducerCommission = Math.max(0, chargeTotal - kiwifyFee - netValue);
   }
