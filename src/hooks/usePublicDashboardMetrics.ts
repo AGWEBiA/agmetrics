@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getNormalizedPlatformFee, getNormalizedCoproducerCommission } from "@/lib/salesFinancials";
 
-export function usePublicDashboardMetrics(projectId: string | undefined, viewToken: string | undefined) {
+export function usePublicDashboardMetrics(projectId: string | undefined, viewToken: string | undefined, strategy?: string) {
   const salesQuery = useQuery({
     queryKey: ["public_sales", projectId, viewToken],
     enabled: !!projectId && !!viewToken,
@@ -197,20 +197,31 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
   const googleLeads = google.reduce((s: number, m: any) => s + (m.conversions || 0), 0);
   const totalLeads = metaLeads + googleLeads;
 
-  // RPL - unique buyers (public RPC strips PII, use external_id as proxy)
+  // Strategy-aware conversion (mirrors private dashboard exactly)
+  const isPerpertuo = strategy === "perpetuo";
+  const isRplStrategy = strategy === "perpetuo" || strategy === "lancamento_pago";
+
+  // Page views for perpétuo conversion
+  const totalPageViews = meta.reduce((s: number, m: any) => s + (m.landing_page_views || 0), 0)
+    + google.reduce((s: number, m: any) => s + (m.clicks || 0), 0);
+
+  // RPL - unique buyers (public RPC strips buyer_email, use external_id as proxy)
   const uniqueSaleKeys = new Set(
     sales
       .map((s: any) => (s.external_id || "").toLowerCase().trim())
       .filter((e: string) => e.length > 0)
   );
-  const isRplStrategy = true;
-  const rplLeads = uniqueSaleKeys.size || salesCount;
+  const rplLeads = isRplStrategy ? (uniqueSaleKeys.size || salesCount) : totalLeads;
   const rpl = rplLeads > 0 ? totalRevenue / rplLeads : 0;
   const rplGross = rplLeads > 0 ? grossRevenue / rplLeads : 0;
   const cplBase = isRplStrategy ? rplLeads : totalLeads;
   const avgCpl = cplBase > 0 ? totalInvestment / cplBase : 0;
   const avgPurchasesPerLead = cplBase > 0 ? salesCount / cplBase : 0;
-  const conversionRate = totalLeads > 0 ? (salesCount / totalLeads) * 100 : 0;
+
+  // Conversion rate uses same base as CPL/RPL for consistency (mirrors private)
+  const conversionBase = isPerpertuo ? totalPageViews : cplBase;
+  const conversionRate = conversionBase > 0 ? (salesCount / conversionBase) * 100 : 0;
+  const conversionLabel = isPerpertuo ? "Views → Compras" : "Leads → Compras";
 
   // Sales by date
   const salesByDate = new Map<string, { count: number; revenue: number }>();
@@ -380,7 +391,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
     pendingSalesCount: pendingSales.length, cancelledSalesCount: cancelledSales.length,
     refundedSalesCount: refundedSales.length, totalSalesCount: allSales.length,
     pendingSales, refundedSales,
-    conversionLabel: "Leads → Compras", conversionBase: totalLeads,
+    conversionLabel, conversionBase,
     demographicsLoaded: false, metaAdsLoaded: metaAdsQuery.isFetched,
     revenueChange: 0, salesCountChange: 0, roiChange: 0, investmentChange: 0, leadsChange: 0,
     // Boleto
