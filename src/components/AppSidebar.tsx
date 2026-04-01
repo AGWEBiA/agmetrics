@@ -135,7 +135,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="border-r border-sidebar-border">
-      <SidebarContent>
+      <SidebarContent className="overflow-y-auto overflow-x-hidden">
         {/* App header */}
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 py-3">
@@ -259,7 +259,7 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-3">
+      <SidebarFooter className="border-t border-sidebar-border p-3 shrink-0">
         <Button
           variant="ghost"
           className="w-full justify-start text-muted-foreground hover:text-foreground"
