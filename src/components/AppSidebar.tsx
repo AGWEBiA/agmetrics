@@ -259,7 +259,7 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-3">
+      <SidebarFooter className="border-t border-sidebar-border p-3 shrink-0">
         <Button
           variant="ghost"
           className="w-full justify-start text-muted-foreground hover:text-foreground"
