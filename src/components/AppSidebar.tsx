@@ -135,7 +135,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="border-r border-sidebar-border">
-      <SidebarContent>
+      <SidebarContent className="overflow-y-auto overflow-x-hidden">
         {/* App header */}
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 py-3">
