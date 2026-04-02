@@ -297,12 +297,19 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
     { name: "Hotmart", value: hotmartSales.reduce((s, e) => s + Number(e.amount), 0) },
   ].filter((d) => d.value > 0);
 
-  // Payment method metrics from payload
+  // Payment method metrics — use payment_method column for consistency with public dashboard
   const paymentBreakdown = { pix: { count: 0, revenue: 0 }, card: { count: 0, revenue: 0 }, cardCash: { count: 0, revenue: 0 }, cardInstallment: { count: 0, revenue: 0 }, boleto: { count: 0, revenue: 0 } };
+  const getPaymentMethod = (s: SalesEvent): string => ((s as any).payment_method || "").toLowerCase().trim();
+  const getInstallments = (s: SalesEvent): number => {
+    const method = getPaymentMethod(s);
+    const numericMatch = method.match(/(\d+)/);
+    if (numericMatch) return Number(numericMatch[1]);
+    if (method.includes("parcel") || method.includes("installment")) return 2;
+    return 1;
+  };
   approvedSales.forEach((s) => {
-    const payload = (s as any).payload || {};
-    const method = (payload.pagamento || payload.payment_method || payload.data?.purchase?.payment?.type || payload.purchase?.payment?.type || payload.payment?.type || "").toLowerCase();
-    const installments = parseInt(payload.parcelas || payload.installments || payload.data?.purchase?.payment?.installments_number || "1", 10);
+    const method = getPaymentMethod(s);
+    const installments = getInstallments(s);
     const amount = Number(s.gross_amount || 0);
     if (method === "pix") {
       paymentBreakdown.pix.count++;
@@ -322,22 +329,6 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
       }
     }
   });
-
-  // Boleto metrics: detect boletos from Kiwify and Hotmart payload structures
-  const getPaymentMethod = (s: SalesEvent): string => {
-    const payload = (s as any).payload || {};
-    // Kiwify: payload.pagamento or payload.payment_method
-    // Hotmart: payload.data.purchase.payment.type
-    const method = (
-      payload.pagamento ||
-      payload.payment_method ||
-      payload.data?.purchase?.payment?.type ||
-      payload.purchase?.payment?.type ||
-      payload.payment?.type ||
-      ""
-    ).toLowerCase();
-    return method;
-  };
 
   const isBoleto = (method: string): boolean =>
     ["boleto", "billet", "bank_slip", "boleto_bancario"].includes(method);
