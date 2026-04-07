@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjects, useCreateProject, useDeleteProject, useUpdateProject } from "@/hooks/useProjects";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -24,7 +24,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, BarChart3, Calendar, Trash2, ExternalLink, Settings, Pencil, GitCompare } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Plus, BarChart3, Calendar, Trash2, ExternalLink, Settings, Pencil, GitCompare, MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProjectStrategyForm, strategyLabel, type ProjectFormData } from "@/components/ProjectStrategyForm";
@@ -48,50 +55,55 @@ function projectToForm(p: Project): ProjectFormData {
   return {
     name: p.name,
     description: p.description || "",
-    strategy: (p.strategy as ProjectStrategy) || "perpetuo",
+    strategy: p.strategy || "perpetuo",
     startDate: p.start_date || "",
     endDate: p.end_date || "",
     cartOpenDate: p.cart_open_date || "",
-    manualInvestment: Number(p.manual_investment || 0).toFixed(2).replace(".", ","),
-    isActive: p.is_active ?? true,
-    budget: Number(p.budget || 0).toFixed(2).replace(".", ","),
+    manualInvestment: (p.manual_investment ?? 0).toFixed(2).replace(".", ","),
+    isActive: p.is_active,
+    budget: (p.budget ?? 0).toFixed(2).replace(".", ","),
     metaLeads: p.meta_leads_enabled ?? false,
     googleLeads: p.google_leads_enabled ?? false,
   };
 }
 
 export default function ProjectsHub() {
-  const navigate = useNavigate();
-  const { toast } = useToast();
   const { data: projects, isLoading } = useProjects();
   const createProject = useCreateProject();
-  const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
+  const updateProject = useUpdateProject();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<ProjectFormData>(emptyForm);
-
   const [editOpen, setEditOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<ProjectFormData>(emptyForm);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const handleCreate = async () => {
     if (!createForm.name.trim()) return;
     try {
-      const project = await createProject.mutateAsync({
+      const created = await createProject.mutateAsync({
         name: createForm.name.trim(),
-        description: createForm.description.trim() || undefined,
-        strategy: createForm.strategy,
-        start_date: createForm.startDate || undefined,
-        end_date: createForm.endDate || undefined,
-        cart_open_date: createForm.cartOpenDate || undefined,
+        description: createForm.description.trim() || null,
+        strategy: createForm.strategy as any,
+        start_date: createForm.startDate || null,
+        end_date: createForm.endDate || null,
+        cart_open_date: createForm.cartOpenDate || null,
+        manual_investment: parseFloat(createForm.manualInvestment.replace(",", ".")) || 0,
+        is_active: createForm.isActive,
+        budget: parseFloat(createForm.budget.replace(",", ".")) || 0,
+        meta_leads_enabled: createForm.metaLeads,
+        google_leads_enabled: createForm.googleLeads,
       });
-      toast({ title: "Projeto criado!", description: `"${project.name}" foi criado com sucesso.` });
+      toast({ title: "Projeto criado com sucesso!" });
       setCreateOpen(false);
       setCreateForm(emptyForm);
-      navigate(`/admin/projects/${project.id}/config`);
+      if (created?.id) navigate(`/admin/projects/${created.id}/dashboard`);
     } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      toast({ title: "Erro ao criar projeto", description: err.message, variant: "destructive" });
     }
   };
 
@@ -126,10 +138,12 @@ export default function ProjectsHub() {
     }
   };
 
-  const handleDelete = async (id: string, projectName: string) => {
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await deleteProject.mutateAsync(id);
-      toast({ title: "Projeto deletado", description: `"${projectName}" foi removido.` });
+      await deleteProject.mutateAsync(deleteTarget.id);
+      toast({ title: "Projeto deletado", description: `"${deleteTarget.name}" foi removido.` });
+      setDeleteTarget(null);
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
@@ -160,20 +174,20 @@ export default function ProjectsHub() {
                 <span className="sm:hidden">Novo</span>
               </Button>
             </DialogTrigger>
-          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Criar Projeto</DialogTitle>
-              <DialogDescription>Preencha as informações do seu projeto digital.</DialogDescription>
-            </DialogHeader>
-            <ProjectStrategyForm data={createForm} onChange={setCreateForm} />
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
-              <Button onClick={handleCreate} disabled={!createForm.name.trim() || createProject.isPending}>
-                {createProject.isPending ? "Criando..." : "Criar Projeto"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Criar Projeto</DialogTitle>
+                <DialogDescription>Preencha as informações do seu projeto digital.</DialogDescription>
+              </DialogHeader>
+              <ProjectStrategyForm data={createForm} onChange={setCreateForm} />
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
+                <Button onClick={handleCreate} disabled={!createForm.name.trim() || createProject.isPending}>
+                  {createProject.isPending ? "Criando..." : "Criar Projeto"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -194,6 +208,27 @@ export default function ProjectsHub() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deletar projeto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Todos os dados de "{deleteTarget?.name}" serão removidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Deletar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {isLoading ? (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
@@ -211,77 +246,80 @@ export default function ProjectsHub() {
       ) : projects && projects.length > 0 ? (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
-            <Card key={project.id} className="group relative transition-shadow hover:shadow-md">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{project.name}</CardTitle>
-                  <div className="flex items-center gap-2">
+            <Card
+              key={project.id}
+              className="group relative transition-all hover:shadow-lg hover:border-primary/30 cursor-pointer"
+              onClick={() => navigate(`/admin/projects/${project.id}/dashboard`)}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-base leading-snug line-clamp-2">{project.name}</CardTitle>
+                  <div className="flex items-center gap-1.5 shrink-0">
                     {!project.is_active && (
-                      <Badge variant="secondary" className="text-xs">Inativo</Badge>
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Inativo</Badge>
                     )}
-                    {project.strategy && (
-                      <Badge variant="outline" className="text-xs capitalize">
-                        {strategyLabel(project.strategy as ProjectStrategy)}
-                      </Badge>
-                    )}
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize whitespace-nowrap">
+                      {strategyLabel(project.strategy as ProjectStrategy)}
+                    </Badge>
                   </div>
                 </div>
                 {project.description && (
-                  <CardDescription className="line-clamp-2">{project.description}</CardDescription>
+                  <CardDescription className="text-xs line-clamp-1 mt-1">{project.description}</CardDescription>
                 )}
               </CardHeader>
-              <CardContent className="pb-3">
-                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                  {project.start_date && (
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
+
+              <CardContent className="pb-3 pt-0">
+                {project.start_date && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
+                    <Calendar className="h-3 w-3" />
+                    <span>
                       {formatDate(project.start_date)}
                       {project.end_date && ` — ${formatDate(project.end_date)}`}
                     </span>
-                  )}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between gap-2">
+                  <Button
+                    size="sm"
+                    className="flex-1 h-8 text-xs"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/admin/projects/${project.id}/dashboard`); }}
+                  >
+                    <BarChart3 className="mr-1 h-3.5 w-3.5" />
+                    Dashboard
+                  </Button>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuItem onClick={() => navigate(`/admin/projects/${project.id}/config`)}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        Configurações
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openEdit(project)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => window.open(`https://agmetrics.lovable.app/view/${project.slug || project.view_token}`, "_blank")}>
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Dashboard Público
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => setDeleteTarget({ id: project.id, name: project.name })}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Deletar
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </CardContent>
-              <CardFooter className="gap-1.5 flex-wrap">
-                <Button size="sm" onClick={() => navigate(`/admin/projects/${project.id}/dashboard`)}>
-                  <BarChart3 className="mr-1 h-3 w-3" />
-                  <span className="hidden sm:inline">Dashboard</span>
-                  <span className="sm:hidden">Dash</span>
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => navigate(`/admin/projects/${project.id}/config`)}>
-                  <Settings className="mr-1 h-3 w-3" />
-                  <span className="hidden sm:inline">Config</span>
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => openEdit(project)}>
-                  <Pencil className="h-3 w-3" />
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => window.open(`https://agmetrics.lovable.app/view/${project.slug || project.view_token}`, "_blank")}>
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="ghost" className="ml-auto text-destructive hover:text-destructive">
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Deletar projeto?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta ação não pode ser desfeita. Todos os dados de "{project.name}" serão removidos permanentemente.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleDelete(project.id, project.name)}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Deletar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </CardFooter>
             </Card>
           ))}
         </div>
