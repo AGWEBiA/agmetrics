@@ -26,7 +26,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useProject } from "@/hooks/useProjects";
 import { useCurrentUser, hasPermission } from "@/hooks/useCurrentUser";
 import type { AppPermission } from "@/hooks/useAdminUsers";
@@ -49,10 +49,12 @@ import {
 } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { Separator } from "@/components/ui/separator";
 
 export function AppSidebar() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: project } = useProject(projectId);
   const { data: currentUser } = useCurrentUser();
   const { isMobile, setOpenMobile } = useSidebar();
@@ -77,7 +79,6 @@ export function AppSidebar() {
     { title: "Guia", url: "/admin/guide", icon: BookOpen, visible: true },
   ].filter((item) => item.visible);
 
-  // Grouped project items
   const analysisItems = projectId
     ? [
         { title: "Dashboard", url: `/admin/projects/${projectId}/dashboard`, icon: LayoutDashboard, visible: can("projects.view") },
@@ -112,24 +113,31 @@ export function AppSidebar() {
       ].filter((item) => item.visible)
     : [];
 
+  // Check if any item in a group is active
+  const isGroupActive = (items: typeof mainItems) =>
+    items.some((item) => location.pathname.startsWith(item.url));
+
   const renderMenuItems = (items: typeof mainItems) => (
     <SidebarMenu>
-      {items.map((item) => (
-        <SidebarMenuItem key={item.title}>
-          <SidebarMenuButton asChild>
-            <NavLink
-              to={item.url}
-              end={false}
-              className="hover:bg-sidebar-accent"
-              activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-              onClick={closeSidebar}
-            >
-              <item.icon className="mr-2 h-4 w-4" />
-              <span>{item.title}</span>
-            </NavLink>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
+      {items.map((item) => {
+        const isActive = location.pathname === item.url || location.pathname.startsWith(item.url + "/");
+        return (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton asChild>
+              <NavLink
+                to={item.url}
+                end={false}
+                className={`hover:bg-sidebar-accent transition-colors rounded-md ${isActive ? "bg-primary/10 text-primary font-medium border-l-2 border-primary" : ""}`}
+                activeClassName="bg-primary/10 text-primary font-medium"
+                onClick={closeSidebar}
+              >
+                <item.icon className={`mr-2 h-4 w-4 ${isActive ? "text-primary" : ""}`} />
+                <span className="truncate">{item.title}</span>
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
     </SidebarMenu>
   );
 
@@ -140,44 +148,51 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 py-3">
             <div className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
+              <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                <BarChart3 className="h-4 w-4 text-primary" />
+              </div>
               <span className="text-base font-semibold tracking-tight">AGMetrics</span>
             </div>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end
-                      className="hover:bg-sidebar-accent"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                      onClick={closeSidebar}
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {mainItems.map((item) => {
+                const isActive = location.pathname === item.url;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        end
+                        className={`hover:bg-sidebar-accent transition-colors rounded-md ${isActive ? "bg-primary/10 text-primary font-medium" : ""}`}
+                        activeClassName="bg-primary/10 text-primary font-medium"
+                        onClick={closeSidebar}
+                      >
+                        <item.icon className={`mr-2 h-4 w-4 ${isActive ? "text-primary" : ""}`} />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         {projectId && (
           <>
+            <Separator className="mx-4 w-auto" />
+            
             {/* Project name */}
             <div className="px-4 pt-3 pb-1">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold truncate">
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground/70 font-semibold truncate">
                 {project?.name || "Projeto"}
               </p>
             </div>
 
             {/* Análises */}
             {analysisItems.length > 0 && (
-              <Collapsible defaultOpen className="group/collapsible">
+              <Collapsible defaultOpen={isGroupActive(analysisItems)} className="group/collapsible">
                 <SidebarGroup className="py-0">
                   <CollapsibleTrigger asChild>
                     <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent/50 rounded-md transition-colors text-xs uppercase tracking-wider text-muted-foreground px-4">
@@ -196,7 +211,7 @@ export function AppSidebar() {
 
             {/* Relatórios */}
             {reportItems.length > 0 && (
-              <Collapsible defaultOpen className="group/collapsible">
+              <Collapsible defaultOpen={isGroupActive(reportItems)} className="group/collapsible">
                 <SidebarGroup className="py-0">
                   <CollapsibleTrigger asChild>
                     <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent/50 rounded-md transition-colors text-xs uppercase tracking-wider text-muted-foreground px-4">
@@ -215,7 +230,7 @@ export function AppSidebar() {
 
             {/* Configurações */}
             {configItems.length > 0 && (
-              <Collapsible defaultOpen className="group/collapsible">
+              <Collapsible defaultOpen={isGroupActive(configItems)} className="group/collapsible">
                 <SidebarGroup className="py-0">
                   <CollapsibleTrigger asChild>
                     <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent/50 rounded-md transition-colors text-xs uppercase tracking-wider text-muted-foreground px-4">
@@ -243,7 +258,7 @@ export function AppSidebar() {
                           href={`https://agmetrics.lovable.app/view/${project.slug || project.view_token}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center hover:bg-sidebar-accent"
+                          className="flex items-center hover:bg-sidebar-accent transition-colors rounded-md"
                           onClick={closeSidebar}
                         >
                           <ExternalLink className="mr-2 h-4 w-4" />
@@ -262,7 +277,7 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border p-3 shrink-0">
         <Button
           variant="ghost"
-          className="w-full justify-start text-muted-foreground hover:text-foreground"
+          className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-destructive/10"
           onClick={handleLogout}
         >
           <LogOut className="mr-2 h-4 w-4" />
