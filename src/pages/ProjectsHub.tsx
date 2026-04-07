@@ -87,16 +87,11 @@ export default function ProjectsHub() {
     try {
       const created = await createProject.mutateAsync({
         name: createForm.name.trim(),
-        description: createForm.description.trim() || null,
+        description: createForm.description.trim() || undefined,
         strategy: createForm.strategy as any,
-        start_date: createForm.startDate || null,
-        end_date: createForm.endDate || null,
-        cart_open_date: createForm.cartOpenDate || null,
-        manual_investment: parseFloat(createForm.manualInvestment.replace(",", ".")) || 0,
-        is_active: createForm.isActive,
-        budget: parseFloat(createForm.budget.replace(",", ".")) || 0,
-        meta_leads_enabled: createForm.metaLeads,
-        google_leads_enabled: createForm.googleLeads,
+        start_date: createForm.startDate || undefined,
+        end_date: createForm.endDate || undefined,
+        cart_open_date: createForm.cartOpenDate || undefined,
       });
       toast({ title: "Projeto criado com sucesso!" });
       setCreateOpen(false);
