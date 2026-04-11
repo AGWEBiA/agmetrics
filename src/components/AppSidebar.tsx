@@ -24,6 +24,7 @@ import {
   ChevronDown,
   Rocket,
   TrendingUp,
+  ClipboardCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -101,6 +102,7 @@ export function AppSidebar() {
         { title: "Alertas Anomalia", url: `/admin/projects/${projectId}/anomaly-alerts`, icon: Shield, visible: can("projects.view") },
         { title: "Relatórios Agendados", url: `/admin/projects/${projectId}/scheduled-reports`, icon: FileBarChart, visible: can("projects.edit") },
         { title: "Relatórios WhatsApp", url: `/admin/projects/${projectId}/whatsapp-reports`, icon: MessageSquare, visible: can("projects.edit") },
+        { title: "Debriefing", url: `/admin/projects/${projectId}/debriefing`, icon: ClipboardCheck, visible: can("projects.view") },
       ].filter((item) => item.visible)
     : [];
 
