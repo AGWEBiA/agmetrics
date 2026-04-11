@@ -1033,6 +1033,72 @@ export type Database = {
           },
         ]
       }
+      project_debriefings: {
+        Row: {
+          action_plan: Json
+          comparison_with_previous: Json | null
+          created_at: string
+          id: string
+          metrics_snapshot: Json
+          overall_score: number
+          period_end: string | null
+          period_start: string | null
+          project_id: string
+          strategy: string | null
+          strengths: Json
+          summary: string
+          user_id: string
+          weaknesses: Json
+        }
+        Insert: {
+          action_plan?: Json
+          comparison_with_previous?: Json | null
+          created_at?: string
+          id?: string
+          metrics_snapshot?: Json
+          overall_score?: number
+          period_end?: string | null
+          period_start?: string | null
+          project_id: string
+          strategy?: string | null
+          strengths?: Json
+          summary: string
+          user_id: string
+          weaknesses?: Json
+        }
+        Update: {
+          action_plan?: Json
+          comparison_with_previous?: Json | null
+          created_at?: string
+          id?: string
+          metrics_snapshot?: Json
+          overall_score?: number
+          period_end?: string | null
+          period_start?: string | null
+          project_id?: string
+          strategy?: string | null
+          strengths?: Json
+          summary?: string
+          user_id?: string
+          weaknesses?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_debriefings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_debriefings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_domains: {
         Row: {
           created_at: string
