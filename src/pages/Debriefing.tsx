@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useProject } from "@/hooks/useProjects";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { exportDebriefingPDF } from "@/lib/exportDebriefingPDF";
 import {
   ClipboardCheck,
   TrendingUp,
@@ -31,6 +32,7 @@ import {
   ArrowRight,
   Sparkles,
   BarChart3,
+  FileDown,
 } from "lucide-react";
 
 interface Strength {
@@ -387,15 +389,40 @@ export default function Debriefing() {
         </div>
         <div className="flex items-center gap-2">
           {data && (
-            <Button
-              variant={showHistory ? "default" : "outline"}
-              size="sm"
-              onClick={() => setShowHistory(!showHistory)}
-              className="gap-1.5"
-            >
-              <History className="h-4 w-4" />
-              Histórico {history && history.length > 0 && `(${history.length})`}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  exportDebriefingPDF({
+                    projectName: project?.name || "Projeto",
+                    overallScore: data.overall_score,
+                    summary: data.summary,
+                    strengths: data.strengths,
+                    weaknesses: data.weaknesses,
+                    actionPlan: data.action_plan,
+                    metricsSnapshot: data.metrics_snapshot,
+                    periodStart: data.period_start,
+                    periodEnd: data.period_end,
+                    generatedAt: new Date().toLocaleDateString("pt-BR"),
+                  });
+                  toast.success("PDF exportado!");
+                }}
+                className="gap-1.5"
+              >
+                <FileDown className="h-4 w-4" />
+                PDF
+              </Button>
+              <Button
+                variant={showHistory ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowHistory(!showHistory)}
+                className="gap-1.5"
+              >
+                <History className="h-4 w-4" />
+                Histórico {history && history.length > 0 && `(${history.length})`}
+              </Button>
+            </>
           )}
           <Button onClick={generate} disabled={loading} className="gap-2">
             {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ClipboardCheck className="h-4 w-4" />}
