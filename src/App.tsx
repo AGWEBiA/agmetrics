@@ -42,6 +42,7 @@ const AdvancedProjection = lazy(() => import("./pages/AdvancedProjection"));
 const ChannelROIReport = lazy(() => import("./pages/ChannelROIReport"));
 const AdvancedAttribution = lazy(() => import("./pages/AdvancedAttribution"));
 const Debriefing = lazy(() => import("./pages/Debriefing"));
+const PerpetualPanel = lazy(() => import("./pages/PerpetualPanel"));
 
 function PageLoader() {
   return (
@@ -102,6 +103,7 @@ const App = () => (
                 <Route path="projects/:projectId/channel-roi" element={<PermissionGuard permission="projects.view"><ChannelROIReport /></PermissionGuard>} />
                 <Route path="projects/:projectId/advanced-attribution" element={<PermissionGuard permission="projects.view"><AdvancedAttribution /></PermissionGuard>} />
                 <Route path="projects/:projectId/debriefing" element={<PermissionGuard permission="projects.view"><Debriefing /></PermissionGuard>} />
+                <Route path="projects/:projectId/perpetual-panel" element={<PermissionGuard permission="projects.view"><PerpetualPanel /></PermissionGuard>} />
                 <Route path="projection" element={<PermissionGuard permission="projects.view"><AdvancedProjection /></PermissionGuard>} />
                 <Route path="users" element={<PermissionGuard adminOnly><UserManagement /></PermissionGuard>} />
                 <Route path="settings" element={<PermissionGuard adminOnly><WorkspaceSettings /></PermissionGuard>} />
