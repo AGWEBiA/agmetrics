@@ -2,7 +2,7 @@ import { useParams, Navigate } from "react-router-dom";
 import { useProject } from "@/hooks/useProjects";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useGlobalFilters } from "@/contexts/GlobalFiltersContext";
-import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { DateRangeFilter, type DateRange } from "@/components/DateRangeFilter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,23 +17,24 @@ import {
   TrendingUp,
   Package,
 } from "lucide-react";
-import { formatCurrency, formatNumber } from "@/lib/formatters";
+import { formatBRL, formatNumber } from "@/lib/formatters";
 import { useState } from "react";
-import type { DateFilter } from "@/types/database";
 
 const ALLOWED_STRATEGIES = ["perpetuo", "funis", "evento_presencial", "lancamento_pago"];
 
 export default function PerpetualPanel() {
   const { projectId } = useParams();
   const { data: project, isLoading: projectLoading } = useProject(projectId);
-  const { globalFilters } = useGlobalFilters();
-  const [dateFilter, setDateFilter] = useState<DateFilter>({});
+  const { filters } = useGlobalFilters();
+  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
+
+  const dateFilter = { from: dateRange.from, to: dateRange.to };
 
   const metrics = useDashboardMetrics(
     projectId,
     dateFilter,
     project?.strategy,
-    globalFilters
+    filters
   );
 
   if (projectLoading) {
@@ -51,13 +52,7 @@ export default function PerpetualPanel() {
     return <Navigate to={`/admin/projects/${projectId}/dashboard`} replace />;
   }
 
-  const { grossRevenue, salesCount, producerRevenue, productData, salesByDayOfWeek, salesByHour, bestDay, bestHour, buyerLocationData } = metrics;
-
-  // Top 15 cities from sales
-  const cityMap = new Map<string, { count: number; revenue: number }>();
-  const approvedSales = (metrics as any).kiwifySales?.concat((metrics as any).hotmartSales) || [];
-  // We already have buyerLocationData (states). For cities, derive from raw sales if available.
-  // Use the hook's internal data - buyerLocationData is states. Let's also build city data.
+  const { grossRevenue, salesCount, producerRevenue, productData, salesByDayOfWeek, salesByHour, buyerLocationData } = metrics;
 
   // Top 5 days of week sorted
   const topDays = [...salesByDayOfWeek].sort((a, b) => b.vendas - a.vendas).filter(d => d.vendas > 0).slice(0, 5);
@@ -86,28 +81,28 @@ export default function PerpetualPanel() {
             Visão consolidada de vendas • {strategyLabel[project.strategy] || project.strategy}
           </p>
         </div>
-        <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
+        <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
       </div>
 
       {/* KPI Cards */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="border-l-4 border-l-emerald-500">
+        <Card className="border-l-4 border-l-primary">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-emerald-500" />
+              <DollarSign className="h-4 w-4 text-primary" />
               Receita Bruta
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(grossRevenue)}</p>
+            <p className="text-2xl font-bold">{formatBRL(grossRevenue)}</p>
             <p className="text-xs text-muted-foreground mt-1">Valor total das vendas (bruto)</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-l-4 border-l-accent">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4 text-blue-500" />
+              <ShoppingCart className="h-4 w-4 text-accent-foreground" />
               Número de Vendas
             </CardTitle>
           </CardHeader>
@@ -117,15 +112,15 @@ export default function PerpetualPanel() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-violet-500">
+        <Card className="border-l-4 border-l-secondary">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-violet-500" />
+              <Wallet className="h-4 w-4 text-secondary-foreground" />
               Receita do Produtor
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(producerRevenue)}</p>
+            <p className="text-2xl font-bold">{formatBRL(producerRevenue)}</p>
             <p className="text-xs text-muted-foreground mt-1">Líquido que fica para o produtor</p>
           </CardContent>
         </Card>
@@ -162,7 +157,7 @@ export default function PerpetualPanel() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-semibold">{p.count} vendas</p>
-                    <p className="text-xs text-muted-foreground">{formatCurrency(p.revenue)}</p>
+                    <p className="text-xs text-muted-foreground">{formatBRL(p.revenue)}</p>
                   </div>
                 </div>
               ))}
@@ -190,11 +185,11 @@ export default function PerpetualPanel() {
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}º</span>
                       <span className="font-medium text-sm">{d.name}</span>
-                      {i === 0 && <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px]">Top</Badge>}
+                      {i === 0 && <Badge variant="secondary" className="text-[10px]">Top</Badge>}
                     </div>
                     <div className="text-right">
                       <span className="text-sm font-semibold">{d.vendas} vendas</span>
-                      <span className="text-xs text-muted-foreground ml-2">{formatCurrency(d.revenue)}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{formatBRL(d.revenue)}</span>
                     </div>
                   </div>
                 ))}
@@ -220,11 +215,11 @@ export default function PerpetualPanel() {
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}º</span>
                       <span className="font-medium text-sm">{h.name}</span>
-                      {i === 0 && <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px]">Top</Badge>}
+                      {i === 0 && <Badge variant="secondary" className="text-[10px]">Top</Badge>}
                     </div>
                     <div className="text-right">
                       <span className="text-sm font-semibold">{h.vendas} vendas</span>
-                      <span className="text-xs text-muted-foreground ml-2">{formatCurrency(h.revenue)}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{formatBRL(h.revenue)}</span>
                     </div>
                   </div>
                 ))}
@@ -267,7 +262,7 @@ export default function PerpetualPanel() {
                       <span className="text-xs text-muted-foreground font-bold">{i + 1}</span>
                       <span className="font-medium truncate">{s.name}</span>
                       <span className="text-right">{s.count}</span>
-                      <span className="text-right text-xs">{formatCurrency(s.revenue)}</span>
+                      <span className="text-right text-xs">{formatBRL(s.revenue)}</span>
                       <span className="text-right text-xs text-muted-foreground">{s.pct.toFixed(1)}%</span>
                     </div>
                   ))}
