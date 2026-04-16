@@ -60,6 +60,9 @@ export function AppSidebar() {
   const { data: currentUser } = useCurrentUser();
   const { isMobile, setOpenMobile } = useSidebar();
 
+  const PERPETUAL_STRATEGIES = ["perpetuo", "funis", "evento_presencial", "lancamento_pago"];
+  const showPerpetualPanel = project?.strategy && PERPETUAL_STRATEGIES.includes(project.strategy);
+
   const closeSidebar = () => {
     if (isMobile) setOpenMobile(false);
   };
@@ -83,6 +86,7 @@ export function AppSidebar() {
   const analysisItems = projectId
     ? [
         { title: "Dashboard", url: `/admin/projects/${projectId}/dashboard`, icon: LayoutDashboard, visible: can("projects.view") },
+        { title: "Painel do Perpétuo", url: `/admin/projects/${projectId}/perpetual-panel`, icon: TrendingUp, visible: can("projects.view") && !!showPerpetualPanel },
         { title: "Vendas", url: `/admin/projects/${projectId}/sales`, icon: ShoppingCart, visible: can("sales.view") },
         { title: "Jornada do Lead", url: `/admin/projects/${projectId}/lead-journey`, icon: Route, visible: can("projects.view") },
         { title: "Analytics do Pixel", url: `/admin/projects/${projectId}/pixel-analytics`, icon: Activity, visible: can("projects.view") },
