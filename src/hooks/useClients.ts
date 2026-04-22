@@ -43,6 +43,16 @@ export function useClients(organizationId?: string) {
   });
 }
 
+/** Check how many projects are linked to a client */
+export async function getClientProjectCount(clientId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from("projects")
+    .select("id", { count: "exact", head: true })
+    .eq("client_id", clientId);
+  if (error) return 0;
+  return count ?? 0;
+}
+
 export function useCreateClient() {
   const qc = useQueryClient();
   return useMutation({
@@ -76,13 +86,25 @@ export function useUpdateClient() {
   });
 }
 
+/** Delete client — unlinking all projects first (sets client_id to null) */
 export function useDeleteClient() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, unlinkProjects }: { id: string; unlinkProjects?: boolean }) => {
+      if (unlinkProjects) {
+        // Set client_id to null for all linked projects
+        const { error: unlinkError } = await supabase
+          .from("projects")
+          .update({ client_id: null } as any)
+          .eq("client_id", id);
+        if (unlinkError) throw unlinkError;
+      }
       const { error } = await supabase.from("clients").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["clients"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
   });
 }
