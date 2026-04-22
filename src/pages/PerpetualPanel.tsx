@@ -52,13 +52,26 @@ export default function PerpetualPanel() {
     return <Navigate to={`/admin/projects/${projectId}/dashboard`} replace />;
   }
 
-  const { grossRevenue, salesCount, producerRevenue, productData, salesByDayOfWeek, salesByHour, buyerLocationData } = metrics;
+  const {
+    grossRevenue, salesCount, producerRevenue, productData, salesByDayOfWeek, salesByHour, buyerLocationData,
+    totalInvestment, metaCpm, metaCtr, gCtr, metaImpressions, gImpressions,
+    metaInvestment, googleInvestment,
+  } = metrics;
 
-  // Top 5 days of week sorted
+  // ROI based on producer revenue
+  const roiProdutor = totalInvestment > 0 ? ((producerRevenue - totalInvestment) / totalInvestment) * 100 : 0;
+  // CPA based on gross product value
+  const cpa = salesCount > 0 ? totalInvestment / salesCount : 0;
+  // Combined CPM
+  const totalImpressions = (metaImpressions || 0) + (gImpressions || 0);
+  const combinedCpm = totalImpressions > 0 ? (totalInvestment / totalImpressions) * 1000 : 0;
+  // Combined CTR
+  const combinedCtr = metaImpressions > 0 || gImpressions > 0
+    ? ((metaCtr || 0) * (metaImpressions || 0) + (gCtr || 0) * (gImpressions || 0)) / totalImpressions
+    : 0;
+
   const topDays = [...salesByDayOfWeek].sort((a, b) => b.vendas - a.vendas).filter(d => d.vendas > 0).slice(0, 5);
-  // Top 5 hours sorted
   const topHours = [...salesByHour].sort((a, b) => b.vendas - a.vendas).filter(h => h.vendas > 0).slice(0, 5);
-  // Top 15 states
   const topStates = buyerLocationData.slice(0, 15);
 
   const strategyLabel: Record<string, string> = {
