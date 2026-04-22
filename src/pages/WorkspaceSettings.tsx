@@ -10,10 +10,16 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
-import { Paintbrush, Globe, Palette, Type, Shield, Save, Eye, UserPlus, Trash2, Building2, Users, CheckCheck } from "lucide-react";
-import { useCurrentOrganization, useOrgMembers, useBulkInviteToOrg, useRemoveFromOrg, useUpdateOrgMemberRole } from "@/hooks/useOrganization";
+import { Paintbrush, Globe, Palette, Type, Shield, Save, Eye, UserPlus, Trash2, Building2, Users, CheckCheck, Plus, UserCircle, Pencil } from "lucide-react";
+import { useCurrentOrganization, useUserOrganizations, useOrgMembers, useBulkInviteToOrg, useRemoveFromOrg, useUpdateOrgMemberRole } from "@/hooks/useOrganization";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useClients, useCreateClient, useDeleteClient, type Client } from "@/hooks/useClients";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 
 interface BrandingConfig {
   appName: string;
@@ -53,12 +59,80 @@ export default function WorkspaceSettings() {
   const { data: members } = useOrgMembers(currentOrg?.id);
   const { data: allUsers } = useAdminUsers();
   const { data: currentUser } = useCurrentUser();
+  const { data: userOrgs } = useUserOrganizations();
+  const { data: clients } = useClients();
+  const createClient = useCreateClient();
+  const deleteClient = useDeleteClient();
+  const queryClient = useQueryClient();
   const bulkInvite = useBulkInviteToOrg();
   const removeFromOrg = useRemoveFromOrg();
   const updateRole = useUpdateOrgMemberRole();
 
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [bulkRole, setBulkRole] = useState<"admin" | "member" | "viewer">("member");
+
+  // Org creation
+  const [newOrgName, setNewOrgName] = useState("");
+  const [creatingOrg, setCreatingOrg] = useState(false);
+
+  // Client management
+  const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientEmail, setNewClientEmail] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
+
+  const handleCreateOrg = async () => {
+    if (!newOrgName.trim()) return;
+    setCreatingOrg(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Não autenticado");
+      const { data: org, error } = await supabase
+        .from("organizations")
+        .insert({ name: newOrgName.trim(), created_by: session.user.id } as any)
+        .select()
+        .single();
+      if (error) throw error;
+      // Add user as owner
+      await supabase.from("organization_members").insert({
+        organization_id: (org as any).id, user_id: session.user.id, role: "owner",
+      } as any);
+      queryClient.invalidateQueries({ queryKey: ["user-organizations"] });
+      queryClient.invalidateQueries({ queryKey: ["all-organizations"] });
+      toast({ title: "Organização criada!", description: `"${newOrgName.trim()}" foi criada com sucesso.` });
+      setNewOrgName("");
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setCreatingOrg(false);
+    }
+  };
+
+  const handleCreateClient = async () => {
+    if (!newClientName.trim() || !currentOrg?.id) return;
+    try {
+      await createClient.mutateAsync({
+        name: newClientName.trim(),
+        organization_id: currentOrg.id,
+        email: newClientEmail.trim() || undefined,
+        phone: newClientPhone.trim() || undefined,
+      });
+      toast({ title: "Cliente criado!" });
+      setClientDialogOpen(false);
+      setNewClientName(""); setNewClientEmail(""); setNewClientPhone("");
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteClient = async (id: string, name: string) => {
+    try {
+      await deleteClient.mutateAsync(id);
+      toast({ title: "Cliente removido", description: `"${name}" foi removido.` });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  };
 
   const [branding, setBranding] = useState<BrandingConfig>(() => {
     const saved = localStorage.getItem("workspace_branding");
@@ -391,6 +465,114 @@ export default function WorkspaceSettings() {
           </Badge>
         </CardContent>
       </Card>
+
+      {/* Create Organization */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Plus className="h-5 w-5" />
+            Criar Nova Organização
+          </CardTitle>
+          <CardDescription>Crie uma nova organização para agrupar projetos e equipe.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Nome da organização"
+              value={newOrgName}
+              onChange={(e) => setNewOrgName(e.target.value)}
+              className="flex-1"
+            />
+            <Button onClick={handleCreateOrg} disabled={!newOrgName.trim() || creatingOrg}>
+              {creatingOrg ? "Criando..." : "Criar"}
+            </Button>
+          </div>
+          {userOrgs && userOrgs.length > 1 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Suas organizações:</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {userOrgs.map((org) => (
+                  <Badge key={org.id} variant={org.id === currentOrg?.id ? "default" : "outline"} className="text-xs">
+                    {org.name}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Clients */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <UserCircle className="h-5 w-5" />
+                Clientes
+              </CardTitle>
+              <CardDescription>Gerencie os clientes da organização. Vincule projetos a clientes para melhor organização.</CardDescription>
+            </div>
+            <Button size="sm" onClick={() => setClientDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Novo Cliente
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {clients && clients.length > 0 ? (
+            <div className="space-y-2">
+              {clients.map((client) => (
+                <div key={client.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                  <div>
+                    <p className="text-sm font-medium">{client.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {[client.email, client.phone].filter(Boolean).join(" · ") || "Sem contato"}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                    onClick={() => handleDeleteClient(client.id, client.name)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-6">Nenhum cliente cadastrado ainda.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create Client Dialog */}
+      <Dialog open={clientDialogOpen} onOpenChange={setClientDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Novo Cliente</DialogTitle>
+            <DialogDescription>Adicione um cliente à organização "{currentOrg?.name}".</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Nome *</Label>
+              <Input placeholder="Nome do cliente" value={newClientName} onChange={(e) => setNewClientName(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>E-mail</Label>
+              <Input placeholder="email@exemplo.com" value={newClientEmail} onChange={(e) => setNewClientEmail(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Telefone</Label>
+              <Input placeholder="(00) 00000-0000" value={newClientPhone} onChange={(e) => setNewClientPhone(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClientDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCreateClient} disabled={!newClientName.trim() || createClient.isPending}>
+              {createClient.isPending ? "Criando..." : "Criar Cliente"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Actions */}
       <div className="flex items-center gap-3">

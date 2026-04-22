@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjects, useCreateProject, useDeleteProject, useUpdateProject, useAllOrganizations, type ProjectFilters } from "@/hooks/useProjects";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useClients } from "@/hooks/useClients";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +23,7 @@ import {
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Plus, BarChart3, Calendar, Trash2, ExternalLink, Settings, Pencil, GitCompare, MoreVertical, Search, Building2 } from "lucide-react";
+import { Plus, BarChart3, Calendar, Trash2, ExternalLink, Settings, Pencil, GitCompare, MoreVertical, Search, Building2, UserCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProjectStrategyForm, strategyLabel, type ProjectFormData } from "@/components/ProjectStrategyForm";
@@ -55,16 +56,19 @@ export default function ProjectsHub() {
   const [strategyFilter, setStrategyFilter] = useState<ProjectStrategy | "all">("all");
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("all");
   const [orgFilter, setOrgFilter] = useState<string>("all");
+  const [clientFilter, setClientFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
 
   const filters: ProjectFilters = {
     search, strategy: strategyFilter, status: statusFilter,
     organizationId: isAdmin ? orgFilter : undefined,
+    clientId: clientFilter,
     page,
   };
 
   const { data, isLoading } = useProjects(filters);
   const { data: allOrgs } = useAllOrganizations();
+  const { data: clients } = useClients(isAdmin ? (orgFilter !== "all" ? orgFilter : undefined) : undefined);
   const createProject = useCreateProject();
   const deleteProject = useDeleteProject();
   const updateProject = useUpdateProject();
@@ -225,6 +229,23 @@ export default function ProjectsHub() {
               <SelectItem value="all">Todas organizações</SelectItem>
               {allOrgs.map((org) => (
                 <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        {clients && clients.length > 0 && (
+          <Select value={clientFilter} onValueChange={(v) => updateFilter(setClientFilter)(v)}>
+            <SelectTrigger className="w-[180px] h-9">
+              <div className="flex items-center gap-1.5">
+                <UserCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                <SelectValue placeholder="Cliente" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos clientes</SelectItem>
+              {clients.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>

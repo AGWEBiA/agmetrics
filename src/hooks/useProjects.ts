@@ -10,6 +10,7 @@ export interface ProjectFilters {
   strategy?: ProjectStrategy | "all";
   status?: "active" | "inactive" | "all";
   organizationId?: string | "all";
+  clientId?: string | "all";
   page?: number;
   pageSize?: number;
 }
@@ -54,6 +55,9 @@ export function useProjects(filters: ProjectFilters = {}) {
         query = query.eq("is_active", true);
       } else if (filters.status === "inactive") {
         query = query.eq("is_active", false);
+      }
+      if (filters.clientId && filters.clientId !== "all") {
+        query = query.eq("client_id", filters.clientId);
       }
 
       // Pagination
