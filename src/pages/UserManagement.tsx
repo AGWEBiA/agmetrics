@@ -455,6 +455,36 @@ export default function UserManagement() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Building2 className="h-3.5 w-3.5" /> Organização *
+              </Label>
+              <Select value={newOrgId} onValueChange={setNewOrgId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a organização" />
+                </SelectTrigger>
+                <SelectContent>
+                  {orgs?.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {newOrgId && (
+              <div className="space-y-2">
+                <Label>Papel na organização</Label>
+                <Select value={newOrgRole} onValueChange={setNewOrgRole}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="member">Membro</SelectItem>
+                    <SelectItem value="viewer">Visualizador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
