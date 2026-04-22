@@ -92,6 +92,7 @@ export default function ProjectsHub() {
         name: createForm.name.trim(), description: createForm.description.trim() || undefined,
         strategy: createForm.strategy as any, start_date: createForm.startDate || undefined,
         end_date: createForm.endDate || undefined, cart_open_date: createForm.cartOpenDate || undefined,
+        client_id: createForm.clientId || undefined,
       });
       toast({ title: "Projeto criado com sucesso!" });
       setCreateOpen(false); setCreateForm(emptyForm);
@@ -115,6 +116,7 @@ export default function ProjectsHub() {
         manual_investment: parseFloat(editForm.manualInvestment.replace(",", ".")) || 0,
         is_active: editForm.isActive, budget: parseFloat(editForm.budget.replace(",", ".")) || 0,
         meta_leads_enabled: editForm.metaLeads, google_leads_enabled: editForm.googleLeads,
+        client_id: editForm.clientId || null,
       });
       toast({ title: "Projeto atualizado!" }); setEditOpen(false); setEditingId(null);
     } catch (err: any) {
