@@ -165,6 +165,66 @@ export default function WorkspaceSettings() {
   const [newClientEmail, setNewClientEmail] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
 
+  // Bulk link projects to client
+  const [bulkLinkClientId, setBulkLinkClientId] = useState<string | null>(null);
+  const [bulkLinkSelected, setBulkLinkSelected] = useState<Set<string>>(new Set());
+  const [savingBulkLink, setSavingBulkLink] = useState(false);
+
+  // Fetch org projects for bulk linking
+  const { data: orgProjects } = useQuery({
+    queryKey: ["org-projects-for-link", currentOrg?.id],
+    enabled: !!currentOrg?.id && !!bulkLinkClientId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, client_id")
+        .eq("organization_id", currentOrg!.id)
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const openBulkLink = (clientId: string) => {
+    setBulkLinkClientId(clientId);
+    // Pre-select projects already linked to this client
+    const alreadyLinked = (orgProjects || []).filter((p) => p.client_id === clientId).map((p) => p.id);
+    setBulkLinkSelected(new Set(alreadyLinked));
+  };
+
+  // When orgProjects loads/changes and dialog is open, sync selection
+  const bulkLinkClient = clients?.find((c) => c.id === bulkLinkClientId);
+
+  const handleSaveBulkLink = async () => {
+    if (!bulkLinkClientId || !orgProjects) return;
+    setSavingBulkLink(true);
+    try {
+      // Projects to link (selected but not already linked)
+      const toLink = orgProjects.filter((p) => bulkLinkSelected.has(p.id) && p.client_id !== bulkLinkClientId);
+      // Projects to unlink (not selected but currently linked to this client)
+      const toUnlink = orgProjects.filter((p) => !bulkLinkSelected.has(p.id) && p.client_id === bulkLinkClientId);
+
+      for (const p of toLink) {
+        await supabase.from("projects").update({ client_id: bulkLinkClientId } as any).eq("id", p.id);
+      }
+      for (const p of toUnlink) {
+        await supabase.from("projects").update({ client_id: null } as any).eq("id", p.id);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["org-projects-for-link"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast({
+        title: "Projetos atualizados",
+        description: `${toLink.length} vinculado(s), ${toUnlink.length} desvinculado(s).`,
+      });
+      setBulkLinkClientId(null);
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingBulkLink(false);
+    }
+  };
+
   const handleCreateOrg = async () => {
     if (!newOrgName.trim()) return;
     setCreatingOrg(true);
