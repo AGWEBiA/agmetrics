@@ -4,6 +4,7 @@ import { PixelDomainSelector } from "@/components/PixelDomainSelector";
 import { useParams } from "react-router-dom";
 import { useProject, useUpdateProject } from "@/hooks/useProjects";
 import { ProjectStrategyForm, type ProjectFormData } from "@/components/ProjectStrategyForm";
+import { useClients } from "@/hooks/useClients";
 import {
   useMetaCredentialsList, useSaveMetaCredentials, useDeleteMetaCredentials,
   useGoogleCredentials, useSaveGoogleCredentials,
@@ -103,6 +104,7 @@ export default function ProjectConfig() {
 function GeneralTab({ projectId }: { projectId: string }) {
   const { data: project } = useProject(projectId);
   const updateProject = useUpdateProject();
+  const { data: clients } = useClients();
   const { toast } = useToast();
 
   const [form, setForm] = useState<ProjectFormData>({
@@ -161,7 +163,7 @@ function GeneralTab({ projectId }: { projectId: string }) {
           <CardTitle>Informações do Projeto</CardTitle>
         </CardHeader>
         <CardContent>
-          <ProjectStrategyForm data={form} onChange={setForm} showExtendedFields />
+          <ProjectStrategyForm data={form} onChange={setForm} showExtendedFields clients={clients ?? []} />
         </CardContent>
       </Card>
       <div className="flex justify-end gap-3">
