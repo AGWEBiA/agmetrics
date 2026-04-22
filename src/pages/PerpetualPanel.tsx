@@ -10,6 +10,11 @@ import { BrazilStateMap } from "@/components/BrazilStateMap";
 import {
   DollarSign,
   ShoppingCart,
+  BarChart3,
+  Megaphone,
+  Target,
+  Eye,
+  MousePointerClick,
   CalendarDays,
   Clock,
   MapPin,
