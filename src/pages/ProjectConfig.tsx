@@ -109,7 +109,7 @@ function GeneralTab({ projectId }: { projectId: string }) {
     name: "", description: "", strategy: "perpetuo",
     startDate: "", endDate: "", cartOpenDate: "",
     manualInvestment: "0,00", isActive: true, budget: "0,00",
-    metaLeads: false, googleLeads: false,
+    metaLeads: false, googleLeads: false, clientId: "",
   });
 
   useEffect(() => {
@@ -126,6 +126,7 @@ function GeneralTab({ projectId }: { projectId: string }) {
         budget: Number(project.budget || 0).toFixed(2).replace(".", ","),
         metaLeads: project.meta_leads_enabled ?? false,
         googleLeads: project.google_leads_enabled ?? false,
+        clientId: (project as any).client_id || "",
       });
     }
   }, [project]);
