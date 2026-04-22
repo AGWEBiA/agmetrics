@@ -1,32 +1,75 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Project } from "@/types/database";
+import type { Project, ProjectStrategy } from "@/types/database";
 import type { Database } from "@/integrations/supabase/types";
 import { useCurrentOrganization } from "@/hooks/useOrganization";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
-export function useProjects() {
+export interface ProjectFilters {
+  search?: string;
+  strategy?: ProjectStrategy | "all";
+  status?: "active" | "inactive" | "all";
+  organizationId?: string | "all";
+  page?: number;
+  pageSize?: number;
+}
+
+const DEFAULT_PAGE_SIZE = 12;
+
+export function useProjects(filters: ProjectFilters = {}) {
   const { data: currentOrg } = useCurrentOrganization();
   const { data: currentUser } = useCurrentUser();
   const isAdmin = currentUser?.role === "admin";
 
+  const page = filters.page ?? 1;
+  const pageSize = filters.pageSize ?? DEFAULT_PAGE_SIZE;
+
   return useQuery({
-    queryKey: ["projects", isAdmin ? "all" : currentOrg?.id],
+    queryKey: ["projects", isAdmin ? "all" : currentOrg?.id, filters],
     enabled: isAdmin || !!currentOrg?.id,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       let query = supabase
         .from("projects")
-        .select("*")
+        .select("*", { count: "exact" })
         .order("created_at", { ascending: false });
 
-      // Admins see all projects; regular users see only their org's projects
-      if (!isAdmin) {
+      // Scope: admin can optionally filter by org, regular users always scoped
+      if (isAdmin) {
+        if (filters.organizationId && filters.organizationId !== "all") {
+          query = query.eq("organization_id", filters.organizationId);
+        }
+      } else {
         query = query.eq("organization_id", currentOrg!.id);
       }
 
-      const { data, error } = await query;
+      // Filters
+      if (filters.search?.trim()) {
+        query = query.ilike("name", `%${filters.search.trim()}%`);
+      }
+      if (filters.strategy && filters.strategy !== "all") {
+        query = query.eq("strategy", filters.strategy);
+      }
+      if (filters.status === "active") {
+        query = query.eq("is_active", true);
+      } else if (filters.status === "inactive") {
+        query = query.eq("is_active", false);
+      }
+
+      // Pagination
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
       if (error) throw error;
-      return data as unknown as Project[];
+      return {
+        projects: data as unknown as Project[],
+        totalCount: count ?? 0,
+        page,
+        pageSize,
+        totalPages: Math.ceil((count ?? 0) / pageSize),
+      };
     },
   });
 }
@@ -148,5 +191,25 @@ export function useDeleteProject() {
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["projects"] }),
+  });
+}
+
+/** Fetch all organizations (admin only) for the org filter dropdown */
+export function useAllOrganizations() {
+  const { data: currentUser } = useCurrentUser();
+  const isAdmin = currentUser?.role === "admin";
+
+  return useQuery({
+    queryKey: ["all-organizations"],
+    enabled: isAdmin,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("organizations")
+        .select("id, name")
+        .order("name");
+      if (error) throw error;
+      return data as { id: string; name: string }[];
+    },
   });
 }
