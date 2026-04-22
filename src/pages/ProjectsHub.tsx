@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjects, useCreateProject, useDeleteProject, useUpdateProject, useAllOrganizations, type ProjectFilters } from "@/hooks/useProjects";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -76,6 +76,32 @@ export default function ProjectsHub() {
 
   const projects = data?.projects ?? [];
   const totalPages = data?.totalPages ?? 1;
+
+  // Group projects by client for display
+  const clientMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (clients ?? []).forEach((c) => map.set(c.id, c.name));
+    return map;
+  }, [clients]);
+
+  const groupedProjects = useMemo(() => {
+    if (!clients || clients.length === 0 || clientFilter !== "all") return null;
+    const groups: { clientId: string | null; clientName: string; projects: Project[] }[] = [];
+    const byClient = new Map<string | null, Project[]>();
+    projects.forEach((p) => {
+      const cid = (p as any).client_id || null;
+      if (!byClient.has(cid)) byClient.set(cid, []);
+      byClient.get(cid)!.push(p);
+    });
+    // Named clients first, then unassigned
+    clients.forEach((c) => {
+      const ps = byClient.get(c.id);
+      if (ps && ps.length > 0) groups.push({ clientId: c.id, clientName: c.name, projects: ps });
+    });
+    const unassigned = byClient.get(null);
+    if (unassigned && unassigned.length > 0) groups.push({ clientId: null, clientName: "Sem cliente", projects: unassigned });
+    return groups.length > 0 ? groups : null;
+  }, [projects, clients, clientFilter]);
 
   // Dialog state
   const [createOpen, setCreateOpen] = useState(false);
