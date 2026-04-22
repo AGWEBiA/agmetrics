@@ -466,6 +466,114 @@ export default function WorkspaceSettings() {
         </CardContent>
       </Card>
 
+      {/* Create Organization */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Plus className="h-5 w-5" />
+            Criar Nova Organização
+          </CardTitle>
+          <CardDescription>Crie uma nova organização para agrupar projetos e equipe.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Nome da organização"
+              value={newOrgName}
+              onChange={(e) => setNewOrgName(e.target.value)}
+              className="flex-1"
+            />
+            <Button onClick={handleCreateOrg} disabled={!newOrgName.trim() || creatingOrg}>
+              {creatingOrg ? "Criando..." : "Criar"}
+            </Button>
+          </div>
+          {userOrgs && userOrgs.length > 1 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Suas organizações:</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {userOrgs.map((org) => (
+                  <Badge key={org.id} variant={org.id === currentOrg?.id ? "default" : "outline"} className="text-xs">
+                    {org.name}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Clients */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <UserCircle className="h-5 w-5" />
+                Clientes
+              </CardTitle>
+              <CardDescription>Gerencie os clientes da organização. Vincule projetos a clientes para melhor organização.</CardDescription>
+            </div>
+            <Button size="sm" onClick={() => setClientDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Novo Cliente
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {clients && clients.length > 0 ? (
+            <div className="space-y-2">
+              {clients.map((client) => (
+                <div key={client.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                  <div>
+                    <p className="text-sm font-medium">{client.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {[client.email, client.phone].filter(Boolean).join(" · ") || "Sem contato"}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                    onClick={() => handleDeleteClient(client.id, client.name)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-6">Nenhum cliente cadastrado ainda.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create Client Dialog */}
+      <Dialog open={clientDialogOpen} onOpenChange={setClientDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Novo Cliente</DialogTitle>
+            <DialogDescription>Adicione um cliente à organização "{currentOrg?.name}".</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Nome *</Label>
+              <Input placeholder="Nome do cliente" value={newClientName} onChange={(e) => setNewClientName(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>E-mail</Label>
+              <Input placeholder="email@exemplo.com" value={newClientEmail} onChange={(e) => setNewClientEmail(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Telefone</Label>
+              <Input placeholder="(00) 00000-0000" value={newClientPhone} onChange={(e) => setNewClientPhone(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClientDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCreateClient} disabled={!newClientName.trim() || createClient.isPending}>
+              {createClient.isPending ? "Criando..." : "Criar Cliente"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Actions */}
       <div className="flex items-center gap-3">
         <Button onClick={handleSave} disabled={saving}>
