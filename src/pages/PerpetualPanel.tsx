@@ -103,7 +103,7 @@ export default function PerpetualPanel() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-l-4 border-l-primary">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -141,6 +141,74 @@ export default function PerpetualPanel() {
             <p className="text-2xl font-bold">{formatBRL(producerRevenue)}</p>
             <p className="text-xs text-muted-foreground mt-1">Líquido que fica para o produtor</p>
           </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Megaphone className="h-4 w-4 text-primary" />
+              Investimento em Ads
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{formatBRL(totalInvestment)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Meta + Google + Manual</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-accent">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-accent-foreground" />
+              ROI (Produtor)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className={`text-2xl font-bold ${roiProdutor >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
+              {formatPercent(roiProdutor)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">Receita do produtor vs investimento</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-secondary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Target className="h-4 w-4 text-secondary-foreground" />
+              CPA
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{formatBRL(cpa)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Custo por aquisição (valor bruto)</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Eye className="h-4 w-4 text-primary" />
+              CPM
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{formatBRL(combinedCpm)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Custo por mil impressões</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-accent">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <MousePointerClick className="h-4 w-4 text-accent-foreground" />
+              CTR
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{formatPercent(combinedCtr)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Taxa de cliques</p>
+          </CardContent>
+        </Card>
         </Card>
       </div>
 
