@@ -146,7 +146,6 @@ export function useCreateProject() {
       start_date?: string;
       end_date?: string;
       cart_open_date?: string;
-      client_id?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");

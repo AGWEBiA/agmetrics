@@ -4,7 +4,6 @@ import { PixelDomainSelector } from "@/components/PixelDomainSelector";
 import { useParams } from "react-router-dom";
 import { useProject, useUpdateProject } from "@/hooks/useProjects";
 import { ProjectStrategyForm, type ProjectFormData } from "@/components/ProjectStrategyForm";
-import { useClients } from "@/hooks/useClients";
 import {
   useMetaCredentialsList, useSaveMetaCredentials, useDeleteMetaCredentials,
   useGoogleCredentials, useSaveGoogleCredentials,
@@ -104,14 +103,13 @@ export default function ProjectConfig() {
 function GeneralTab({ projectId }: { projectId: string }) {
   const { data: project } = useProject(projectId);
   const updateProject = useUpdateProject();
-  const { data: clients } = useClients();
   const { toast } = useToast();
 
   const [form, setForm] = useState<ProjectFormData>({
     name: "", description: "", strategy: "perpetuo",
     startDate: "", endDate: "", cartOpenDate: "",
     manualInvestment: "0,00", isActive: true, budget: "0,00",
-    metaLeads: false, googleLeads: false, clientId: "",
+    metaLeads: false, googleLeads: false,
   });
 
   useEffect(() => {
@@ -128,7 +126,6 @@ function GeneralTab({ projectId }: { projectId: string }) {
         budget: Number(project.budget || 0).toFixed(2).replace(".", ","),
         metaLeads: project.meta_leads_enabled ?? false,
         googleLeads: project.google_leads_enabled ?? false,
-        clientId: (project as any).client_id || "",
       });
     }
   }, [project]);
@@ -148,7 +145,6 @@ function GeneralTab({ projectId }: { projectId: string }) {
         start_date: form.startDate || null,
         end_date: form.endDate || null,
         cart_open_date: form.cartOpenDate || null,
-        client_id: form.clientId || null,
       });
       toast({ title: "Projeto atualizado!" });
     } catch (err: any) {
@@ -163,7 +159,7 @@ function GeneralTab({ projectId }: { projectId: string }) {
           <CardTitle>Informações do Projeto</CardTitle>
         </CardHeader>
         <CardContent>
-          <ProjectStrategyForm data={form} onChange={setForm} showExtendedFields clients={clients ?? []} />
+          <ProjectStrategyForm data={form} onChange={setForm} showExtendedFields />
         </CardContent>
       </Card>
       <div className="flex justify-end gap-3">

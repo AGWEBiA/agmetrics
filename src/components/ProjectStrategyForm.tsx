@@ -3,9 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ProjectStrategy } from "@/types/database";
-import type { Client } from "@/hooks/useClients";
 
 const strategyOptions: { value: ProjectStrategy; label: string; description: string }[] = [
   { value: "perpetuo", label: "Perpétuo", description: "Ideal para produtos evergreen com vendas contínuas. Taxa de conversão = vendas / visitas." },
@@ -30,17 +28,15 @@ interface ProjectFormData {
   budget: string;
   metaLeads: boolean;
   googleLeads: boolean;
-  clientId: string;
 }
 
 interface ProjectStrategyFormProps {
   data: ProjectFormData;
   onChange: (data: ProjectFormData) => void;
   showExtendedFields?: boolean;
-  clients?: Client[];
 }
 
-export function ProjectStrategyForm({ data, onChange, showExtendedFields = false, clients }: ProjectStrategyFormProps) {
+export function ProjectStrategyForm({ data, onChange, showExtendedFields = false }: ProjectStrategyFormProps) {
   const update = (partial: Partial<ProjectFormData>) => onChange({ ...data, ...partial });
   const showDates = data.strategy === "lancamento" || data.strategy === "lancamento_pago";
 
@@ -54,23 +50,6 @@ export function ProjectStrategyForm({ data, onChange, showExtendedFields = false
         <Label>Descrição</Label>
         <Textarea placeholder="Descrição opcional do projeto" value={data.description} onChange={(e) => update({ description: e.target.value })} />
       </div>
-
-      {clients && clients.length > 0 && (
-        <div className="space-y-2">
-          <Label>Cliente</Label>
-          <Select value={data.clientId || "none"} onValueChange={(v) => update({ clientId: v === "none" ? "" : v })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione um cliente (opcional)" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Sem cliente</SelectItem>
-              {clients.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
 
       <div className="space-y-3">
         <div className="flex items-center gap-2">

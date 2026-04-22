@@ -6,7 +6,6 @@ export interface Project {
   description: string | null;
   owner_id: string;
   organization_id: string | null;
-  client_id: string | null;
   view_token: string;
   slug: string | null;
   start_date: string | null;
