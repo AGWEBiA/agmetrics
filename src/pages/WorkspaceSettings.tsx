@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
-import { Paintbrush, Palette, Type, Shield, Save, UserPlus, Trash2, Building2, Users, CheckCheck, Plus, UserCircle, Pencil, History } from "lucide-react";
+import { Paintbrush, Palette, Type, Shield, Save, UserPlus, Trash2, Building2, Users, CheckCheck, Plus, UserCircle, Pencil, History, Link2 } from "lucide-react";
 import { useCurrentOrganization, useUserOrganizations, useOrgMembers, useBulkInviteToOrg, useRemoveFromOrg, useUpdateOrgMemberRole } from "@/hooks/useOrganization";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
