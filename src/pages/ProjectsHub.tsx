@@ -56,8 +56,9 @@ export default function ProjectsHub() {
   const [search, setSearch] = useState("");
   const [strategyFilter, setStrategyFilter] = useState<ProjectStrategy | "all">("all");
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("all");
-  const [orgFilter, setOrgFilter] = useState<string>("all");
+  const [orgFilter, setOrgFilterRaw] = useState<string>("all");
   const [clientFilter, setClientFilter] = useState<string>("all");
+  const setOrgFilter = (v: string) => { setOrgFilterRaw(v); setClientFilter("all"); setPage(1); };
   const [page, setPage] = useState(1);
 
   const filters: ProjectFilters = {

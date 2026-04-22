@@ -18,7 +18,7 @@ import {
 import { useCurrentOrganization, useUserOrganizations, useOrgMembers, useBulkInviteToOrg, useRemoveFromOrg, useUpdateOrgMemberRole } from "@/hooks/useOrganization";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useClients, useCreateClient, useUpdateClient, useDeleteClient, type Client } from "@/hooks/useClients";
+import { useClients, useCreateClient, useUpdateClient, useDeleteClient, getClientProjectCount, type Client } from "@/hooks/useClients";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -102,7 +102,7 @@ export default function WorkspaceSettings() {
   const [clientForm, setClientForm] = useState({ name: "", email: "", phone: "", notes: "" });
   const [clientSearch, setClientSearch] = useState("");
   const [clientPage, setClientPage] = useState(1);
-  const [deleteClientConfirm, setDeleteClientConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [deleteClientConfirm, setDeleteClientConfirm] = useState<{ id: string; name: string; projectCount: number } | null>(null);
 
   // Filtered & grouped members
   const filteredMembers = useMemo(() => {
@@ -225,13 +225,18 @@ export default function WorkspaceSettings() {
   const confirmDeleteClient = async () => {
     if (!deleteClientConfirm) return;
     try {
-      await deleteClient.mutateAsync(deleteClientConfirm.id);
+      await deleteClient.mutateAsync({ id: deleteClientConfirm.id, unlinkProjects: deleteClientConfirm.projectCount > 0 });
       toast({ title: "Cliente removido", description: `"${deleteClientConfirm.name}" foi removido.` });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     } finally {
       setDeleteClientConfirm(null);
     }
+  };
+
+  const handleRequestDeleteClient = async (id: string, name: string) => {
+    const count = await getClientProjectCount(id);
+    setDeleteClientConfirm({ id, name, projectCount: count });
   };
 
   const [branding, setBranding] = useState<BrandingConfig>(() => {
@@ -552,7 +557,7 @@ export default function WorkspaceSettings() {
                     </Button>
                     <Button
                       variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={() => setDeleteClientConfirm({ id: client.id, name: client.name })}
+                      onClick={() => handleRequestDeleteClient(client.id, client.name)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -809,7 +814,14 @@ export default function WorkspaceSettings() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remover cliente</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja remover <strong>{deleteClientConfirm?.name}</strong>? Projetos vinculados ficarão sem cliente.
+              {deleteClientConfirm && deleteClientConfirm.projectCount > 0 ? (
+                <>
+                  O cliente <strong>{deleteClientConfirm.name}</strong> possui <strong>{deleteClientConfirm.projectCount} projeto(s)</strong> vinculado(s).
+                  Ao remover, os projetos ficarão sem cliente associado. Deseja continuar?
+                </>
+              ) : (
+                <>Tem certeza que deseja remover <strong>{deleteClientConfirm?.name}</strong>?</>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
