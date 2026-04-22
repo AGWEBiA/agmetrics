@@ -122,13 +122,21 @@ export default function UserManagement() {
       return;
     }
     try {
-      await createUser.mutateAsync({ email: newEmail, name: newName, password: newPassword, role: newRole });
+      await createUser.mutateAsync({
+        email: newEmail,
+        name: newName,
+        password: newPassword,
+        role: newRole,
+        ...(newOrgId ? { organization_id: newOrgId, org_role: newOrgRole } : {}),
+      });
       toast({ title: "Usuário criado com sucesso" });
       setCreateOpen(false);
       setNewEmail("");
       setNewName("");
       setNewPassword("");
       setNewRole("user");
+      setNewOrgId("");
+      setNewOrgRole("member");
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
