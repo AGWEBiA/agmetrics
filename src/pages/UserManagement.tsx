@@ -38,7 +38,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Trash2, Users, Pencil, UserPlus } from "lucide-react";
+import { Shield, Trash2, Users, Pencil, UserPlus, Building2 } from "lucide-react";
 
 const ALL_PERMISSIONS: { value: AppPermission; label: string }[] = [
   { value: "projects.view", label: "Visualizar projetos" },
