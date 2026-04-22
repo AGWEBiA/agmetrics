@@ -50,6 +50,7 @@ const ALL_PERMISSIONS: { value: AppPermission; label: string }[] = [
 
 export default function UserManagement() {
   const { data: users, isLoading, error } = useAdminUsers();
+  const { data: orgs } = useUserOrganizations();
   const updateRole = useUpdateUserRole();
   const deleteUser = useDeleteUser();
   const updatePermissions = useUpdatePermissions();
@@ -66,6 +67,8 @@ export default function UserManagement() {
   const [newName, setNewName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState<"admin" | "user">("user");
+  const [newOrgId, setNewOrgId] = useState<string>("");
+  const [newOrgRole, setNewOrgRole] = useState<string>("member");
 
   const openEdit = (user: AdminUser) => {
     setEditingUser(user);
