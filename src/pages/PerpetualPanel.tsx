@@ -210,7 +210,6 @@ export default function PerpetualPanel() {
           </CardContent>
         </Card>
       </div>
-      </div>
 
       {/* Product breakdown */}
       {productData.length > 0 && (
