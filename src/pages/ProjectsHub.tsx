@@ -326,65 +326,28 @@ export default function ProjectsHub() {
         </div>
       ) : projects.length > 0 ? (
         <>
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => (
-              <Card
-                key={project.id}
-                className="group relative transition-all hover:shadow-lg hover:border-primary/30 cursor-pointer"
-                onClick={() => navigate(`/admin/projects/${project.id}/dashboard`)}
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base leading-snug line-clamp-2">{project.name}</CardTitle>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {!project.is_active && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Inativo</Badge>
-                      )}
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize whitespace-nowrap">
-                        {strategyLabel(project.strategy as ProjectStrategy)}
-                      </Badge>
-                    </div>
+          {groupedProjects ? (
+            <div className="space-y-8">
+              {groupedProjects.map((group) => (
+                <div key={group.clientId || "none"}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <UserCircle className="h-4 w-4 text-muted-foreground" />
+                    <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                      {group.clientName}
+                    </h2>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{group.projects.length}</Badge>
                   </div>
-                  {project.description && (
-                    <CardDescription className="text-xs line-clamp-1 mt-1">{project.description}</CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent className="pb-3 pt-0">
-                  {project.start_date && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
-                      <Calendar className="h-3 w-3" />
-                      <span>{formatDate(project.start_date)}{project.end_date && ` — ${formatDate(project.end_date)}`}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between gap-2">
-                    <Button size="sm" className="flex-1 h-8 text-xs" onClick={(e) => { e.stopPropagation(); navigate(`/admin/projects/${project.id}/dashboard`); }}>
-                      <BarChart3 className="mr-1 h-3.5 w-3.5" />Dashboard
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0"><MoreVertical className="h-4 w-4" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenuItem onClick={() => navigate(`/admin/projects/${project.id}/config`)}>
-                          <Settings className="mr-2 h-4 w-4" />Configurações
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openEdit(project)}>
-                          <Pencil className="mr-2 h-4 w-4" />Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => window.open(`https://agmetrics.lovable.app/view/${project.slug || project.view_token}`, "_blank")}>
-                          <ExternalLink className="mr-2 h-4 w-4" />Dashboard Público
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteTarget({ id: project.id, name: project.name })}>
-                          <Trash2 className="mr-2 h-4 w-4" />Deletar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    {group.projects.map((project) => renderProjectCard(project))}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {projects.map((project) => renderProjectCard(project))}
+            </div>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -445,4 +408,70 @@ export default function ProjectsHub() {
       )}
     </div>
   );
+
+  function renderProjectCard(project: Project) {
+    return (
+      <Card
+        key={project.id}
+        className="group relative transition-all hover:shadow-lg hover:border-primary/30 cursor-pointer"
+        onClick={() => navigate(`/admin/projects/${project.id}/dashboard`)}
+      >
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between gap-2">
+            <CardTitle className="text-base leading-snug line-clamp-2">{project.name}</CardTitle>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {!project.is_active && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Inativo</Badge>
+              )}
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize whitespace-nowrap">
+                {strategyLabel(project.strategy as ProjectStrategy)}
+              </Badge>
+            </div>
+          </div>
+          {project.description && (
+            <CardDescription className="text-xs line-clamp-1 mt-1">{project.description}</CardDescription>
+          )}
+          {(project as any).client_id && clientMap.get((project as any).client_id) && (
+            <div className="flex items-center gap-1 mt-1">
+              <UserCircle className="h-3 w-3 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground">{clientMap.get((project as any).client_id)}</span>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent className="pb-3 pt-0">
+          {project.start_date && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
+              <Calendar className="h-3 w-3" />
+              <span>{formatDate(project.start_date)}{project.end_date && ` — ${formatDate(project.end_date)}`}</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-2">
+            <Button size="sm" className="flex-1 h-8 text-xs" onClick={(e) => { e.stopPropagation(); navigate(`/admin/projects/${project.id}/dashboard`); }}>
+              <BarChart3 className="mr-1 h-3.5 w-3.5" />Dashboard
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0"><MoreVertical className="h-4 w-4" /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuItem onClick={() => navigate(`/admin/projects/${project.id}/config`)}>
+                  <Settings className="mr-2 h-4 w-4" />Configurações
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openEdit(project)}>
+                  <Pencil className="mr-2 h-4 w-4" />Editar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.open(`https://agmetrics.lovable.app/view/${project.slug || project.view_token}`, "_blank")}>
+                  <ExternalLink className="mr-2 h-4 w-4" />Dashboard Público
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteTarget({ id: project.id, name: project.name })}>
+                  <Trash2 className="mr-2 h-4 w-4" />Deletar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 }
