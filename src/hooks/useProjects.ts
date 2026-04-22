@@ -3,19 +3,28 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Project } from "@/types/database";
 import type { Database } from "@/integrations/supabase/types";
 import { useCurrentOrganization } from "@/hooks/useOrganization";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export function useProjects() {
   const { data: currentOrg } = useCurrentOrganization();
+  const { data: currentUser } = useCurrentUser();
+  const isAdmin = currentUser?.role === "admin";
 
   return useQuery({
-    queryKey: ["projects", currentOrg?.id],
-    enabled: !!currentOrg?.id,
+    queryKey: ["projects", isAdmin ? "all" : currentOrg?.id],
+    enabled: isAdmin || !!currentOrg?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("projects")
         .select("*")
-        .eq("organization_id", currentOrg!.id)
         .order("created_at", { ascending: false });
+
+      // Admins see all projects; regular users see only their org's projects
+      if (!isAdmin) {
+        query = query.eq("organization_id", currentOrg!.id);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as unknown as Project[];
     },
