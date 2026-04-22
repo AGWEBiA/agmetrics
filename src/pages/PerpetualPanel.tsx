@@ -10,6 +10,11 @@ import { BrazilStateMap } from "@/components/BrazilStateMap";
 import {
   DollarSign,
   ShoppingCart,
+  BarChart3,
+  Megaphone,
+  Target,
+  Eye,
+  MousePointerClick,
   CalendarDays,
   Clock,
   MapPin,
@@ -17,7 +22,7 @@ import {
   TrendingUp,
   Package,
 } from "lucide-react";
-import { formatBRL, formatNumber } from "@/lib/formatters";
+import { formatBRL, formatNumber, formatPercent, formatDecimal } from "@/lib/formatters";
 import { useState } from "react";
 
 const ALLOWED_STRATEGIES = ["perpetuo", "funis", "evento_presencial", "lancamento_pago"];
@@ -52,13 +57,26 @@ export default function PerpetualPanel() {
     return <Navigate to={`/admin/projects/${projectId}/dashboard`} replace />;
   }
 
-  const { grossRevenue, salesCount, producerRevenue, productData, salesByDayOfWeek, salesByHour, buyerLocationData } = metrics;
+  const {
+    grossRevenue, salesCount, producerRevenue, productData, salesByDayOfWeek, salesByHour, buyerLocationData,
+    totalInvestment, metaCpm, metaCtr, gCtr, metaImpressions, gImpressions,
+    metaInvestment, googleInvestment,
+  } = metrics;
 
-  // Top 5 days of week sorted
+  // ROI based on producer revenue
+  const roiProdutor = totalInvestment > 0 ? ((producerRevenue - totalInvestment) / totalInvestment) * 100 : 0;
+  // CPA based on gross product value
+  const cpa = salesCount > 0 ? totalInvestment / salesCount : 0;
+  // Combined CPM
+  const totalImpressions = (metaImpressions || 0) + (gImpressions || 0);
+  const combinedCpm = totalImpressions > 0 ? (totalInvestment / totalImpressions) * 1000 : 0;
+  // Combined CTR
+  const combinedCtr = metaImpressions > 0 || gImpressions > 0
+    ? ((metaCtr || 0) * (metaImpressions || 0) + (gCtr || 0) * (gImpressions || 0)) / totalImpressions
+    : 0;
+
   const topDays = [...salesByDayOfWeek].sort((a, b) => b.vendas - a.vendas).filter(d => d.vendas > 0).slice(0, 5);
-  // Top 5 hours sorted
   const topHours = [...salesByHour].sort((a, b) => b.vendas - a.vendas).filter(h => h.vendas > 0).slice(0, 5);
-  // Top 15 states
   const topStates = buyerLocationData.slice(0, 15);
 
   const strategyLabel: Record<string, string> = {
@@ -85,7 +103,7 @@ export default function PerpetualPanel() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-l-4 border-l-primary">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -122,6 +140,73 @@ export default function PerpetualPanel() {
           <CardContent>
             <p className="text-2xl font-bold">{formatBRL(producerRevenue)}</p>
             <p className="text-xs text-muted-foreground mt-1">Líquido que fica para o produtor</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Megaphone className="h-4 w-4 text-primary" />
+              Investimento em Ads
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{formatBRL(totalInvestment)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Meta + Google + Manual</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-accent">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-accent-foreground" />
+              ROI (Produtor)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className={`text-2xl font-bold ${roiProdutor >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
+              {formatPercent(roiProdutor)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">Receita do produtor vs investimento</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-secondary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Target className="h-4 w-4 text-secondary-foreground" />
+              CPA
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{formatBRL(cpa)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Custo por aquisição (valor bruto)</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Eye className="h-4 w-4 text-primary" />
+              CPM
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{formatBRL(combinedCpm)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Custo por mil impressões</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-accent">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <MousePointerClick className="h-4 w-4 text-accent-foreground" />
+              CTR
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{formatPercent(combinedCtr)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Taxa de cliques</p>
           </CardContent>
         </Card>
       </div>
