@@ -22,7 +22,7 @@ import {
   TrendingUp,
   Package,
 } from "lucide-react";
-import { formatBRL, formatNumber } from "@/lib/formatters";
+import { formatBRL, formatNumber, formatPercent, formatDecimal } from "@/lib/formatters";
 import { useState } from "react";
 
 const ALLOWED_STRATEGIES = ["perpetuo", "funis", "evento_presencial", "lancamento_pago"];
