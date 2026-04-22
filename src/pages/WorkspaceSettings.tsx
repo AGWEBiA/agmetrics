@@ -59,12 +59,80 @@ export default function WorkspaceSettings() {
   const { data: members } = useOrgMembers(currentOrg?.id);
   const { data: allUsers } = useAdminUsers();
   const { data: currentUser } = useCurrentUser();
+  const { data: userOrgs } = useUserOrganizations();
+  const { data: clients } = useClients();
+  const createClient = useCreateClient();
+  const deleteClient = useDeleteClient();
+  const queryClient = useQueryClient();
   const bulkInvite = useBulkInviteToOrg();
   const removeFromOrg = useRemoveFromOrg();
   const updateRole = useUpdateOrgMemberRole();
 
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [bulkRole, setBulkRole] = useState<"admin" | "member" | "viewer">("member");
+
+  // Org creation
+  const [newOrgName, setNewOrgName] = useState("");
+  const [creatingOrg, setCreatingOrg] = useState(false);
+
+  // Client management
+  const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientEmail, setNewClientEmail] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
+
+  const handleCreateOrg = async () => {
+    if (!newOrgName.trim()) return;
+    setCreatingOrg(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Não autenticado");
+      const { data: org, error } = await supabase
+        .from("organizations")
+        .insert({ name: newOrgName.trim(), created_by: session.user.id } as any)
+        .select()
+        .single();
+      if (error) throw error;
+      // Add user as owner
+      await supabase.from("organization_members").insert({
+        organization_id: (org as any).id, user_id: session.user.id, role: "owner",
+      } as any);
+      queryClient.invalidateQueries({ queryKey: ["user-organizations"] });
+      queryClient.invalidateQueries({ queryKey: ["all-organizations"] });
+      toast({ title: "Organização criada!", description: `"${newOrgName.trim()}" foi criada com sucesso.` });
+      setNewOrgName("");
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setCreatingOrg(false);
+    }
+  };
+
+  const handleCreateClient = async () => {
+    if (!newClientName.trim() || !currentOrg?.id) return;
+    try {
+      await createClient.mutateAsync({
+        name: newClientName.trim(),
+        organization_id: currentOrg.id,
+        email: newClientEmail.trim() || undefined,
+        phone: newClientPhone.trim() || undefined,
+      });
+      toast({ title: "Cliente criado!" });
+      setClientDialogOpen(false);
+      setNewClientName(""); setNewClientEmail(""); setNewClientPhone("");
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteClient = async (id: string, name: string) => {
+    try {
+      await deleteClient.mutateAsync(id);
+      toast({ title: "Cliente removido", description: `"${name}" foi removido.` });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  };
 
   const [branding, setBranding] = useState<BrandingConfig>(() => {
     const saved = localStorage.getItem("workspace_branding");
