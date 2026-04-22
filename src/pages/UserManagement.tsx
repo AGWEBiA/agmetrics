@@ -8,6 +8,7 @@ import {
   type AdminUser,
   type AppPermission,
 } from "@/hooks/useAdminUsers";
+import { useUserOrganizations } from "@/hooks/useOrganization";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Trash2, Users, Pencil, UserPlus } from "lucide-react";
+import { Shield, Trash2, Users, Pencil, UserPlus, Building2 } from "lucide-react";
 
 const ALL_PERMISSIONS: { value: AppPermission; label: string }[] = [
   { value: "projects.view", label: "Visualizar projetos" },
@@ -49,6 +50,7 @@ const ALL_PERMISSIONS: { value: AppPermission; label: string }[] = [
 
 export default function UserManagement() {
   const { data: users, isLoading, error } = useAdminUsers();
+  const { data: orgs } = useUserOrganizations();
   const updateRole = useUpdateUserRole();
   const deleteUser = useDeleteUser();
   const updatePermissions = useUpdatePermissions();
@@ -65,6 +67,8 @@ export default function UserManagement() {
   const [newName, setNewName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState<"admin" | "user">("user");
+  const [newOrgId, setNewOrgId] = useState<string>("");
+  const [newOrgRole, setNewOrgRole] = useState<string>("member");
 
   const openEdit = (user: AdminUser) => {
     setEditingUser(user);
@@ -118,13 +122,21 @@ export default function UserManagement() {
       return;
     }
     try {
-      await createUser.mutateAsync({ email: newEmail, name: newName, password: newPassword, role: newRole });
+      await createUser.mutateAsync({
+        email: newEmail,
+        name: newName,
+        password: newPassword,
+        role: newRole,
+        ...(newOrgId ? { organization_id: newOrgId, org_role: newOrgRole } : {}),
+      });
       toast({ title: "Usuário criado com sucesso" });
       setCreateOpen(false);
       setNewEmail("");
       setNewName("");
       setNewPassword("");
       setNewRole("user");
+      setNewOrgId("");
+      setNewOrgRole("member");
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
@@ -443,6 +455,36 @@ export default function UserManagement() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Building2 className="h-3.5 w-3.5" /> Organização *
+              </Label>
+              <Select value={newOrgId} onValueChange={setNewOrgId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a organização" />
+                </SelectTrigger>
+                <SelectContent>
+                  {orgs?.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {newOrgId && (
+              <div className="space-y-2">
+                <Label>Papel na organização</Label>
+                <Select value={newOrgRole} onValueChange={setNewOrgRole}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="member">Membro</SelectItem>
+                    <SelectItem value="viewer">Visualizador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>

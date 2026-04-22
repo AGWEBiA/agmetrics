@@ -80,10 +80,10 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify(users), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  // POST /admin-users → create user { email, name, password, role }
+  // POST /admin-users → create user { email, name, password, role, organization_id, org_role }
   if (method === "POST") {
     const body = await req.json();
-    const { email, name, password, role } = body;
+    const { email, name, password, role, organization_id, org_role } = body;
 
     if (!email || !password || password.length < 6) {
       return new Response(JSON.stringify({ error: "E-mail e senha (mín. 6 caracteres) são obrigatórios" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -91,12 +91,19 @@ Deno.serve(async (req) => {
 
     const validRole = ["admin", "user"].includes(role) ? role : "user";
 
+    // Build user metadata – the handle_new_user trigger reads organization_id from metadata
+    const userMeta: Record<string, string> = { name: name || "" };
+    if (organization_id) {
+      userMeta.organization_id = organization_id;
+      userMeta.org_role = org_role || "member";
+    }
+
     // Create user via admin API
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: { name: name || "" },
+      user_metadata: userMeta,
     });
 
     if (createError) {
