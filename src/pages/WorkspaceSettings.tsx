@@ -75,6 +75,31 @@ export default function WorkspaceSettings() {
   const [newOrgName, setNewOrgName] = useState("");
   const [creatingOrg, setCreatingOrg] = useState(false);
 
+  // Org rename
+  const [editingOrgName, setEditingOrgName] = useState(false);
+  const [orgNameDraft, setOrgNameDraft] = useState("");
+  const [savingOrgName, setSavingOrgName] = useState(false);
+
+  const handleRenameOrg = async () => {
+    if (!orgNameDraft.trim() || !currentOrg?.id) return;
+    setSavingOrgName(true);
+    try {
+      const { error } = await supabase
+        .from("organizations")
+        .update({ name: orgNameDraft.trim() } as any)
+        .eq("id", currentOrg.id);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["current-organization"] });
+      queryClient.invalidateQueries({ queryKey: ["user-organizations"] });
+      toast({ title: "Nome atualizado", description: `Organização renomeada para "${orgNameDraft.trim()}".` });
+      setEditingOrgName(false);
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingOrgName(false);
+    }
+  };
+
   // Client management
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
