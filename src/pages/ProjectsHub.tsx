@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjects, useCreateProject, useDeleteProject, useUpdateProject, useAllOrganizations, type ProjectFilters } from "@/hooks/useProjects";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useClients } from "@/hooks/useClients";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +23,7 @@ import {
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Plus, BarChart3, Calendar, Trash2, ExternalLink, Settings, Pencil, GitCompare, MoreVertical, Search, Building2 } from "lucide-react";
+import { Plus, BarChart3, Calendar, Trash2, ExternalLink, Settings, Pencil, GitCompare, MoreVertical, Search, Building2, UserCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProjectStrategyForm, strategyLabel, type ProjectFormData } from "@/components/ProjectStrategyForm";
