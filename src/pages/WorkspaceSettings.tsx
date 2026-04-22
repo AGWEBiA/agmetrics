@@ -10,10 +10,16 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
-import { Paintbrush, Globe, Palette, Type, Shield, Save, Eye, UserPlus, Trash2, Building2, Users, CheckCheck } from "lucide-react";
-import { useCurrentOrganization, useOrgMembers, useBulkInviteToOrg, useRemoveFromOrg, useUpdateOrgMemberRole } from "@/hooks/useOrganization";
+import { Paintbrush, Globe, Palette, Type, Shield, Save, Eye, UserPlus, Trash2, Building2, Users, CheckCheck, Plus, UserCircle, Pencil } from "lucide-react";
+import { useCurrentOrganization, useUserOrganizations, useOrgMembers, useBulkInviteToOrg, useRemoveFromOrg, useUpdateOrgMemberRole } from "@/hooks/useOrganization";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useClients, useCreateClient, useDeleteClient, type Client } from "@/hooks/useClients";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 
 interface BrandingConfig {
   appName: string;
