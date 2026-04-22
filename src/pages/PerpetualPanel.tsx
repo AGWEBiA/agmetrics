@@ -209,7 +209,7 @@ export default function PerpetualPanel() {
             <p className="text-xs text-muted-foreground mt-1">Taxa de cliques</p>
           </CardContent>
         </Card>
-        </Card>
+      </div>
       </div>
 
       {/* Product breakdown */}
