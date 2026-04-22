@@ -171,7 +171,7 @@ export default function ProjectsHub() {
                 <DialogTitle>Criar Projeto</DialogTitle>
                 <DialogDescription>Preencha as informações do seu projeto digital.</DialogDescription>
               </DialogHeader>
-              <ProjectStrategyForm data={createForm} onChange={setCreateForm} />
+              <ProjectStrategyForm data={createForm} onChange={setCreateForm} clients={clients ?? []} />
               <DialogFooter>
                 <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
                 <Button onClick={handleCreate} disabled={!createForm.name.trim() || createProject.isPending}>
@@ -262,7 +262,7 @@ export default function ProjectsHub() {
             <DialogTitle>Editar Projeto</DialogTitle>
             <DialogDescription>Atualize as informações do projeto.</DialogDescription>
           </DialogHeader>
-          <ProjectStrategyForm data={editForm} onChange={setEditForm} showExtendedFields />
+          <ProjectStrategyForm data={editForm} onChange={setEditForm} showExtendedFields clients={clients ?? []} />
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
             <Button onClick={handleEdit} disabled={!editForm.name.trim() || updateProject.isPending}>
