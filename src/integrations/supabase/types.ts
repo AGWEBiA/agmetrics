@@ -131,6 +131,47 @@ export type Database = {
           },
         ]
       }
+      clients: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_api_metrics: {
         Row: {
           created_at: string
@@ -1238,6 +1279,7 @@ export type Database = {
           agsell_form_field_mapping: Json | null
           budget: number | null
           cart_open_date: string | null
+          client_id: string | null
           created_at: string
           custom_api_endpoints: Json | null
           custom_api_key: string | null
@@ -1276,6 +1318,7 @@ export type Database = {
           agsell_form_field_mapping?: Json | null
           budget?: number | null
           cart_open_date?: string | null
+          client_id?: string | null
           created_at?: string
           custom_api_endpoints?: Json | null
           custom_api_key?: string | null
@@ -1314,6 +1357,7 @@ export type Database = {
           agsell_form_field_mapping?: Json | null
           budget?: number | null
           cart_open_date?: string | null
+          client_id?: string | null
           created_at?: string
           custom_api_endpoints?: Json | null
           custom_api_key?: string | null
@@ -1347,6 +1391,13 @@ export type Database = {
           view_token?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_organization_id_fkey"
             columns: ["organization_id"]
