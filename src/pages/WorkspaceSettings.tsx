@@ -102,7 +102,7 @@ export default function WorkspaceSettings() {
   const [clientForm, setClientForm] = useState({ name: "", email: "", phone: "", notes: "" });
   const [clientSearch, setClientSearch] = useState("");
   const [clientPage, setClientPage] = useState(1);
-  const [deleteClientConfirm, setDeleteClientConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [deleteClientConfirm, setDeleteClientConfirm] = useState<{ id: string; name: string; projectCount: number } | null>(null);
 
   // Filtered & grouped members
   const filteredMembers = useMemo(() => {
