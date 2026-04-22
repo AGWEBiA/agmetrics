@@ -173,7 +173,7 @@ export default function WorkspaceSettings() {
   // Fetch org projects for bulk linking
   const { data: orgProjects } = useQuery({
     queryKey: ["org-projects-for-link", currentOrg?.id],
-    enabled: !!currentOrg?.id && !!bulkLinkClientId,
+    enabled: !!currentOrg?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
