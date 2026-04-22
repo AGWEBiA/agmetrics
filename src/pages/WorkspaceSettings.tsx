@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,16 +10,18 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
-import { Paintbrush, Globe, Palette, Type, Shield, Save, Eye, UserPlus, Trash2, Building2, Users, CheckCheck, Plus, UserCircle, Pencil } from "lucide-react";
+import { Paintbrush, Palette, Type, Shield, Save, UserPlus, Trash2, Building2, Users, CheckCheck, Plus, UserCircle, Pencil, History } from "lucide-react";
 import { useCurrentOrganization, useUserOrganizations, useOrgMembers, useBulkInviteToOrg, useRemoveFromOrg, useUpdateOrgMemberRole } from "@/hooks/useOrganization";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useClients, useCreateClient, useDeleteClient, type Client } from "@/hooks/useClients";
+import { useClients, useCreateClient, useDeleteClient } from "@/hooks/useClients";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface BrandingConfig {
   appName: string;
@@ -54,6 +56,15 @@ const orgRoleLabels: Record<string, string> = {
   viewer: "Visualizador",
 };
 
+const actionLabels: Record<string, string> = {
+  rename_org: "Renomeou a organização",
+  create_client: "Criou cliente",
+  delete_client: "Removeu cliente",
+  add_member: "Adicionou membro",
+  remove_member: "Removeu membro",
+  change_role: "Alterou papel de membro",
+};
+
 export default function WorkspaceSettings() {
   const { data: currentOrg } = useCurrentOrganization();
   const { data: members } = useOrgMembers(currentOrg?.id);
@@ -80,17 +91,65 @@ export default function WorkspaceSettings() {
   const [orgNameDraft, setOrgNameDraft] = useState("");
   const [savingOrgName, setSavingOrgName] = useState(false);
 
+  // Determine current user's role in this org
+  const currentUserOrgRole = useMemo(() => {
+    if (!currentOrg || !userOrgs) return null;
+    const match = userOrgs.find((o) => o.id === currentOrg.id);
+    return match?.userRole || null;
+  }, [currentOrg, userOrgs]);
+
+  const canManageOrg = currentUserOrgRole === "owner" || currentUserOrgRole === "admin";
+
+  // Audit logs
+  const { data: auditLogs } = useQuery({
+    queryKey: ["org-audit-logs", currentOrg?.id],
+    enabled: !!currentOrg?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("org_audit_logs" as any)
+        .select("*")
+        .eq("organization_id", currentOrg!.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  // Map user_ids to profile names for audit display
+  const auditUserNames = useMemo(() => {
+    const map = new Map<string, string>();
+    (members || []).forEach((m) => {
+      if (m.profile?.name) map.set(m.user_id, m.profile.name);
+    });
+    return map;
+  }, [members]);
+
   const handleRenameOrg = async () => {
     if (!orgNameDraft.trim() || !currentOrg?.id) return;
     setSavingOrgName(true);
     try {
+      const oldName = currentOrg.name;
       const { error } = await supabase
         .from("organizations")
         .update({ name: orgNameDraft.trim() } as any)
         .eq("id", currentOrg.id);
       if (error) throw error;
+
+      // Log audit
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase.from("org_audit_logs" as any).insert({
+          organization_id: currentOrg.id,
+          user_id: session.user.id,
+          action: "rename_org",
+          details: { old_name: oldName, new_name: orgNameDraft.trim() },
+        } as any);
+      }
+
       queryClient.invalidateQueries({ queryKey: ["current-organization"] });
       queryClient.invalidateQueries({ queryKey: ["user-organizations"] });
+      queryClient.invalidateQueries({ queryKey: ["org-audit-logs", currentOrg.id] });
       toast({ title: "Nome atualizado", description: `Organização renomeada para "${orgNameDraft.trim()}".` });
       setEditingOrgName(false);
     } catch (err: any) {
@@ -118,7 +177,6 @@ export default function WorkspaceSettings() {
         .select()
         .single();
       if (error) throw error;
-      // Add user as owner
       await supabase.from("organization_members").insert({
         organization_id: (org as any).id, user_id: session.user.id, role: "owner",
       } as any);
@@ -272,14 +330,17 @@ export default function WorkspaceSettings() {
             ) : (
               <span className="flex items-center gap-1.5">
                 Organização: {currentOrg?.name || "—"}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7"
-                  onClick={() => { setOrgNameDraft(currentOrg?.name || ""); setEditingOrgName(true); }}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
+                {canManageOrg && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={() => { setOrgNameDraft(currentOrg?.name || ""); setEditingOrgName(true); }}
+                    title="Renomear organização"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                )}
               </span>
             )}
           </CardTitle>
@@ -352,7 +413,6 @@ export default function WorkspaceSettings() {
               <p className="text-sm text-muted-foreground">Todos os usuários já fazem parte desta organização.</p>
             ) : (
               <>
-                {/* Select all + role picker */}
                 <div className="flex items-center justify-between">
                   <Button variant="ghost" size="sm" className="text-xs gap-1.5 h-7" onClick={selectAll}>
                     <CheckCheck className="h-3.5 w-3.5" />
@@ -373,7 +433,6 @@ export default function WorkspaceSettings() {
                   </div>
                 </div>
 
-                {/* User checklist */}
                 <div className="max-h-[240px] overflow-y-auto rounded-lg border divide-y">
                   {availableUsers.map((user) => (
                     <label
@@ -397,7 +456,6 @@ export default function WorkspaceSettings() {
                   ))}
                 </div>
 
-                {/* Add button */}
                 <Button
                   onClick={handleBulkInvite}
                   disabled={selectedUserIds.size === 0 || bulkInvite.isPending}
@@ -412,6 +470,57 @@ export default function WorkspaceSettings() {
               </>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Audit Logs */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <History className="h-5 w-5" />
+            Histórico de Atividades
+          </CardTitle>
+          <CardDescription>Registro de ações realizadas na organização</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {auditLogs && auditLogs.length > 0 ? (
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              {auditLogs.map((log: any) => {
+                const details = log.details || {};
+                const userName = auditUserNames.get(log.user_id) || "Usuário";
+                const actionLabel = actionLabels[log.action] || log.action;
+
+                let description = "";
+                if (log.action === "rename_org" && details.old_name && details.new_name) {
+                  description = `"${details.old_name}" → "${details.new_name}"`;
+                } else if (details.name) {
+                  description = details.name;
+                }
+
+                return (
+                  <div key={log.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20 text-sm">
+                    <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <History className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p>
+                        <span className="font-medium">{userName}</span>{" "}
+                        <span className="text-muted-foreground">{actionLabel}</span>
+                      </p>
+                      {description && (
+                        <p className="text-xs text-muted-foreground truncate">{description}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: ptBR })}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-6">Nenhuma atividade registrada ainda.</p>
+          )}
         </CardContent>
       </Card>
 
@@ -494,7 +603,6 @@ export default function WorkspaceSettings() {
           </div>
         </CardContent>
       </Card>
-
 
       {/* Create Organization */}
       <Card>
