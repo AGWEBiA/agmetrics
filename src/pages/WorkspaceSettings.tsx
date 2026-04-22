@@ -495,29 +495,6 @@ export default function WorkspaceSettings() {
         </CardContent>
       </Card>
 
-      {/* Domain */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Globe className="h-5 w-5" />
-            Domínio Personalizado
-          </CardTitle>
-          <CardDescription>Use seu próprio domínio para acessar a plataforma</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-1.5">
-            <Label className="text-sm">Domínio</Label>
-            <Input value={branding.customDomain} onChange={(e) => update("customDomain", e.target.value)} placeholder="analytics.seudominio.com" />
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Shield className="h-3 w-3" />
-            <span>Configure um CNAME apontando para agmetrics.lovable.app para ativar</span>
-          </div>
-          <Badge variant="outline" className="text-xs">
-            <Eye className="h-3 w-3 mr-1" /> Recurso disponível em breve
-          </Badge>
-        </CardContent>
-      </Card>
 
       {/* Create Organization */}
       <Card>
