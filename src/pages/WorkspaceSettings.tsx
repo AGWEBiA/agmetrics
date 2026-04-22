@@ -253,7 +253,35 @@ export default function WorkspaceSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Building2 className="h-5 w-5" />
-            Organização: {currentOrg?.name || "—"}
+            {editingOrgName ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={orgNameDraft}
+                  onChange={(e) => setOrgNameDraft(e.target.value)}
+                  className="h-8 text-base w-60"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleRenameOrg(); if (e.key === "Escape") setEditingOrgName(false); }}
+                  autoFocus
+                />
+                <Button size="sm" variant="default" onClick={handleRenameOrg} disabled={savingOrgName || !orgNameDraft.trim()} className="h-8">
+                  <Save className="h-3.5 w-3.5" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingOrgName(false)} className="h-8">
+                  Cancelar
+                </Button>
+              </div>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                Organização: {currentOrg?.name || "—"}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() => { setOrgNameDraft(currentOrg?.name || ""); setEditingOrgName(true); }}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              </span>
+            )}
           </CardTitle>
           <CardDescription>Gerencie os membros da sua organização. Todos os membros terão acesso aos projetos.</CardDescription>
         </CardHeader>
