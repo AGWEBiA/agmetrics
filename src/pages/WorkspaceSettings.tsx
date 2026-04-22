@@ -225,13 +225,18 @@ export default function WorkspaceSettings() {
   const confirmDeleteClient = async () => {
     if (!deleteClientConfirm) return;
     try {
-      await deleteClient.mutateAsync(deleteClientConfirm.id);
+      await deleteClient.mutateAsync({ id: deleteClientConfirm.id, unlinkProjects: deleteClientConfirm.projectCount > 0 });
       toast({ title: "Cliente removido", description: `"${deleteClientConfirm.name}" foi removido.` });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     } finally {
       setDeleteClientConfirm(null);
     }
+  };
+
+  const handleRequestDeleteClient = async (id: string, name: string) => {
+    const count = await getClientProjectCount(id);
+    setDeleteClientConfirm({ id, name, projectCount: count });
   };
 
   const [branding, setBranding] = useState<BrandingConfig>(() => {
@@ -552,7 +557,7 @@ export default function WorkspaceSettings() {
                     </Button>
                     <Button
                       variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={() => setDeleteClientConfirm({ id: client.id, name: client.name })}
+                      onClick={() => handleRequestDeleteClient(client.id, client.name)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -809,7 +814,14 @@ export default function WorkspaceSettings() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remover cliente</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja remover <strong>{deleteClientConfirm?.name}</strong>? Projetos vinculados ficarão sem cliente.
+              {deleteClientConfirm && deleteClientConfirm.projectCount > 0 ? (
+                <>
+                  O cliente <strong>{deleteClientConfirm.name}</strong> possui <strong>{deleteClientConfirm.projectCount} projeto(s)</strong> vinculado(s).
+                  Ao remover, os projetos ficarão sem cliente associado. Deseja continuar?
+                </>
+              ) : (
+                <>Tem certeza que deseja remover <strong>{deleteClientConfirm?.name}</strong>?</>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
