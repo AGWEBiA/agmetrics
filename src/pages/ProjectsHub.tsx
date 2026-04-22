@@ -32,7 +32,7 @@ import type { Project, ProjectStrategy } from "@/types/database";
 const emptyForm: ProjectFormData = {
   name: "", description: "", strategy: "perpetuo", startDate: "", endDate: "",
   cartOpenDate: "", manualInvestment: "0,00", isActive: true, budget: "0,00",
-  metaLeads: false, googleLeads: false,
+  metaLeads: false, googleLeads: false, clientId: "",
 };
 
 function projectToForm(p: Project): ProjectFormData {
@@ -42,6 +42,7 @@ function projectToForm(p: Project): ProjectFormData {
     manualInvestment: (p.manual_investment ?? 0).toFixed(2).replace(".", ","),
     isActive: p.is_active, budget: (p.budget ?? 0).toFixed(2).replace(".", ","),
     metaLeads: p.meta_leads_enabled ?? false, googleLeads: p.google_leads_enabled ?? false,
+    clientId: (p as any).client_id || "",
   };
 }
 
