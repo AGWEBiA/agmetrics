@@ -56,16 +56,19 @@ export default function ProjectsHub() {
   const [strategyFilter, setStrategyFilter] = useState<ProjectStrategy | "all">("all");
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("all");
   const [orgFilter, setOrgFilter] = useState<string>("all");
+  const [clientFilter, setClientFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
 
   const filters: ProjectFilters = {
     search, strategy: strategyFilter, status: statusFilter,
     organizationId: isAdmin ? orgFilter : undefined,
+    clientId: clientFilter,
     page,
   };
 
   const { data, isLoading } = useProjects(filters);
   const { data: allOrgs } = useAllOrganizations();
+  const { data: clients } = useClients(isAdmin ? (orgFilter !== "all" ? orgFilter : undefined) : undefined);
   const createProject = useCreateProject();
   const deleteProject = useDeleteProject();
   const updateProject = useUpdateProject();
