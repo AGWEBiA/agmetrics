@@ -146,6 +146,7 @@ function GeneralTab({ projectId }: { projectId: string }) {
         start_date: form.startDate || null,
         end_date: form.endDate || null,
         cart_open_date: form.cartOpenDate || null,
+        client_id: form.clientId || null,
       });
       toast({ title: "Projeto atualizado!" });
     } catch (err: any) {
