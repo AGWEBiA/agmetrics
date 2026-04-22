@@ -28,7 +28,8 @@ const STRATEGY_LABELS: Record<string, string> = {
 
 export default function CompareProjects() {
   const navigate = useNavigate();
-  const { data: projects, isLoading: projectsLoading } = useProjects();
+  const { data: projectsData, isLoading: projectsLoading } = useProjects();
+  const projects = projectsData?.projects ?? [];
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
 

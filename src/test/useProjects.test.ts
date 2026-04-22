@@ -6,7 +6,7 @@ const mockIlike = vi.fn(() => ({ eq: vi.fn(() => ({ range: mockRange })), range:
 const mockEqChain = vi.fn(() => ({ ilike: mockIlike, range: mockRange, eq: vi.fn(() => ({ range: mockRange })) }));
 const mockOrder = vi.fn(() => ({ eq: mockEqChain, ilike: mockIlike, range: mockRange }));
 const mockSelect = vi.fn(() => ({ order: mockOrder }));
-const mockFrom = vi.fn(() => ({ select: mockSelect }));
+const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { from: (...args: any[]) => mockFrom(...args), auth: { getUser: vi.fn(), getSession: vi.fn() } },
