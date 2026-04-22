@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
-import { Paintbrush, Palette, Type, Shield, Save, UserPlus, Trash2, Building2, Users, CheckCheck, Plus, UserCircle, Pencil, History } from "lucide-react";
+import { Paintbrush, Palette, Type, Shield, Save, UserPlus, Trash2, Building2, Users, CheckCheck, Plus, UserCircle, Pencil, History, Link2 } from "lucide-react";
 import { useCurrentOrganization, useUserOrganizations, useOrgMembers, useBulkInviteToOrg, useRemoveFromOrg, useUpdateOrgMemberRole } from "@/hooks/useOrganization";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -164,6 +164,66 @@ export default function WorkspaceSettings() {
   const [newClientName, setNewClientName] = useState("");
   const [newClientEmail, setNewClientEmail] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
+
+  // Bulk link projects to client
+  const [bulkLinkClientId, setBulkLinkClientId] = useState<string | null>(null);
+  const [bulkLinkSelected, setBulkLinkSelected] = useState<Set<string>>(new Set());
+  const [savingBulkLink, setSavingBulkLink] = useState(false);
+
+  // Fetch org projects for bulk linking
+  const { data: orgProjects } = useQuery({
+    queryKey: ["org-projects-for-link", currentOrg?.id],
+    enabled: !!currentOrg?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, client_id")
+        .eq("organization_id", currentOrg!.id)
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const openBulkLink = (clientId: string) => {
+    setBulkLinkClientId(clientId);
+    // Pre-select projects already linked to this client
+    const alreadyLinked = (orgProjects || []).filter((p) => p.client_id === clientId).map((p) => p.id);
+    setBulkLinkSelected(new Set(alreadyLinked));
+  };
+
+  // When orgProjects loads/changes and dialog is open, sync selection
+  const bulkLinkClient = clients?.find((c) => c.id === bulkLinkClientId);
+
+  const handleSaveBulkLink = async () => {
+    if (!bulkLinkClientId || !orgProjects) return;
+    setSavingBulkLink(true);
+    try {
+      // Projects to link (selected but not already linked)
+      const toLink = orgProjects.filter((p) => bulkLinkSelected.has(p.id) && p.client_id !== bulkLinkClientId);
+      // Projects to unlink (not selected but currently linked to this client)
+      const toUnlink = orgProjects.filter((p) => !bulkLinkSelected.has(p.id) && p.client_id === bulkLinkClientId);
+
+      for (const p of toLink) {
+        await supabase.from("projects").update({ client_id: bulkLinkClientId } as any).eq("id", p.id);
+      }
+      for (const p of toUnlink) {
+        await supabase.from("projects").update({ client_id: null } as any).eq("id", p.id);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["org-projects-for-link"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast({
+        title: "Projetos atualizados",
+        description: `${toLink.length} vinculado(s), ${toUnlink.length} desvinculado(s).`,
+      });
+      setBulkLinkClientId(null);
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingBulkLink(false);
+    }
+  };
 
   const handleCreateOrg = async () => {
     if (!newOrgName.trim()) return;
@@ -667,12 +727,21 @@ export default function WorkspaceSettings() {
                       {[client.email, client.phone].filter(Boolean).join(" · ") || "Sem contato"}
                     </p>
                   </div>
-                  <Button
-                    variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-                    onClick={() => handleDeleteClient(client.id, client.name)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost" size="icon" className="h-7 w-7"
+                      onClick={() => openBulkLink(client.id)}
+                      title="Vincular projetos"
+                    >
+                      <Link2 className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                      onClick={() => handleDeleteClient(client.id, client.name)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -712,7 +781,84 @@ export default function WorkspaceSettings() {
         </DialogContent>
       </Dialog>
 
-      {/* Actions */}
+      {/* Bulk Link Projects to Client Dialog */}
+      <Dialog open={!!bulkLinkClientId} onOpenChange={(open) => { if (!open) setBulkLinkClientId(null); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              Vincular Projetos — {bulkLinkClient?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Selecione os projetos que devem ser vinculados a este cliente. Projetos desmarcados serão desvinculados.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[320px] overflow-y-auto rounded-lg border divide-y">
+            {orgProjects && orgProjects.length > 0 ? (
+              <>
+                <div className="p-2 bg-muted/30 sticky top-0 z-10">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs gap-1.5 h-7"
+                    onClick={() => {
+                      if (bulkLinkSelected.size === orgProjects.length) {
+                        setBulkLinkSelected(new Set());
+                      } else {
+                        setBulkLinkSelected(new Set(orgProjects.map((p) => p.id)));
+                      }
+                    }}
+                  >
+                    <CheckCheck className="h-3.5 w-3.5" />
+                    {bulkLinkSelected.size === orgProjects.length ? "Desmarcar todos" : "Selecionar todos"}
+                  </Button>
+                </div>
+                {orgProjects.map((project) => {
+                  const isLinked = bulkLinkSelected.has(project.id);
+                  const linkedToOther = project.client_id && project.client_id !== bulkLinkClientId;
+                  const otherClientName = linkedToOther ? clients?.find((c) => c.id === project.client_id)?.name : null;
+
+                  return (
+                    <label
+                      key={project.id}
+                      className={`flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-muted/50 ${isLinked ? "bg-primary/5" : ""}`}
+                    >
+                      <Checkbox
+                        checked={isLinked}
+                        onCheckedChange={(checked) => {
+                          setBulkLinkSelected((prev) => {
+                            const next = new Set(prev);
+                            if (checked) next.add(project.id);
+                            else next.delete(project.id);
+                            return next;
+                          });
+                        }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{project.name}</p>
+                        {linkedToOther && (
+                          <p className="text-xs text-warning">Vinculado a: {otherClientName || "outro cliente"}</p>
+                        )}
+                      </div>
+                      {isLinked && <Badge variant="secondary" className="text-xs shrink-0">Vinculado</Badge>}
+                    </label>
+                  );
+                })}
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-6">Nenhum projeto encontrado na organização.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkLinkClientId(null)}>Cancelar</Button>
+            <Button onClick={handleSaveBulkLink} disabled={savingBulkLink}>
+              <Link2 className="h-4 w-4 mr-1.5" />
+              {savingBulkLink ? "Salvando..." : `Salvar (${bulkLinkSelected.size} projeto${bulkLinkSelected.size !== 1 ? "s" : ""})`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="flex items-center gap-3">
         <Button onClick={handleSave} disabled={saving}>
           <Save className="h-4 w-4 mr-2" />
