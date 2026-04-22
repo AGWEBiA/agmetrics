@@ -781,7 +781,84 @@ export default function WorkspaceSettings() {
         </DialogContent>
       </Dialog>
 
-      {/* Actions */}
+      {/* Bulk Link Projects to Client Dialog */}
+      <Dialog open={!!bulkLinkClientId} onOpenChange={(open) => { if (!open) setBulkLinkClientId(null); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              Vincular Projetos — {bulkLinkClient?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Selecione os projetos que devem ser vinculados a este cliente. Projetos desmarcados serão desvinculados.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[320px] overflow-y-auto rounded-lg border divide-y">
+            {orgProjects && orgProjects.length > 0 ? (
+              <>
+                <div className="p-2 bg-muted/30 sticky top-0 z-10">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs gap-1.5 h-7"
+                    onClick={() => {
+                      if (bulkLinkSelected.size === orgProjects.length) {
+                        setBulkLinkSelected(new Set());
+                      } else {
+                        setBulkLinkSelected(new Set(orgProjects.map((p) => p.id)));
+                      }
+                    }}
+                  >
+                    <CheckCheck className="h-3.5 w-3.5" />
+                    {bulkLinkSelected.size === orgProjects.length ? "Desmarcar todos" : "Selecionar todos"}
+                  </Button>
+                </div>
+                {orgProjects.map((project) => {
+                  const isLinked = bulkLinkSelected.has(project.id);
+                  const linkedToOther = project.client_id && project.client_id !== bulkLinkClientId;
+                  const otherClientName = linkedToOther ? clients?.find((c) => c.id === project.client_id)?.name : null;
+
+                  return (
+                    <label
+                      key={project.id}
+                      className={`flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-muted/50 ${isLinked ? "bg-primary/5" : ""}`}
+                    >
+                      <Checkbox
+                        checked={isLinked}
+                        onCheckedChange={(checked) => {
+                          setBulkLinkSelected((prev) => {
+                            const next = new Set(prev);
+                            if (checked) next.add(project.id);
+                            else next.delete(project.id);
+                            return next;
+                          });
+                        }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{project.name}</p>
+                        {linkedToOther && (
+                          <p className="text-xs text-warning">Vinculado a: {otherClientName || "outro cliente"}</p>
+                        )}
+                      </div>
+                      {isLinked && <Badge variant="secondary" className="text-xs shrink-0">Vinculado</Badge>}
+                    </label>
+                  );
+                })}
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-6">Nenhum projeto encontrado na organização.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkLinkClientId(null)}>Cancelar</Button>
+            <Button onClick={handleSaveBulkLink} disabled={savingBulkLink}>
+              <Link2 className="h-4 w-4 mr-1.5" />
+              {savingBulkLink ? "Salvando..." : `Salvar (${bulkLinkSelected.size} projeto${bulkLinkSelected.size !== 1 ? "s" : ""})`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="flex items-center gap-3">
         <Button onClick={handleSave} disabled={saving}>
           <Save className="h-4 w-4 mr-2" />
