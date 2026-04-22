@@ -233,6 +233,23 @@ export default function ProjectsHub() {
             </SelectContent>
           </Select>
         )}
+
+        {clients && clients.length > 0 && (
+          <Select value={clientFilter} onValueChange={(v) => updateFilter(setClientFilter)(v)}>
+            <SelectTrigger className="w-[180px] h-9">
+              <div className="flex items-center gap-1.5">
+                <UserCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                <SelectValue placeholder="Cliente" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos clientes</SelectItem>
+              {clients.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Edit Dialog */}
