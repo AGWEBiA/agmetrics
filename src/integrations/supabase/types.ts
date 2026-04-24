@@ -2184,6 +2184,10 @@ export type Database = {
       }
     }
     Functions: {
+      can_manage_project: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       get_project_by_slug: {
         Args: { _slug: string }
         Returns: {
