@@ -25,6 +25,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { AGSellLogo } from "@/components/agsell/AGSellLogo";
 
 interface ConnectorField {
   key: string;
