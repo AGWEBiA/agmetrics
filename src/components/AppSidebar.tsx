@@ -27,6 +27,7 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { AGSellIcon } from "@/components/agsell/AGSellLogo";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useProject } from "@/hooks/useProjects";
 import { useCurrentUser, hasPermission } from "@/hooks/useCurrentUser";
@@ -106,7 +107,7 @@ export function AppSidebar() {
         { title: "Alertas Anomalia", url: `/admin/projects/${projectId}/anomaly-alerts`, icon: Shield, visible: can("projects.view") },
         { title: "Relatórios Agendados", url: `/admin/projects/${projectId}/scheduled-reports`, icon: FileBarChart, visible: can("projects.edit") },
         { title: "Relatórios WhatsApp", url: `/admin/projects/${projectId}/whatsapp-reports`, icon: MessageSquare, visible: can("projects.edit") },
-        { title: "Métricas AG Sell", url: `/admin/projects/${projectId}/agsell-metrics`, icon: Rocket, visible: can("projects.view") },
+        { title: "Métricas AG Sell", url: `/admin/projects/${projectId}/agsell-metrics`, icon: AGSellIcon as any, visible: can("projects.view") },
         { title: "Debriefing", url: `/admin/projects/${projectId}/debriefing`, icon: ClipboardCheck, visible: can("projects.view") },
       ].filter((item) => item.visible)
     : [];
@@ -116,7 +117,7 @@ export function AppSidebar() {
         { title: "Configurações", url: `/admin/projects/${projectId}/config`, icon: Settings, visible: can("projects.edit") },
         { title: "Integrações", url: `/admin/projects/${projectId}/integrations`, icon: Plug, visible: can("integrations.manage") },
         { title: "Hub de Conectores", url: `/admin/projects/${projectId}/connectors`, icon: Zap, visible: can("integrations.manage") },
-        { title: "AG Sell", url: `/admin/projects/${projectId}/agsell`, icon: Rocket, visible: can("integrations.manage") },
+        { title: "AG Sell", url: `/admin/projects/${projectId}/agsell`, icon: AGSellIcon as any, visible: can("integrations.manage") },
       ].filter((item) => item.visible)
     : [];
 

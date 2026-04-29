@@ -25,6 +25,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { AGSellLogo } from "@/components/agsell/AGSellLogo";
 
 interface ConnectorField {
   key: string;
@@ -330,7 +331,11 @@ export default function ConnectorHub() {
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-2xl">{connector.icon}</span>
+                          {connector.id === "agsell" ? (
+                            <AGSellLogo className="h-7 w-7" />
+                          ) : (
+                            <span className="text-2xl">{connector.icon}</span>
+                          )}
                           <CardTitle className="text-base">{connector.name}</CardTitle>
                         </div>
                         <div className="flex items-center gap-1">
@@ -392,7 +397,11 @@ export default function ConnectorHub() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <span className="text-xl">{configuring?.icon}</span>
+              {configuring?.id === "agsell" ? (
+                <AGSellLogo className="h-6 w-6" />
+              ) : (
+                <span className="text-xl">{configuring?.icon}</span>
+              )}
               Configurar {configuring?.name}
             </DialogTitle>
             <DialogDescription>{configuring?.description}</DialogDescription>

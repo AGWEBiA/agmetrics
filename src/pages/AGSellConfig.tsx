@@ -10,7 +10,6 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useProject } from "@/hooks/useProjects";
 import {
-  Rocket,
   CheckCircle2,
   XCircle,
   RefreshCw,
@@ -24,6 +23,7 @@ import {
   TestTube,
 } from "lucide-react";
 import AGSellFieldMapping from "@/components/agsell/AGSellFieldMapping";
+import { AGSellLogo } from "@/components/agsell/AGSellLogo";
 
 export default function AGSellConfig() {
   const { projectId } = useParams();
@@ -125,7 +125,7 @@ export default function AGSellConfig() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Rocket className="h-6 w-6 text-primary" />
+            <AGSellLogo className="h-7 w-7" />
             AG Sell
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
