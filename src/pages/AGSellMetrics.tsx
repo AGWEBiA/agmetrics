@@ -18,12 +18,12 @@ import {
   Users,
   MessageSquare,
   RefreshCw,
-  Rocket,
   Workflow,
   FileText,
   TrendingUp,
   AlertCircle,
 } from "lucide-react";
+import { AGSellLogo } from "@/components/agsell/AGSellLogo";
 
 type MetricRow = {
   metric_type: string;
@@ -151,7 +151,7 @@ export default function AGSellMetrics() {
     return (
       <div className="space-y-4 max-w-3xl">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Rocket className="h-6 w-6 text-primary" /> Métricas AG Sell
+          <AGSellLogo className="h-7 w-7" /> Métricas AG Sell
         </h1>
         <Alert>
           <AlertCircle className="h-4 w-4" />
@@ -205,7 +205,7 @@ export default function AGSellMetrics() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Rocket className="h-6 w-6 text-primary" /> Métricas AG Sell
+            <AGSellLogo className="h-7 w-7" /> Métricas AG Sell
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Engajamento de e-mails, WhatsApp, automações e formulários sincronizados da sua conta AG Sell.
