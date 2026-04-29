@@ -17,4 +17,19 @@ export function AGSellLogo({ className, alt = "AG Sell" }: AGSellLogoProps) {
   );
 }
 
+/**
+ * Drop-in replacement for a lucide-react icon component, so it can be used
+ * anywhere a sidebar/menu expects `icon: LucideIcon`.
+ */
+export function AGSellIcon({ className }: { className?: string }) {
+  return (
+    <img
+      src={logo}
+      alt="AG Sell"
+      className={cn("rounded-sm object-contain", className)}
+      loading="lazy"
+    />
+  );
+}
+
 export default AGSellLogo;
