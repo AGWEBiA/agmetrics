@@ -27,6 +27,7 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { AGSellIcon } from "@/components/agsell/AGSellLogo";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useProject } from "@/hooks/useProjects";
 import { useCurrentUser, hasPermission } from "@/hooks/useCurrentUser";
