@@ -46,8 +46,8 @@ export default function AGSellConfig() {
 
   const isConnected = !!apiKey;
 
-  const defaultBaseUrl = "https://gmemxbfibakfpsjbsvyt.supabase.co/functions/v1/public-api";
-  const effectiveBaseUrl = baseUrl || defaultBaseUrl;
+  const defaultBaseUrl = "https://rcxrkvwxlzwzrllwdwgz.supabase.co/functions/v1/public-api/v1.1";
+  const effectiveBaseUrl = (baseUrl || defaultBaseUrl).replace(/\/$/, "");
 
   const webhookUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/webhook-agsell`;
 
