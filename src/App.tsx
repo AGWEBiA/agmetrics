@@ -100,6 +100,7 @@ const App = () => (
                 <Route path="projects/:projectId/temporal-comparison" element={<PermissionGuard permission="projects.view"><TemporalComparison /></PermissionGuard>} />
                 <Route path="projects/:projectId/connectors" element={<PermissionGuard permission="integrations.manage"><ConnectorHub /></PermissionGuard>} />
                 <Route path="projects/:projectId/agsell" element={<PermissionGuard permission="integrations.manage"><AGSellConfig /></PermissionGuard>} />
+                <Route path="projects/:projectId/agsell-metrics" element={<PermissionGuard permission="projects.view"><AGSellMetrics /></PermissionGuard>} />
                 <Route path="projects/:projectId/ai-insights" element={<PermissionGuard permission="projects.view"><AIInsights /></PermissionGuard>} />
                 <Route path="projects/:projectId/channel-roi" element={<PermissionGuard permission="projects.view"><ChannelROIReport /></PermissionGuard>} />
                 <Route path="projects/:projectId/advanced-attribution" element={<PermissionGuard permission="projects.view"><AdvancedAttribution /></PermissionGuard>} />
