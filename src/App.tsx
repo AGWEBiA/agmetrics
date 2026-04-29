@@ -36,6 +36,7 @@ const ScheduledReports = lazy(() => import("./pages/ScheduledReports"));
 const TemporalComparison = lazy(() => import("./pages/TemporalComparison"));
 const ConnectorHub = lazy(() => import("./pages/ConnectorHub"));
 const AGSellConfig = lazy(() => import("./pages/AGSellConfig"));
+const AGSellMetrics = lazy(() => import("./pages/AGSellMetrics"));
 const AIInsights = lazy(() => import("./pages/AIInsights"));
 const WorkspaceSettings = lazy(() => import("./pages/WorkspaceSettings"));
 const AdvancedProjection = lazy(() => import("./pages/AdvancedProjection"));
