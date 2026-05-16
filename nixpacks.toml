@@ -1,11 +1,12 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "bun"]
-
-[phases.install]
-cmds = ["bun install"]
-
-[phases.build]
-cmds = ["bun run build"]
-
+ nixPkgs = ["nodejs_20"]
+ 
+ [phases.install]
+ cmds = ["npm install --legacy-peer-deps"]
+ 
+ [phases.build]
+ cmds = ["npm run build"]
+ 
 [start]
-cmd = "bun run preview"
+  cmd = "sh -c 'if [ -f dist/client/index.html ]; then npx -y serve@latest -s dist/client -l tcp://0.0.0.0:${PORT:-3000}; elif [ -f dist/server/server.js ]; then PORT=${PORT:-3000} HOST=0.0.0.0 node dist/server/server.js; elif [ -f dist/index.html ]; then npx -y serve@latest -s dist -l tcp://0.0.0.0:${PORT:-3000}; else npx -y serve@latest -s dist -l tcp://0.0.0.0:${PORT:-3000}; fi'"
+ 
