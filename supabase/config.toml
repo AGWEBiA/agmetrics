@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.backfill-kiwify-fees]
 verify_jwt = false
+
+[functions.db-dump]
+verify_jwt = false
