@@ -1,0 +1,19 @@
+-- SCRIPT DE IMPORTAÇÃO DE DADOS (TOP 1000 POR TABELA)
+-- Este script tenta inserir dados básicos. Para tabelas gigantes, use pg_dump.
+
+-- Tabela: profiles
+-- Tabela: user_roles
+-- Tabela: organizations
+-- Tabela: organization_members
+-- Tabela: projects
+-- Tabela: project_domains
+-- Tabela: products
+-- Tabela: clients
+-- Tabela: meta_credentials
+-- Tabela: google_credentials
+-- Tabela: notifications
+-- Tabela: whatsapp_groups
+-- Tabela: whatsapp_report_configs
+-- Tabela: project_goals
+-- Tabela: dashboard_layouts
+-- Tabela: user_dashboard_preferences
