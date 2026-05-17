@@ -30,6 +30,7 @@ export function useProjects(filters: ProjectFilters = {}) {
     enabled: isAdmin || !!currentOrg?.id,
     placeholderData: keepPreviousData,
     queryFn: async () => {
+      console.log("[useProjects] Fetching projects... isAdmin:", isAdmin, "currentOrgId:", currentOrg?.id);
       let query = supabase
         .from("projects")
         .select("*", { count: "exact" })
