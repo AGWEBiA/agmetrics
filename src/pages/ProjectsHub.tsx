@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjects, useCreateProject, useDeleteProject, useUpdateProject, useAllOrganizations, type ProjectFilters } from "@/hooks/useProjects";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useCurrentOrganization } from "@/hooks/useOrganization";
+import { supabase } from "@/integrations/supabase/client";
 import { useClients } from "@/hooks/useClients";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +25,7 @@ import {
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Plus, BarChart3, Calendar, Trash2, ExternalLink, Settings, Pencil, GitCompare, MoreVertical, Search, Building2, UserCircle } from "lucide-react";
+import { Plus, BarChart3, Calendar, Trash2, ExternalLink, Settings, Pencil, GitCompare, MoreVertical, Search, Building2, UserCircle, RefreshCcw, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProjectStrategyForm, strategyLabel, type ProjectFormData } from "@/components/ProjectStrategyForm";
@@ -49,6 +51,7 @@ export default function ProjectsHub() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: currentUser } = useCurrentUser();
+  const { data: currentOrg } = useCurrentOrganization();
   const isAdmin = currentUser?.role === "admin";
 
   // Filters state
@@ -66,7 +69,7 @@ export default function ProjectsHub() {
     page,
   };
 
-  const { data, isLoading } = useProjects(filters);
+  const { data, isLoading, error: fetchError } = useProjects(filters);
   const { data: allOrgs } = useAllOrganizations();
   const { data: clients } = useClients(isAdmin ? (orgFilter !== "all" ? orgFilter : undefined) : undefined);
   const createProject = useCreateProject();
@@ -139,6 +142,37 @@ export default function ProjectsHub() {
     setter(val); setPage(1);
   };
 
+  // Auto-sync orphaned projects
+  useEffect(() => {
+    const syncProjects = async () => {
+      if (!currentOrg?.id || !currentUser) return;
+      
+      try {
+        const { data: orphaned } = await supabase
+          .from("projects")
+          .select("id")
+          .is("organization_id", null)
+          .eq("owner_id", currentUser.id);
+
+        if (orphaned && orphaned.length > 0) {
+          console.log(`[ProjectsHub] Syncing ${orphaned.length} orphaned projects to org:`, currentOrg.id);
+          const { error } = await supabase
+            .from("projects")
+            .update({ organization_id: currentOrg.id })
+            .in("id", orphaned.map(p => p.id));
+          
+          if (!error) {
+            toast({ title: "Projetos sincronizados", description: `${orphaned.length} projetos foram vinculados à sua organização.` });
+          }
+        }
+      } catch (err) {
+        console.error("[ProjectsHub] Sync error:", err);
+      }
+    };
+
+    syncProjects();
+  }, [currentOrg?.id, currentUser?.id]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -151,6 +185,10 @@ export default function ProjectsHub() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+            <RefreshCcw className="mr-1.5 h-4 w-4" />
+            <span className="hidden sm:inline">Atualizar</span>
+          </Button>
           <Button variant="outline" size="sm" onClick={() => navigate("/admin/compare")}>
             <GitCompare className="mr-1.5 h-4 w-4" />
             <span className="hidden sm:inline">Comparar</span>
@@ -288,7 +326,20 @@ export default function ProjectsHub() {
       </AlertDialog>
 
       {/* Project Grid */}
-      {isLoading ? (
+      {fetchError ? (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardHeader>
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              <CardTitle>Erro ao carregar projetos</CardTitle>
+            </div>
+            <CardDescription>{fetchError.message}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" onClick={() => window.location.reload()}>Tentar novamente</Button>
+          </CardContent>
+        </Card>
+      ) : isLoading ? (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <Card key={i}><CardHeader><Skeleton className="h-6 w-40" /><Skeleton className="h-4 w-60" /></CardHeader>

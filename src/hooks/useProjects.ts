@@ -26,11 +26,38 @@ export function useProjects(filters: ProjectFilters = {}) {
   const pageSize = filters.pageSize ?? DEFAULT_PAGE_SIZE;
 
   return useQuery({
-    queryKey: ["projects", isAdmin ? "all" : currentOrg?.id, filters],
-    enabled: isAdmin || !!currentOrg?.id,
+    queryKey: ["projects", isAdmin ? "all" : (currentOrg?.id || "fallback"), filters],
+    enabled: isAdmin || true, // Enable always to allow fallback logic
     placeholderData: keepPreviousData,
     queryFn: async () => {
       console.log("[useProjects] Fetching projects... isAdmin:", isAdmin, "currentOrgId:", currentOrg?.id);
+      
+      let effectiveOrgId = currentOrg?.id;
+
+      // Fallback: if no currentOrg but user is logged in, try to find an org from memberships
+      if (!isAdmin && !effectiveOrgId) {
+        console.log("[useProjects] No currentOrgId found, trying fallback...");
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data: membership } = await supabase
+            .from("organization_members" as any)
+            .select("organization_id")
+            .eq("user_id", session.user.id)
+            .limit(1)
+            .maybeSingle();
+          
+          if (membership) {
+            effectiveOrgId = (membership as any).organization_id;
+            console.log("[useProjects] Fallback organization found:", effectiveOrgId);
+          }
+        }
+      }
+
+      if (!isAdmin && !effectiveOrgId) {
+        console.warn("[useProjects] No effective organization ID found. Returning empty list.");
+        return { projects: [], totalCount: 0, page: 1, pageSize: 12, totalPages: 0 };
+      }
+
       let query = supabase
         .from("projects")
         .select("*", { count: "exact" })
@@ -42,7 +69,7 @@ export function useProjects(filters: ProjectFilters = {}) {
           query = query.eq("organization_id", filters.organizationId);
         }
       } else {
-        query = query.eq("organization_id", currentOrg!.id);
+        query = query.eq("organization_id", effectiveOrgId);
       }
 
       // Filters
