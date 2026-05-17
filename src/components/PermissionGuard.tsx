@@ -28,7 +28,12 @@ export function PermissionGuard({ children, permission, adminOnly }: PermissionG
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <Shield className="mb-4 h-12 w-12 text-destructive/50" />
         <h2 className="text-lg font-semibold">Acesso restrito</h2>
-        <p className="text-muted-foreground">Você não tem permissão para acessar esta página.</p>
+        <p className="text-muted-foreground mb-4">Você não tem permissão para acessar esta página.</p>
+        <div className="text-xs text-muted-foreground bg-muted p-4 rounded-md">
+          <p>Seu ID de usuário no banco externo:</p>
+          <code className="block mt-2 font-mono break-all">{user?.id || "Não identificado"}</code>
+          <p className="mt-2 font-semibold">Papel atual: {user?.role || "Nenhum"}</p>
+        </div>
       </div>
     );
   }
@@ -38,7 +43,12 @@ export function PermissionGuard({ children, permission, adminOnly }: PermissionG
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <Shield className="mb-4 h-12 w-12 text-destructive/50" />
         <h2 className="text-lg font-semibold">Acesso restrito</h2>
-        <p className="text-muted-foreground">Você não tem permissão para acessar esta página.</p>
+        <p className="text-muted-foreground mb-4">Você não tem permissão para acessar esta página.</p>
+        <div className="text-xs text-muted-foreground bg-muted p-4 rounded-md">
+          <p>Seu ID de usuário no banco externo:</p>
+          <code className="block mt-2 font-mono break-all">{user?.id || "Não identificado"}</code>
+          <p className="mt-2 font-semibold">Papel atual: {user?.role || "Nenhum"}</p>
+        </div>
       </div>
     );
   }
