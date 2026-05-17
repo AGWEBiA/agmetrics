@@ -9,8 +9,6 @@ export interface CurrentUser {
 }
 
 async function fetchCurrentUser(): Promise<CurrentUser | null> {
-  console.log("[useCurrentUser] Fetching user...");
-  // First try getSession (cached), then fall back to getUser (network)
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   
   if (sessionError) {
@@ -18,24 +16,15 @@ async function fetchCurrentUser(): Promise<CurrentUser | null> {
   }
 
   const buildCurrentUser = async (userId: string): Promise<CurrentUser> => {
-    console.log("[useCurrentUser] Building user for ID:", userId);
     const [{ data: rolesData, error: rolesError }, { data: permData, error: permsError }] = await Promise.all([
       supabase.from("user_roles").select("role").eq("user_id", userId),
       supabase.from("user_permissions").select("permission").eq("user_id", userId),
     ]);
 
-    if (rolesError) {
-      console.error("[useCurrentUser] Roles error:", rolesError);
-    } else {
-      console.log("[useCurrentUser] Raw roles from DB:", rolesData);
-    }
-
+    if (rolesError) console.error("[useCurrentUser] Roles error:", rolesError);
     if (permsError) console.error("[useCurrentUser] Permissions error:", permsError);
 
     const roles = (rolesData || []).map((item) => item.role as "admin" | "user");
-    console.log("[useCurrentUser] Processed roles:", roles);
-    
-    // Explicitly check for admin, otherwise default to user
     const role: CurrentUser["role"] = roles.some(r => r === "admin") ? "admin" : "user";
     const permissions = (permData || []).map((p) => p.permission as AppPermission);
 
@@ -43,23 +32,12 @@ async function fetchCurrentUser(): Promise<CurrentUser | null> {
   };
   
   if (!session) {
-    console.log("[useCurrentUser] No session found, trying getUser...");
-    // Session might not be ready yet — try getUser which forces a network call
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError) console.error("[useCurrentUser] GetUser error:", userError);
-    
-    if (!user) {
-      console.log("[useCurrentUser] No user found");
-      return null;
-    }
-
+    if (userError || !user) return null;
     return buildCurrentUser(user.id);
   }
 
-  const userId = session.user.id;
-  console.log("[useCurrentUser] Using session userId:", userId);
-
-  return buildCurrentUser(userId);
+  return buildCurrentUser(session.user.id);
 }
 
 export function useCurrentUser() {
