@@ -11,35 +11,31 @@ export interface CurrentUser {
 async function fetchCurrentUser(): Promise<CurrentUser | null> {
   // First try getSession (cached), then fall back to getUser (network)
   const { data: { session } } = await supabase.auth.getSession();
+
+  const buildCurrentUser = async (userId: string): Promise<CurrentUser> => {
+    const [{ data: rolesData }, { data: permData }] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", userId),
+      supabase.from("user_permissions").select("permission").eq("user_id", userId),
+    ]);
+
+    const roles = (rolesData || []).map((item) => item.role as "admin" | "user");
+    const role: CurrentUser["role"] = roles.includes("admin") ? "admin" : "user";
+    const permissions = (permData || []).map((p) => p.permission as AppPermission);
+
+    return { id: userId, role, permissions };
+  };
   
   if (!session) {
     // Session might not be ready yet — try getUser which forces a network call
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
-    
-    const [{ data: roleData }, { data: permData }] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", user.id).single(),
-      supabase.from("user_permissions").select("permission").eq("user_id", user.id),
-    ]);
 
-    return {
-      id: user.id,
-      role: (roleData?.role as "admin" | "user") || "user",
-      permissions: (permData || []).map((p) => p.permission as AppPermission),
-    };
+    return buildCurrentUser(user.id);
   }
 
   const userId = session.user.id;
 
-  const [{ data: roleData }, { data: permData }] = await Promise.all([
-    supabase.from("user_roles").select("role").eq("user_id", userId).single(),
-    supabase.from("user_permissions").select("permission").eq("user_id", userId),
-  ]);
-
-  const role = (roleData?.role as "admin" | "user") || "user";
-  const permissions = (permData || []).map((p) => p.permission as AppPermission);
-
-  return { id: userId, role, permissions };
+  return buildCurrentUser(userId);
 }
 
 export function useCurrentUser() {
