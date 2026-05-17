@@ -8,10 +8,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("[AuthGuard] Auth state changed:", _event, session?.user?.id);
       setSession(session);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("[AuthGuard] Session loaded:", session?.user?.id);
       setSession(session);
     });
 
