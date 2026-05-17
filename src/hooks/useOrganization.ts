@@ -72,10 +72,14 @@ export function useCurrentOrganization() {
         if (!membership) return null;
         orgId = (membership as any).organization_id;
 
-        await supabase
-          .from("profiles")
-          .update({ current_organization_id: orgId } as any)
-          .eq("id", session.user.id);
+        // Only update if we actually found an orgId and it's different
+        if (orgId && profile) {
+          console.log("[useCurrentOrganization] Updating profile with current_organization_id:", orgId);
+          await supabase
+            .from("profiles")
+            .update({ current_organization_id: orgId } as any)
+            .eq("id", session.user.id);
+        }
       }
 
       const { data: org, error: orgError } = await supabase

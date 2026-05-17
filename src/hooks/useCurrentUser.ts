@@ -9,42 +9,52 @@ export interface CurrentUser {
 }
 
 async function fetchCurrentUser(): Promise<CurrentUser | null> {
+  const supabaseUrl = (supabase as any).supabaseUrl;
+  console.log("[useCurrentUser] Fetching current user... URL:", supabaseUrl);
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError) console.error("[useCurrentUser] Session error:", sessionError);
-
-  const buildCurrentUser = async (userId: string): Promise<CurrentUser> => {
-    const [{ data: rolesData, error: rolesError }, { data: permData, error: permsError }] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-      supabase.from("user_permissions").select("permission").eq("user_id", userId),
-    ]);
-
-    if (rolesError) console.error("[useCurrentUser] Roles error:", rolesError);
-    if (permsError) console.error("[useCurrentUser] Permissions error:", permsError);
-
-    const roles = (rolesData || []).map((item) => item.role as "admin" | "user");
-    const role: CurrentUser["role"] = roles.some(r => r === "admin") ? "admin" : "user";
-    const permissions = (permData || []).map((p) => p.permission as AppPermission);
-
-    return { id: userId, role, permissions };
-  };
   
-  if (!session?.user) {
+  if (sessionError) {
+    console.error("[useCurrentUser] Session error:", sessionError);
+  }
+
+  const userId = session?.user?.id;
+  if (!userId) {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) return null;
+    if (userError || !user) {
+      console.log("[useCurrentUser] No user found in session or via getUser()");
+      return null;
+    }
     return buildCurrentUser(user.id);
   }
 
-  return buildCurrentUser(session.user.id);
+  return buildCurrentUser(userId);
+}
+
+async function buildCurrentUser(userId: string): Promise<CurrentUser> {
+  console.log("[useCurrentUser] Building user data for ID:", userId);
+  const [{ data: rolesData, error: rolesError }, { data: permData, error: permsError }] = await Promise.all([
+    supabase.from("user_roles").select("role").eq("user_id", userId),
+    supabase.from("user_permissions").select("permission").eq("user_id", userId),
+  ]);
+
+  if (rolesError) console.error("[useCurrentUser] Roles error:", rolesError);
+  if (permsError) console.error("[useCurrentUser] Permissions error:", permsError);
+
+  const roles = (rolesData || []).map((item) => item.role as "admin" | "user");
+  const role: CurrentUser["role"] = roles.some(r => r === "admin") ? "admin" : "user";
+  const permissions = (permData || []).map((p) => p.permission as AppPermission);
+
+  console.log("[useCurrentUser] Resolved role:", role, "permissions:", permissions.length);
+  return { id: userId, role, permissions };
 }
 
 export function useCurrentUser() {
   return useQuery<CurrentUser | null>({
-    queryKey: ["current-user", "roles-v2"],
+    queryKey: ["current-user", "roles-v3"],
     queryFn: fetchCurrentUser,
     staleTime: 5 * 60 * 1000,
-    refetchOnMount: "always",
-    retry: 3,
-    retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 3000),
+    refetchOnMount: false,
+    retry: 1,
   });
 }
 
