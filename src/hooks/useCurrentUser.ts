@@ -24,12 +24,19 @@ async function fetchCurrentUser(): Promise<CurrentUser | null> {
       supabase.from("user_permissions").select("permission").eq("user_id", userId),
     ]);
 
-    if (rolesError) console.error("[useCurrentUser] Roles error:", rolesError);
+    if (rolesError) {
+      console.error("[useCurrentUser] Roles error:", rolesError);
+    } else {
+      console.log("[useCurrentUser] Raw roles from DB:", rolesData);
+    }
+
     if (permsError) console.error("[useCurrentUser] Permissions error:", permsError);
 
     const roles = (rolesData || []).map((item) => item.role as "admin" | "user");
-    console.log("[useCurrentUser] Found roles:", roles);
-    const role: CurrentUser["role"] = roles.includes("admin") ? "admin" : "user";
+    console.log("[useCurrentUser] Processed roles:", roles);
+    
+    // Explicitly check for admin, otherwise default to user
+    const role: CurrentUser["role"] = roles.some(r => r === "admin") ? "admin" : "user";
     const permissions = (permData || []).map((p) => p.permission as AppPermission);
 
     return { id: userId, role, permissions };
