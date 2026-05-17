@@ -40,9 +40,10 @@ async function fetchCurrentUser(): Promise<CurrentUser | null> {
 
 export function useCurrentUser() {
   return useQuery<CurrentUser | null>({
-    queryKey: ["current-user"],
+    queryKey: ["current-user", "roles-v2"],
     queryFn: fetchCurrentUser,
     staleTime: 5 * 60 * 1000,
+    refetchOnMount: "always",
     retry: 3,
     retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 3000),
   });
