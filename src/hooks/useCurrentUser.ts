@@ -10,10 +10,7 @@ export interface CurrentUser {
 
 async function fetchCurrentUser(): Promise<CurrentUser | null> {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  
-  if (sessionError) {
-    console.error("[useCurrentUser] Session error:", sessionError);
-  }
+  if (sessionError) console.error("[useCurrentUser] Session error:", sessionError);
 
   const buildCurrentUser = async (userId: string): Promise<CurrentUser> => {
     const [{ data: rolesData, error: rolesError }, { data: permData, error: permsError }] = await Promise.all([
@@ -31,7 +28,7 @@ async function fetchCurrentUser(): Promise<CurrentUser | null> {
     return { id: userId, role, permissions };
   };
   
-  if (!session) {
+  if (!session?.user) {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) return null;
     return buildCurrentUser(user.id);

@@ -42,52 +42,49 @@ export function useUserOrganizations() {
   });
 }
 
-/** Get the user's current organization from their profile */
 export function useCurrentOrganization() {
   return useQuery({
     queryKey: ["current-organization"],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return null;
+      if (!session?.user) return null;
 
-      // Get current_organization_id from profile
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("current_organization_id")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
 
-      if (!profile?.current_organization_id) {
-        // Fallback: get first org
-        const { data: membership } = await supabase
+      if (profileError) console.error("[useCurrentOrganization] Profile fetch error:", profileError);
+
+      let orgId = profile?.current_organization_id;
+
+      if (!orgId) {
+        const { data: membership, error: memError } = await supabase
           .from("organization_members" as any)
           .select("organization_id")
           .eq("user_id", session.user.id)
           .limit(1)
-          .single();
+          .maybeSingle();
 
+        if (memError) console.error("[useCurrentOrganization] Membership fetch error:", memError);
+        
         if (!membership) return null;
-        const orgId = (membership as any).organization_id;
+        orgId = (membership as any).organization_id;
 
-        // Set it as current
         await supabase
           .from("profiles")
           .update({ current_organization_id: orgId } as any)
           .eq("id", session.user.id);
-
-        const { data: org } = await supabase
-          .from("organizations" as any)
-          .select("*")
-          .eq("id", orgId)
-          .single();
-        return org as unknown as Organization | null;
       }
 
-      const { data: org } = await supabase
+      const { data: org, error: orgError } = await supabase
         .from("organizations" as any)
         .select("*")
-        .eq("id", profile.current_organization_id)
-        .single();
+        .eq("id", orgId)
+        .maybeSingle();
+
+      if (orgError) console.error("[useCurrentOrganization] Org fetch error:", orgError);
       return org as unknown as Organization | null;
     },
     staleTime: 5 * 60 * 1000,
