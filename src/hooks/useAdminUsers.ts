@@ -17,7 +17,11 @@ async function callAdminUsers(method: string, body?: any, params?: Record<string
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Not authenticated");
 
-  const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users`);
+  // Use the same Supabase URL as the auth client to avoid JWT mismatch across projects
+  const supabaseUrl = (supabase as any).supabaseUrl as string;
+  const supabaseKey = (supabase as any).supabaseKey as string;
+
+  const url = new URL(`${supabaseUrl}/functions/v1/admin-users`);
   if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
 
   const res = await fetch(url.toString(), {
@@ -25,7 +29,7 @@ async function callAdminUsers(method: string, body?: any, params?: Record<string
     headers: {
       Authorization: `Bearer ${session.access_token}`,
       "Content-Type": "application/json",
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      apikey: supabaseKey,
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
