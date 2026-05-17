@@ -81,6 +81,7 @@ export function AppSidebar() {
     { title: "Projeção Avançada", url: "/admin/projection", icon: Brain, visible: can("projects.view") },
     { title: "Usuários", url: "/admin/users", icon: Users, visible: isAdmin },
     { title: "Workspace", url: "/admin/settings", icon: Paintbrush, visible: isAdmin },
+    { title: "Diagnóstico", url: "/admin/debug", icon: Activity, visible: isAdmin },
     { title: "Guia", url: "/admin/guide", icon: BookOpen, visible: true },
   ].filter((item) => item.visible);
 

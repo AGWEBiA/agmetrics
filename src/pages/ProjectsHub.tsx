@@ -137,6 +137,11 @@ export default function ProjectsHub() {
 
   const formatDate = (date: string | null) => date ? new Date(date).toLocaleDateString("pt-BR") : null;
 
+  // Reset page when filters change
+  const updateFilter = <T,>(setter: React.Dispatch<React.SetStateAction<T>>) => (val: T) => {
+    setter(val); setPage(1);
+  };
+
   // Auto-sync orphaned projects
   useEffect(() => {
     const syncProjects = async () => {
