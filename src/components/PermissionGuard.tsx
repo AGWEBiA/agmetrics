@@ -13,7 +13,7 @@ export function PermissionGuard({ children, permission, adminOnly }: PermissionG
 
   // Show loading while query is still in progress or user not yet resolved
   // Only consider it "truly failed" after all retries are exhausted AND isError is true
-  const stillLoading = isLoading || isFetching || (!user && !isError) || (!user && failureCount < 3);
+  const stillLoading = isLoading || isFetching;
 
   if (stillLoading) {
     return (
