@@ -9,7 +9,8 @@ export interface CurrentUser {
 }
 
 async function fetchCurrentUser(): Promise<CurrentUser | null> {
-  console.log("[useCurrentUser] Fetching current user...");
+  const supabaseUrl = (supabase as any).supabaseUrl;
+  console.log("[useCurrentUser] Fetching current user... URL:", supabaseUrl);
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   
   if (sessionError) {
