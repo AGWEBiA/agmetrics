@@ -35,7 +35,7 @@ export function RefundsSection({ projectId, totalRevenue, totalSalesCount }: Ref
       if (error) throw error;
       return data as any[];
     },
-    refetchInterval: 60000,
+    
   });
 
   const stats = useMemo(() => {

@@ -108,7 +108,7 @@ export default function AGSellMetrics() {
       if (error) throw error;
       return (data || []) as MetricRow[];
     },
-    refetchInterval: 60000,
+    
   });
 
   const byType = useMemo(() => {

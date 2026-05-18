@@ -32,7 +32,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
 
       return allData;
     },
-    refetchInterval: 300000,
+    
   });
 
   const leadEventsQuery = useQuery({
@@ -62,7 +62,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
 
       return allData;
     },
-    refetchInterval: 300000,
+    
   });
 
   const metaQuery = useQuery({
@@ -77,7 +77,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
       if (error) throw error;
       return (data as any[]) || [];
     },
-    refetchInterval: 300000,
+    
   });
 
   const googleQuery = useQuery({
@@ -92,7 +92,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
       if (error) throw error;
       return (data as any[]) || [];
     },
-    refetchInterval: 300000,
+    
   });
 
   const goalsQuery = useQuery({
@@ -107,7 +107,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
       if (error) throw error;
       return (data as any[]) || [];
     },
-    refetchInterval: 300000,
+    
   });
 
   const productsQuery = useQuery({
@@ -121,7 +121,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
       if (error) throw error;
       return (data as any[]) || [];
     },
-    refetchInterval: 300000,
+    
   });
 
   const metaAdsQuery = useQuery({
@@ -136,7 +136,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
       if (error) throw error;
       return (data as any[]) || [];
     },
-    refetchInterval: 300000,
+    
   });
 
   const manualInvestmentsQuery = useQuery({
@@ -150,7 +150,7 @@ export function usePublicDashboardMetrics(projectId: string | undefined, viewTok
       if (error) throw error;
       return (data as any[]) || [];
     },
-    refetchInterval: 300000,
+    
   });
 
   const allSales = (salesQuery.data || []).filter((s: any) => !s.is_ignored);

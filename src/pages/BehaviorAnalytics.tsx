@@ -159,7 +159,7 @@ export default function BehaviorAnalytics() {
       if (error) throw error;
       return (data || []) as TrackingEvent[];
     },
-    refetchInterval: 60000,
+    
   });
 
   const pages = useMemo(() => {

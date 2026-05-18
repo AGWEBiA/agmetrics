@@ -14,7 +14,7 @@ export function useLeadJourneyData(projectId: string | undefined) {
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 300000,
+    
   });
 
   return useMemo(() => {

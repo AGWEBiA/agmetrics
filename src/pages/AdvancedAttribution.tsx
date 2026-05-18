@@ -81,7 +81,7 @@ export default function AdvancedAttribution() {
         "buyer_email, buyer_name, amount, sale_date, utm_source, utm_campaign, utm_medium, tracking_src, tracking_sck, status, product_name, is_ignored",
         "sale_date"
       ).then((d) => d.filter((s: any) => !s.is_ignored)),
-    refetchInterval: 300000,
+    
   });
 
   const { data: leadEvents } = useQuery({
