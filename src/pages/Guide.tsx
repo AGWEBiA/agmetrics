@@ -1079,7 +1079,7 @@ export default function Guide() {
           Guia Completo do AGMetrics
         </h1>
         <p className="text-muted-foreground mt-1">
-          Aprenda passo a passo como configurar e utilizar todas as funcionalidades do sistema
+          Aprenda passo a passo como configurar e utilizar todas as funcionalidades do sistema. Para detalhes de infraestrutura, consulte os <a href="/admin/technical-docs" class="text-primary hover:underline">Docs Técnicos</a>.
         </p>
       </div>
 
