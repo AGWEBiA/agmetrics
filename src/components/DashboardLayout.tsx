@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { RefreshButton } from "@/components/RefreshButton";
 import { NotificationBell } from "@/components/NotificationBell";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { GlobalFiltersBar } from "@/components/GlobalFiltersBar";
@@ -72,6 +73,7 @@ export function DashboardLayout() {
               <Breadcrumbs />
             </div>
             <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+              <RefreshButton />
               <div className="flex items-center gap-1 px-2 py-1 bg-muted/40 rounded-full border border-border/40">
                 <PushNotificationToggle />
                 <NotificationBell />
