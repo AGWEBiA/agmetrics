@@ -3,9 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
 /**
- * Polls for new sales every 5m and invalidates caches.
- * We removed sales_events from Realtime publication to prevent PII leakage,
- * so we use polling as a secure alternative.
+ * Polls for new sales periodically and invalidates caches.
+ * Optimized for low server consumption.
  */
 export function useSalesRealtime(projectId: string | undefined) {
   const queryClient = useQueryClient();
@@ -22,6 +21,7 @@ export function useSalesRealtime(projectId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ["compare_sales"] });
     };
 
+    // Refetch every 15 minutes as a fallback
     const interval = setInterval(async () => {
       try {
         const { count } = await supabase
@@ -37,7 +37,7 @@ export function useSalesRealtime(projectId: string | undefined) {
       } catch {
         // Silent fail — polling is best-effort
       }
-    }, 30000);
+    }, 900000); // 15 minutes
 
     return () => clearInterval(interval);
   }, [projectId, queryClient]);
