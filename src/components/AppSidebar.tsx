@@ -84,6 +84,7 @@ export function AppSidebar() {
     { title: "Workspace", url: "/admin/settings", icon: Paintbrush, visible: isAdmin },
     { title: "Diagnóstico", url: "/admin/debug", icon: Activity, visible: isAdmin },
     { title: "Guia", url: "/admin/guide", icon: BookOpen, visible: true },
+    { title: "Docs Técnicos", url: "/admin/technical-docs", icon: FileCode2, visible: true },
   ].filter((item) => item.visible);
 
   const analysisItems = projectId
