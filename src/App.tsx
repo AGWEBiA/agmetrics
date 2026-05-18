@@ -45,6 +45,7 @@ const AdvancedAttribution = lazy(() => import("./pages/AdvancedAttribution"));
 const Debriefing = lazy(() => import("./pages/Debriefing"));
 const PerpetualPanel = lazy(() => import("./pages/PerpetualPanel"));
 const AdminDebug = lazy(() => import("./pages/AdminDebug"));
+const TechnicalDocs = lazy(() => import("./pages/TechnicalDocs"));
 
 function PageLoader() {
   return (
