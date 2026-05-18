@@ -215,10 +215,24 @@ export default function ConnectorHub() {
   const { data: project, refetch } = useProject(projectId);
   const { data: metaCreds, refetch: refetchMeta } = useMetaCredentials(projectId);
   const { data: googleCreds, refetch: refetchGoogle } = useGoogleCredentials(projectId);
+  const { data: globalAccounts, createAccount, deleteAccount, isLoading: accountsLoading } = useIntegrationAccounts();
+  const { data: currentOrg } = useCurrentOrganization();
+  
   const [configuring, setConfiguring] = useState<ConnectorConfig | null>(null);
   const [formData, setFormData] = useState<Record<string, string>>({});
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  
+  // Global account creation state
+  const [isCreatingGlobal, setIsCreatingGlobal] = useState(false);
+  const [globalForm, setGlobalForm] = useState({ name: "", platform: "", credentials: {} as any });
+  
+  const categories = ["ads", "analytics", "crm", "messaging"] as const;
 
+  const filteredAccounts = useMemo(() => {
+    if (!globalAccounts || !configuring) return [];
+    return globalAccounts.filter(acc => acc.platform === configuring.id);
+  }, [globalAccounts, configuring]);
   const categories = ["ads", "analytics", "crm", "messaging"] as const;
 
   const handleConfigure = (connector: ConnectorConfig) => {
