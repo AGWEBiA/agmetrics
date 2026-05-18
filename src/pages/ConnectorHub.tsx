@@ -233,12 +233,31 @@ export default function ConnectorHub() {
     if (!globalAccounts || !configuring) return [];
     return globalAccounts.filter(acc => acc.platform === configuring.id);
   }, [globalAccounts, configuring]);
-  const categories = ["ads", "analytics", "crm", "messaging"] as const;
-
   const handleConfigure = (connector: ConnectorConfig) => {
     const existing = getExistingValues(project, connector.id, metaCreds, googleCreds);
     setFormData(existing);
+    
+    // Auto-select global account if project is already linked to one
+    // (This would require a new column in projects, which I'll add if needed, 
+    // but for now let's just use the credentials directly)
     setConfiguring(connector);
+  };
+
+  const handleCreateGlobal = async () => {
+    if (!globalForm.name || !globalForm.platform) return;
+    try {
+      await createAccount({
+        name: globalForm.name,
+        platform: globalForm.platform,
+        credentials: globalForm.credentials,
+        org_id: currentOrg?.id
+      });
+      toast({ title: "Conta Global Criada", description: `A conta "${globalForm.name}" está pronta para uso.` });
+      setIsCreatingGlobal(false);
+      setGlobalForm({ name: "", platform: "", credentials: {} });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
   };
 
   const handleSave = async () => {
