@@ -1,5 +1,6 @@
+import { isValidElement, createElement } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, LucideIcon } from "lucide-react";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MetricCardProps {
@@ -7,13 +8,17 @@ interface MetricCardProps {
   value: string;
   subtitle?: string;
   color?: string;
-  icon?: React.ReactNode | LucideIcon;
+  icon?: React.ReactNode | React.ComponentType<any>;
   change?: number | null;
   loading?: boolean;
 }
 
 export function MetricCard({ title, value, subtitle, color, icon: Icon, change, loading }: MetricCardProps) {
-  const isLucideIcon = typeof Icon === 'function';
+  const renderedIcon = Icon
+    ? isValidElement(Icon)
+      ? Icon
+      : createElement(Icon as React.ComponentType<any>, { className: "h-4 w-4" })
+    : null;
 
   return (
     <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 glass-card border-border/40">
