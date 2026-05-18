@@ -59,6 +59,12 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Lucide Icons
+- Radix UI Components
+
+## Technical Documentation
+
+A detailed technical guide covering the system architecture, database schema, and data flows is available within the application at `/admin/technical-docs`.
 
 ## How can I deploy this project?
 

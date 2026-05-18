@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Link } from "react-router-dom";
 import {
   Accordion,
   AccordionContent,
@@ -43,6 +44,7 @@ import {
   Zap,
   PieChart,
   Network,
+  LayoutGrid,
 } from "lucide-react";
 
 interface GuideSection {
@@ -980,6 +982,70 @@ const sections: GuideSection[] = [
     ],
     tip: "Use o Dashboard Customizado para criar visões específicas para apresentações ou acompanhamento diário com apenas as métricas que importam.",
   },
+  {
+    id: "coproducao",
+    icon: Users,
+    title: "30. Coprodução",
+    badge: "Vendas",
+    intro: "Entenda como o AGMetrics processa vendas de coprodução e como visualizar seus ganhos reais.",
+    content: [
+      "O sistema identifica automaticamente vendas onde você atua como **coprodutor** nas plataformas Kiwify e Hotmart.",
+      "**Venda Própria** → Venda onde você é o produtor principal (recebe o valor total menos taxas).",
+      "**Venda Coprodução** → Venda onde você recebe uma porcentagem da venda.",
+      "O AGMetrics separa esses valores para que seu ROI e Faturamento reflitam o que **realmente entra na sua conta**.",
+    ],
+    subsections: [
+      {
+        title: "Onde visualizar",
+        steps: [
+          "No **Dashboard Principal**, os cards de faturamento mostram o valor líquido já considerando sua parte na coprodução.",
+          "Na **Tabela de Vendas**, você verá uma coluna 'Tipo' indicando se a venda é Própria ou Coprodução.",
+          "Filtros: Você pode filtrar o dashboard para ver apenas vendas próprias, apenas coprodução ou ambas.",
+        ],
+      },
+      {
+        title: "Backfill de Coprodução",
+        steps: [
+          "Se você já tinha vendas importadas e a coprodução não está aparecendo, é necessário rodar um **Backfill**.",
+          "Vá em **Configurações** → **Kiwify** (ou Hotmart) e procure pela opção de Sincronização Histórica.",
+          "Isso atualizará os registros antigos com os detalhes de partilha de receita da API.",
+        ],
+      },
+    ],
+    tip: "O cálculo de ROI do projeto leva em conta apenas a sua parte líquida nas vendas de coprodução, garantindo uma análise financeira precisa.",
+  },
+  {
+    id: "multi-contas",
+    icon: LayoutGrid,
+    title: "31. Gestão Multi-contas (Hub de Conectores)",
+    badge: "Integração",
+    intro: "Gerencie múltiplas contas de uma mesma ferramenta (ex: 3 contas Kiwify) de forma centralizada.",
+    content: [
+      "O **Hub de Conectores** permite cadastrar infinitas contas globais que podem ser compartilhadas entre projetos.",
+      "**Passo 1:** Acesse o **Hub de Conectores** no menu lateral.",
+      "**Passo 2:** Clique em **Adicionar Conector** e escolha a ferramenta (ex: Kiwify).",
+      "**Passo 3:** Dê um nome amigável (ex: 'Conta do João') e insira as credenciais.",
+    ],
+    subsections: [
+      {
+        title: "Vinculando ao Projeto",
+        steps: [
+          "Após cadastrar no Hub, vá nas **Configurações** do seu projeto específico.",
+          "Na aba da ferramenta, você verá uma lista de contas disponíveis no Hub.",
+          "**Selecione** qual conta deve alimentar este projeto.",
+        ],
+      },
+      {
+        title: "Vantagens",
+        steps: [
+          "**Centralização** → Atualize um token uma única vez no Hub e ele refletirá em todos os projetos vinculados.",
+          "**Organização** → Separe contas de clientes diferentes sem misturar dados.",
+          "**Escalabilidade** → Gerencie dezenas de contas sem perder o controle.",
+        ],
+      },
+    ],
+    tip: "Você pode cadastrar várias contas de anúncio do Meta Ads e vincular diferentes combinações delas para cada projeto.",
+  },
 ];
 
 function renderMarkdown(text: string) {
@@ -1014,7 +1080,7 @@ export default function Guide() {
           Guia Completo do AGMetrics
         </h1>
         <p className="text-muted-foreground mt-1">
-          Aprenda passo a passo como configurar e utilizar todas as funcionalidades do sistema
+          Aprenda passo a passo como configurar e utilizar todas as funcionalidades do sistema. Para detalhes de infraestrutura, consulte os <Link to="/admin/technical-docs" className="text-primary hover:underline">Docs Técnicos</Link>.
         </p>
       </div>
 
