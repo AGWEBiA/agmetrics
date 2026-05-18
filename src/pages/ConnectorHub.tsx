@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useProject } from "@/hooks/useProjects";
 import { useMetaCredentials, useGoogleCredentials } from "@/hooks/useProjectData";
+import { useIntegrationAccounts } from "@/hooks/useIntegrationAccounts";
+import { useCurrentOrganization } from "@/hooks/useOrganization";
 import {
   Zap,
   CheckCircle2,
@@ -17,6 +20,9 @@ import {
   RefreshCw,
   Plus,
   Settings2,
+  Globe,
+  Trash2,
+  LayoutGrid,
 } from "lucide-react";
 import {
   Dialog,
@@ -24,8 +30,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { AGSellLogo } from "@/components/agsell/AGSellLogo";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ConnectorField {
   key: string;
