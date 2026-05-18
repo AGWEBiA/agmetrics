@@ -379,6 +379,50 @@ export type Database = {
           },
         ]
       }
+      integration_accounts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          credentials: Json
+          id: string
+          is_active: boolean
+          name: string
+          org_id: string | null
+          platform: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          credentials?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          org_id?: string | null
+          platform: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          credentials?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          org_id?: string | null
+          platform?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_accounts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_sync_logs: {
         Row: {
           accounts_synced: number | null
@@ -2341,6 +2385,7 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      link_profile_to_auth_user: { Args: never; Returns: undefined }
       owns_project: { Args: { _project_id: string }; Returns: boolean }
       user_org_ids: { Args: { _user_id: string }; Returns: string[] }
     }
