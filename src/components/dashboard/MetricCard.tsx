@@ -34,12 +34,12 @@ export function MetricCard({ title, value, subtitle, color, icon: Icon, change, 
           <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80 leading-tight">
             {title}
           </p>
-          {Icon && (
+          {renderedIcon && (
             <div className={cn(
               "p-2 rounded-xl bg-muted/50 group-hover:scale-110 transition-transform duration-300",
               color
             )}>
-              {isLucideIcon ? <Icon className="h-4 w-4" /> : Icon}
+              {renderedIcon}
             </div>
           )}
         </div>
