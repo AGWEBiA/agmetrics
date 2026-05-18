@@ -28,10 +28,10 @@ export function useIntegrationAccounts() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (account: Partial<IntegrationAccount>) => {
+    mutationFn: async (account: { name: string; platform: string; credentials: any; org_id?: string }) => {
       const { data, error } = await supabase
         .from("integration_accounts")
-        .insert(account)
+        .insert([account])
         .select()
         .single();
 
