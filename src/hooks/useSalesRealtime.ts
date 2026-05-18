@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
 /**
- * Polls for new sales every 30s and invalidates caches.
+ * Polls for new sales every 5m and invalidates caches.
  * We removed sales_events from Realtime publication to prevent PII leakage,
  * so we use polling as a secure alternative.
  */
