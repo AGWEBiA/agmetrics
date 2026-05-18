@@ -127,21 +127,25 @@ export function AppSidebar() {
     items.some((item) => location.pathname.startsWith(item.url));
 
   const renderMenuItems = (items: typeof mainItems) => (
-    <SidebarMenu>
+    <SidebarMenu className="px-2">
       {items.map((item) => {
-        const isActive = location.pathname === item.url || location.pathname.startsWith(item.url + "/");
+        const isActive = location.pathname === item.url || (item.url.includes("/dashboard") && location.pathname.includes("/dashboard"));
         return (
           <SidebarMenuItem key={item.title}>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild tooltip={item.title}>
               <NavLink
                 to={item.url}
                 end={false}
-                className={`hover:bg-sidebar-accent transition-colors rounded-md ${isActive ? "bg-primary/10 text-primary font-medium border-l-2 border-primary" : ""}`}
-                activeClassName="bg-primary/10 text-primary font-medium"
+                className={`group flex items-center px-3 py-2 my-0.5 rounded-lg transition-all duration-200 ${
+                  isActive 
+                    ? "bg-primary/10 text-primary font-bold border-l-4 border-primary" 
+                    : "hover:bg-primary/5 text-muted-foreground hover:text-foreground"
+                }`}
+                activeClassName=""
                 onClick={closeSidebar}
               >
-                <item.icon className={`mr-2 h-4 w-4 ${isActive ? "text-primary" : ""}`} />
-                <span className="truncate">{item.title}</span>
+                <item.icon className={`mr-3 h-4 w-4 transition-transform group-hover:scale-110 ${isActive ? "text-primary" : ""}`} />
+                <span className="truncate text-xs">{item.title}</span>
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -151,34 +155,41 @@ export function AppSidebar() {
   );
 
   return (
-    <Sidebar className="border-r border-sidebar-border">
-      <SidebarContent className="overflow-y-auto overflow-x-hidden">
+    <Sidebar className="border-r border-border/40 bg-sidebar/80 backdrop-blur-xl">
+      <SidebarContent className="overflow-y-auto overflow-x-hidden custom-scrollbar">
         {/* App header */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-4 py-3">
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                <BarChart3 className="h-4 w-4 text-primary" />
+        <SidebarGroup className="py-6">
+          <SidebarGroupLabel className="px-5 mb-2">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shadow-inner">
+                <BarChart3 className="h-5 w-5 text-primary" />
               </div>
-              <span className="text-base font-semibold tracking-tight">AGMetrics</span>
+              <div>
+                <span className="text-lg font-bold tracking-tight text-gradient">AG Metrics</span>
+                <p className="text-[10px] text-muted-foreground font-medium -mt-1 opacity-70">INTELIGÊNCIA DE DADOS</p>
+              </div>
             </div>
           </SidebarGroupLabel>
-          <SidebarGroupContent>
+          <SidebarGroupContent className="px-2">
             <SidebarMenu>
               {mainItems.map((item) => {
                 const isActive = location.pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild tooltip={item.title}>
                       <NavLink
                         to={item.url}
                         end
-                        className={`hover:bg-sidebar-accent transition-colors rounded-md ${isActive ? "bg-primary/10 text-primary font-medium" : ""}`}
-                        activeClassName="bg-primary/10 text-primary font-medium"
+                        className={`group flex items-center px-3 py-2.5 my-0.5 rounded-xl transition-all duration-200 ${
+                          isActive 
+                            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-[1.02]" 
+                            : "hover:bg-primary/5 text-muted-foreground hover:text-foreground"
+                        }`}
+                        activeClassName=""
                         onClick={closeSidebar}
                       >
-                        <item.icon className={`mr-2 h-4 w-4 ${isActive ? "text-primary" : ""}`} />
-                        <span>{item.title}</span>
+                        <item.icon className={`mr-3 h-4.5 w-4.5 transition-transform group-hover:scale-110 ${isActive ? "text-primary-foreground" : ""}`} />
+                        <span className="font-semibold text-sm">{item.title}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

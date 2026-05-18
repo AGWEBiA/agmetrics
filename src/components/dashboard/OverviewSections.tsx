@@ -8,7 +8,7 @@ import { BudgetSection, type BudgetData } from "./BudgetSection";
 import { COLORS, TOOLTIP_STYLE, GOAL_LABELS } from "./constants";
 import { formatBRL, formatPercent, formatNumber, formatNumberBR, formatDecimal } from "@/lib/formatters";
 import { openAdPreview } from "@/lib/openAdPreview";
-import { TrendingUp, TrendingDown, ExternalLink, Video, MessageCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, ExternalLink, Video, MessageCircle, LayoutGrid } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -28,24 +28,35 @@ export function buildOverviewSections({ m, budgetData, whatsappGroups, whatsappH
     budget_provisioning: budgetData ? <BudgetSection budgetData={budgetData} /> : null,
 
     financial: m.salesCount > 0 ? (
-      <AnimatedCard index={0}>
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-lg">Resumo Financeiro</CardTitle></CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-3 lg:grid-cols-4">
-              <Stat label="Receita Bruta da Ação" value={formatBRL(m.grossActionRevenue)} />
-              <Stat label="Receita Bruta" value={formatBRL(m.grossRevenue)} />
-              <Stat label="Receita Líquida (Produtor)" value={formatBRL(m.producerRevenue)} />
-              <Stat label="Comissão Coprodutor" value={formatBRL(m.totalCoproducerCommission)} />
-              <Stat label="Taxas Plataforma" value={formatBRL(m.totalFees)} />
-              <Stat label="Lucro Líquido Projeto" value={formatBRL(m.netProfitProject)} />
-              <Stat label="Lucro Líquido Produtor" value={formatBRL(m.netProfitProducer)} />
-              <Stat label="Ticket Médio" value={formatBRL(m.avgTicket)} />
-              {m.rpl > 0 && <Stat label="RPL (Receita/Lead)" value={formatBRL(m.rpl)} />}
-            </div>
-          </CardContent>
-        </Card>
-      </AnimatedCard>
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <AnimatedCard index={0}><MetricCard title="Receita Bruta Total" value={formatBRL(m.grossRevenue)} icon={TrendingUp} subtitle="Faturamento total rastreado" /></AnimatedCard>
+          <AnimatedCard index={1}><MetricCard title="Líquido (Produtor)" value={formatBRL(m.producerRevenue)} color="text-primary" subtitle="Sua parte após taxas e co-prod." /></AnimatedCard>
+          <AnimatedCard index={2}><MetricCard title="Comissão Co-produtores" value={formatBRL(m.totalCoproducerCommission)} color="text-accent" subtitle="Total distribuído aos parceiros" /></AnimatedCard>
+          <AnimatedCard index={3}><MetricCard title="Lucro Líquido" value={formatBRL(m.netProfitProducer)} color={m.netProfitProducer >= 0 ? "text-success" : "text-destructive"} subtitle="Receita líquida - Investimento" /></AnimatedCard>
+        </div>
+        
+        <AnimatedCard index={4}>
+          <Card className="glass-card border-none overflow-hidden">
+            <CardHeader className="pb-3 border-b border-border/50">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <LayoutGrid className="h-5 w-5 text-primary" />
+                Detalhamento Financeiro
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-2 gap-x-12 gap-y-6 text-sm sm:grid-cols-3 lg:grid-cols-4">
+                <Stat label="Venda Bruta (Produtos)" value={formatBRL(m.grossActionRevenue)} />
+                <Stat label="Ticket Médio" value={formatBRL(m.avgTicket)} />
+                <Stat label="Taxas da Plataforma" value={formatBRL(m.totalFees)} color="text-destructive/80" />
+                {m.rpl > 0 && <Stat label="RPL (Receita/Lead)" value={formatBRL(m.rpl)} color="text-success" />}
+                <Stat label="Lucro Projeto (Total)" value={formatBRL(m.netProfitProject)} />
+                <Stat label="ROI Total" value={formatPercent(m.roi)} color={m.roi >= 0 ? "text-success" : "text-destructive"} />
+              </div>
+            </CardContent>
+          </Card>
+        </AnimatedCard>
+      </div>
     ) : null,
 
     roi: (m.totalInvestment > 0 || m.salesCount > 0) ? (
