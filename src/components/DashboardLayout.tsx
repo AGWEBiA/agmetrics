@@ -60,24 +60,34 @@ export function DashboardLayout() {
   const { projectId } = useParams();
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full bg-background/50">
         <AppSidebar />
-        <main className="flex-1 overflow-auto">
-          <header className="sticky top-0 z-30 flex h-12 sm:h-14 items-center justify-between gap-2 border-b bg-background/80 backdrop-blur-sm px-3 sm:px-6">
-            <div className="flex items-center gap-2 min-w-0">
-              <SidebarTrigger className="shrink-0" />
+        <main className="flex-1 overflow-auto relative">
+          <header className="sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between gap-2 border-b bg-background/60 backdrop-blur-xl px-4 sm:px-8">
+            <div className="flex items-center gap-3 min-w-0">
+              <SidebarTrigger className="shrink-0 hover:bg-primary/10 transition-colors" />
+              <div className="h-6 w-[1px] bg-border/60 mx-1 hidden sm:block" />
               <OrganizationSwitcher />
+              <div className="h-6 w-[1px] bg-border/60 mx-1 hidden md:block" />
               <Breadcrumbs />
             </div>
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              <PushNotificationToggle />
-              <NotificationBell />
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+              <div className="flex items-center gap-1 px-2 py-1 bg-muted/40 rounded-full border border-border/40">
+                <PushNotificationToggle />
+                <NotificationBell />
+              </div>
               <ThemeToggle />
             </div>
           </header>
-          <div className="p-4 sm:p-6 space-y-4">
-            {projectId && <GlobalFiltersBar />}
-            <Outlet />
+          <div className="p-4 sm:p-8 space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+            {projectId && (
+              <div className="glass-card rounded-2xl p-1 modern-shadow">
+                <GlobalFiltersBar />
+              </div>
+            )}
+            <div className="pb-10">
+              <Outlet />
+            </div>
           </div>
         </main>
       </div>
