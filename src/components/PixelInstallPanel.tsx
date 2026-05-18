@@ -81,7 +81,7 @@ export function PixelInstallPanel({ projectId, projectName = "Projeto" }: PixelI
   // Real-time pixel status
   const { data: pixelStatus } = useQuery({
     queryKey: ["pixel_status", projectId],
-    refetchInterval: 30000,
+    
     queryFn: async () => {
       const { data, error, count } = await supabase
         .from("tracking_events")

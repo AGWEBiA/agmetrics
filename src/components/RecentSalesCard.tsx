@@ -38,7 +38,7 @@ export function RecentSalesCard({ projectId }: RecentSalesCardProps) {
       if (error) throw error;
       return data as any[];
     },
-    refetchInterval: 60000,
+    
   });
 
   const filtered = statusFilter === "all"
