@@ -113,6 +113,7 @@ const App = () => (
                 <Route path="settings" element={<PermissionGuard adminOnly><WorkspaceSettings /></PermissionGuard>} />
                 <Route path="debug" element={<PermissionGuard adminOnly><AdminDebug /></PermissionGuard>} />
                 <Route path="guide" element={<Guide />} />
+                <Route path="technical-docs" element={<TechnicalDocs />} />
               </Route>
               <Route path="/" element={<Index />} />
               <Route path="/apresentacao" element={<Presentation />} />
