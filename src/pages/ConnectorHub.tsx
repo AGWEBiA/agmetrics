@@ -529,7 +529,7 @@ export default function ConnectorHub() {
 
             <Button className="w-full h-11 text-base shadow-lg shadow-primary/20" onClick={handleSave} disabled={saving}>
               {saving ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-              {connected ? "Salvar Alterações" : "Conectar Agora"}
+              Salvar Configuração
             </Button>
           </div>
         </DialogContent>
