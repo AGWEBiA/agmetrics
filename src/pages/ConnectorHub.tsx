@@ -345,17 +345,36 @@ export default function ConnectorHub() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
-          <Zap className="h-6 w-6 text-primary" />
-          Hub de Conectores
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Conecte suas fontes de dados e gerencie integrações
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-3">
+            <Zap className="h-7 w-7 text-primary" />
+            <span className="text-gradient">Hub de Conectores</span>
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Conecte suas fontes de dados e gerencie integrações de forma global ou por projeto.
+          </p>
+        </div>
+        <Button onClick={() => setIsCreatingGlobal(true)} className="gap-2">
+          <Globe className="h-4 w-4" />
+          Nova Conta Global
+        </Button>
       </div>
 
-      {categories.map((cat) => {
+      <Tabs defaultValue="projects" className="space-y-6">
+        <TabsList className="bg-muted/50 p-1">
+          <TabsTrigger value="projects" className="gap-2">
+            <LayoutGrid className="h-4 w-4" />
+            Conexões do Projeto
+          </TabsTrigger>
+          <TabsTrigger value="global" className="gap-2">
+            <Globe className="h-4 w-4" />
+            Contas Globais
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="projects" className="space-y-8">
+          {categories.map((cat) => {
         const items = CONNECTORS.filter((c) => c.category === cat);
         return (
           <div key={cat} className="space-y-3">
