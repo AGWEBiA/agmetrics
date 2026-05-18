@@ -25,6 +25,7 @@ import {
   Rocket,
   TrendingUp,
   ClipboardCheck,
+  FileCode2,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { AGSellIcon } from "@/components/agsell/AGSellLogo";
