@@ -61,7 +61,7 @@ export default function SalesTable() {
       if (error) throw error;
       return { rows: data as any[], total: count || 0 };
     },
-    refetchInterval: 60000,
+    
   });
 
   const rows = data?.rows || [];

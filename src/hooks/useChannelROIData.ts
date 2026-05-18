@@ -87,7 +87,7 @@ export function useChannelROIData(projectId: string | undefined) {
     queryKey: ["channel_roi_all_sales", projectId],
     enabled: !!projectId,
     queryFn: () => fetchAllSales(projectId!),
-    refetchInterval: 300000,
+    
   });
 
   const { data: leadEvents } = useQuery({

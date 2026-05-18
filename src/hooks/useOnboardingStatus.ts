@@ -12,7 +12,7 @@ export function useOnboardingStatus(projectId: string | undefined) {
   return useQuery({
     queryKey: ["onboarding_status", projectId],
     enabled: !!projectId,
-    refetchInterval: 30000,
+    
     queryFn: async () => {
       const status: OnboardingStatusMap = {};
 

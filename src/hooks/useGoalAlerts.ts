@@ -35,7 +35,7 @@ export function useGoalAlerts(
       if (error) throw error;
       return (data as any[]) || [];
     },
-    refetchInterval: 60000,
+    
   });
 
   useEffect(() => {

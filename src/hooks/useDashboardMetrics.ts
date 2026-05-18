@@ -57,7 +57,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
 
       return allData;
     },
-    refetchInterval: 300000,
+    
   });
 
   const metaQuery = useQuery({
@@ -72,7 +72,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
       if (error) throw error;
       return (data as any[]) || [];
     },
-    refetchInterval: 300000,
+    
   });
 
   const googleQuery = useQuery({
@@ -87,7 +87,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
       if (error) throw error;
       return (data as any[]) || [];
     },
-    refetchInterval: 300000,
+    
   });
 
   const investmentsQuery = useQuery({
@@ -101,7 +101,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
       if (error) throw error;
       return (data as any[]) || [];
     },
-    refetchInterval: 300000,
+    
   });
 
   const demographicsQuery = useQuery({
@@ -115,7 +115,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
       if (error) throw error;
       return (data as unknown as AdDemographic[]) || [];
     },
-    refetchInterval: 300000,
+    
   });
 
   const metaAdsQuery = useQuery({
@@ -130,7 +130,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
       if (error) throw error;
       return (data as any[]) || [];
     },
-    refetchInterval: 300000,
+    
   });
 
   const productsQuery = useQuery({
@@ -144,7 +144,7 @@ export function useDashboardMetrics(projectId: string | undefined, dateFilter?: 
       if (error) throw error;
       return (data as any[]) || [];
     },
-    refetchInterval: 300000,
+    
   });
 
   const df = dateFilter || {};
