@@ -8,7 +8,7 @@ import { BudgetSection, type BudgetData } from "./BudgetSection";
 import { COLORS, TOOLTIP_STYLE, GOAL_LABELS } from "./constants";
 import { formatBRL, formatPercent, formatNumber, formatNumberBR, formatDecimal } from "@/lib/formatters";
 import { openAdPreview } from "@/lib/openAdPreview";
-import { TrendingUp, TrendingDown, ExternalLink, Video, MessageCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, ExternalLink, Video, MessageCircle, LayoutGrid } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
