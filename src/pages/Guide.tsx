@@ -43,6 +43,7 @@ import {
   Zap,
   PieChart,
   Network,
+  LayoutGrid,
 } from "lucide-react";
 
 interface GuideSection {
